@@ -29,10 +29,10 @@ services:
     depends_on:
       - backend
 
-  ia-service:
-    build: ./ia-service
-    container_name: rpg_saas_ia
+  ai-service:
+    build: ./ai-service
+    container_name: rpg_saas_ai
     ports:
       - "5000:5000"
-    depends_on:
-      - db
+    environment:
+      - OPENAI_API_KEY=sua_chave_aqui
