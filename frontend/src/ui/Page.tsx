@@ -7,7 +7,7 @@ interface PageType {
 
 export const Page: React.FC<PageType> = ({ children }) => {
     return (
-        <div className="font-sans bg-gradient-to-b from-blue-900 to-black text-white">
+        <div className="font-sans bg-gradient-to-b from-blue-900 to-black text-white h-full">
             <Header
                 logo="RPG Creator"
                 menuItems={[

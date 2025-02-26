@@ -10,10 +10,10 @@ xp_por_nivel = {
 
 # Multiplicadores de dificuldade (D&D 5e)
 multiplicadores_dificuldade = {
-    "fácil": 0.5,
-    "médio": 1,
-    "difícil": 1.5,
-    "mortal": 2
+    "f": 0.5,
+    "m": 1,
+    "d": 1.5,
+    "mo": 2
 }
 
 # Dados de monstros organizados por tema
@@ -112,7 +112,7 @@ def exibir_encontro(encontro, xp_total, tema):
 def main():
     nivel_jogadores = int(input("Digite o nível dos jogadores (1-20): "))
     quantidade_jogadores = int(input("Digite a quantidade de jogadores: "))
-    dificuldade = input("Escolha a dificuldade do encontro (fácil, médio, difícil, mortal): ").lower()
+    dificuldade = input("Escolha a dificuldade do encontro (fácil - f, médio - m, difícil - d, mortal - mo): ").lower()
 
     if nivel_jogadores < 1 or nivel_jogadores > 20:
         print("Nível inválido. Use um nível entre 1 e 20.")

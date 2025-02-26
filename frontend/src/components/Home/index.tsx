@@ -7,8 +7,11 @@ import TestimonialCard from './TestimonialCard';
 import { Page } from '../../ui/Page';
 import PricingSection from './PricingSection';
 import DemoSection from './DemoSection';
+import { useNavigate } from 'react-router-dom';
 
 const HomePage: React.FC = () => {
+    const navigate = useNavigate();
+
     return (
         <Page>
             <Section title="Crie Campanhas de RPG Incríveis" className="py-20">
@@ -24,8 +27,13 @@ const HomePage: React.FC = () => {
                     />
                     <Card
                         icon="🧙"
-                        title="Criação de NPCs"
+                        title="Criação de PCs e NPCs"
                         description="Gere NPCs únicos com atributos e histórias detalhadas."
+                        button={{
+                            label: 'CLica aqui bunda',
+                            onClick: () => navigate('/char-creation'),
+                            className: 'mt-4'
+                        }}
                     />
                     <Card
                         icon="📖"

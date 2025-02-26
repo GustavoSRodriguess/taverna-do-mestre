@@ -13,6 +13,17 @@ services:
     ports:
       - "5432:5432"
 
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: rpg_saas_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+
   backend:
     build: ./backend
     container_name: rpg_saas_backend
@@ -28,11 +39,3 @@ services:
       - "5173:5173"
     depends_on:
       - backend
-
-  ai-service:
-    build: ./ai-service
-    container_name: rpg_saas_ai
-    ports:
-      - "5000:5000"
-    environment:
-      - OPENAI_API_KEY=sua_chave_aqui
