@@ -1,13 +1,9 @@
 import React from 'react';
-import Section from '../../ui/Section';
-import { Button } from '../../ui/Button';
-import Card from '../../ui/Card';
-import Footer from '../../ui/Footer';
+import { useNavigate } from 'react-router-dom';
+import { Button, Card, Footer, Page, Section } from '../../ui';
 import TestimonialCard from './TestimonialCard';
-import { Page } from '../../ui/Page';
 import PricingSection from './PricingSection';
 import DemoSection from './DemoSection';
-import { useNavigate } from 'react-router-dom';
 
 const HomePage: React.FC = () => {
     const navigate = useNavigate();
@@ -28,10 +24,10 @@ const HomePage: React.FC = () => {
                     <Card
                         icon="🧙"
                         title="Criação de PCs e NPCs"
-                        description="Gere NPCs únicos com atributos e histórias detalhadas."
+                        description="Gere personagens e NPCs únicos com atributos e histórias detalhadas."
                         button={{
-                            label: 'CLica aqui bunda',
-                            onClick: () => navigate('/char-creation'),
+                            label: 'Ir para Gerador',
+                            onClick: () => navigate('/generator'),
                             className: 'mt-4'
                         }}
                     />

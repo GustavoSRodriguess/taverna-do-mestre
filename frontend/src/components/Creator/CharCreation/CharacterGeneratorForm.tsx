@@ -1,9 +1,5 @@
 import React, { useState } from 'react';
-import { Button } from '../../ui/Button';
-import { CardBorder } from '../../ui/CardBorder';
-import { NumberField } from '../../ui/NumberField';
-import { SelectField } from '../../ui/SelectField';
-import { RadioGroup } from '../../ui/RadioGroup';
+import { Button, SelectField, NumberField, RadioGroup } from '../../../ui';
 
 type AttributeMethod = 'rolagem' | 'array' | 'compra';
 
@@ -51,7 +47,6 @@ interface CharacterGeneratorFormProps {
 }
 
 export const CharacterGeneratorForm: React.FC<CharacterGeneratorFormProps> = ({ onGenerateCharacter }) => {
-    // Estados do formulário
     const [level, setLevel] = useState("1");
     const [race, setRace] = useState(racas[0]);
     const [characterClass, setCharacterClass] = useState(classes[0]);
@@ -69,12 +64,7 @@ export const CharacterGeneratorForm: React.FC<CharacterGeneratorFormProps> = ({ 
     };
 
     return (
-        <CardBorder className="text-left bg-indigo-950/80">
-            <div className='flex justify-between'>
-                <h2 className="text-2xl font-bold mb-6">Gerador de Personagem</h2>
-                <Button buttonLabel='Aleatório' onClick={() => console.log('alo')} classname='mb-4'/>
-            </div>
-
+        <div className="text-left">
             <div className="space-y-4">
                 <NumberField
                     label="Nível do Personagem (1-20)"
@@ -118,6 +108,6 @@ export const CharacterGeneratorForm: React.FC<CharacterGeneratorFormProps> = ({ 
                     classname="w-full mt-4"
                 />
             </div>
-        </CardBorder>
+        </div>
     );
 };

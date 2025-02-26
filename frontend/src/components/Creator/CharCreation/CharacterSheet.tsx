@@ -1,5 +1,5 @@
 import React from 'react';
-import { CardBorder } from '../../ui/CardBorder';
+import { CardBorder } from '../../../ui';
 
 // Tipos
 type CharacterAttributes = {
