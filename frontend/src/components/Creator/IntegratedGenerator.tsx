@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { CharacterGeneratorForm, CharacterSheet } from './CharCreation';
 import { NPCGeneratorForm, NPCSheet } from './NPCCreation';
-import apiService from '../../api/apiService';
+import apiService from '../../services/apiService';
 import { Button, CardBorder, Page, Section } from '../../ui';
 import CreatorTabs from './CreatorTabs';
 

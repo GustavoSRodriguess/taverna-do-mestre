@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { NPCGeneratorForm } from './NPCGeneratorForm';
 import { NPCSheet } from './NPCSheet';
-import apiService from '../../../api/apiService';
+import apiService from '../../../services/apiService';
 import { Page, Section } from '../../../ui';
 
 export const NPCCreation: React.FC = () => {

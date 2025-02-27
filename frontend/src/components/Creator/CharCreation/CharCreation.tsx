@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { CharacterGeneratorForm } from './CharacterGeneratorForm';
 import { CharacterSheet } from './CharacterSheet';
-import apiService from '../../../api/apiService';
+import apiService from '../../../services/apiService';
 import { Page, Section } from '../../../ui';
 
 export const CharCreation: React.FC = () => {

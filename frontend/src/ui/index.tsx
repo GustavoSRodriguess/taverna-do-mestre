@@ -7,9 +7,6 @@ export { SelectField } from './SelectField';
 export { NumberField } from './NumberField';
 export { RadioGroup } from './RadioGroup';
 export { default as Footer } from "./Footer"
-
-
-// Novos componentes
 export { Badge } from './Badge';
 export { Alert } from './Alert';
 export { Tabs, type TabItem } from './Tabs';

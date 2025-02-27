@@ -77,7 +77,7 @@ export const Page: React.FC<PageType> = ({ children, theme = 'cosmic' }) => {
             {/* Conteúdo */}
             <div className="relative z-10">
                 <Header
-                    logo="RPG Creator"
+                    logo="Torre do Mago"
                     menuItems={[
                         { label: 'Início', href: '/' },
                         { label: 'Recursos', href: '/features' },
