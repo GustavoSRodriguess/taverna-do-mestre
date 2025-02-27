@@ -1,5 +1,4 @@
 version: '3.8'
-
 services:
   db:
     image: postgres:13-alpine
@@ -12,13 +11,17 @@ services:
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
-
+  
   pgadmin:
     image: dpage/pgadmin4
     container_name: rpg_saas_pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@example.com
       PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./pgadmin/servers.json:/pgadmin4/servers.json
     ports:
       - "5050:80"
     depends_on:
@@ -31,7 +34,7 @@ services:
       - "8080:8080"
     depends_on:
       - db
-
+  
   frontend:
     build: ./frontend
     container_name: rpg_saas_frontend
@@ -39,3 +42,6 @@ services:
       - "5173:5173"
     depends_on:
       - backend
+
+volumes:
+  pgadmin_data:
