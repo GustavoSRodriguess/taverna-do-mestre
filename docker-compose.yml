@@ -27,13 +27,30 @@ services:
     depends_on:
       - db
 
+  python-api:
+    build: ./python
+    container_name: rpg_saas_python
+    ports:
+      - "5000:5000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DATABASE_URL=postgresql://user:password@db:5432/rpg_saas
+    volumes:
+      - ./python:/app
+    depends_on:
+      - db
+
   backend:
     build: ./backend
     container_name: rpg_saas_backend
     ports:
       - "8080:8080"
+    environment:
+      - PYTHON_API_URL=http://python-api:5000
+      - DATABASE_URL=postgresql://user:password@db:5432/rpg_saas
     depends_on:
       - db
+      - python-api
   
   frontend:
     build: ./frontend

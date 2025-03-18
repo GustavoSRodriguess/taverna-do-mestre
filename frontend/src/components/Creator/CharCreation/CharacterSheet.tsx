@@ -41,7 +41,9 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character }) => 
 
     return (
         <CardBorder className="bg-indigo-950/80">
-            <h2 className="text-2xl font-bold mb-6">Ficha de Personagem</h2>
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold">Ficha de Personagem</h2>
+            </div>
 
             <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
