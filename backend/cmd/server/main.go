@@ -27,10 +27,10 @@ func main() {
 	
 	// Configuração do banco de dados
 	dbConfig := db.Config{
-		Host:     getEnv("DB_HOST", "localhost"),
+		Host:     getEnv("DB_HOST", "db"),
 		Port:     getEnv("DB_PORT", "5432"),
-		User:     getEnv("DB_USER", "postgres"),
-		Password: getEnv("DB_PASSWORD", "postgres"),
+		User:     getEnv("DB_USER", "user"),
+		Password: getEnv("DB_PASSWORD", "password"),
 		DBName:   getEnv("DB_NAME", "rpg_saas"),
 		SSLMode:  getEnv("DB_SSLMODE", "disable"),
 	}

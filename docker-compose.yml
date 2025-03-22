@@ -28,17 +28,19 @@ services:
       - db
 
   python-api:
-    build: ./ai-service
-    container_name: rpg_saas_python
-    ports:
-      - "5000:5000"
-    environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - DATABASE_URL=postgresql://user:password@db:5432/rpg_saas
-    volumes:
-      - ./python:/app
-    depends_on:
-      - db
+      build: ./ai-service
+      container_name: rpg_saas_python
+      ports:
+        - "5000:5000"
+      environment:
+        - OPENAI_API_KEY=${OPENAI_API_KEY}
+        - DATABASE_URL=postgresql://user:password@db:5432/rpg_saas
+        - PYTHONPATH=/app
+      volumes:
+        - ./ai-service:/app
+      depends_on:
+        - db
+      command: sh -c "python -m flask run --host=0.0.0.0"
 
   backend:
     build: ./backend
