@@ -6,7 +6,7 @@ Um assistente digital completo para mestres de RPG criarem, organizarem e gerenc
 
 A Taverna do Mestre é uma aplicação web completa desenvolvida para auxiliar mestres de jogos de RPG (Role Playing Games) na preparação e gestão de suas sessões de jogo. Através de ferramentas automatizadas para geração de personagens, NPCs e encontros balanceados, o projeto visa reduzir significativamente o tempo de preparação das sessões, permitindo que os mestres foquem na narrativa e na experiência dos jogadores.
 
-Este projeto foi desenvolvido como Trabalho de Conclusão de Curso na área de Ciência da Computação, aplicando conceitos de desenvolvimento full-stack, processamento de linguagem natural e aprendizado de máquina.
+Este projeto foi desenvolvido como Trabalho de Conclusão de Curso na área de Engenharia de Software, aplicando conceitos de desenvolvimento full-stack, processamento de linguagem natural e aprendizado de máquina.
 
 ## 🔮 Funcionalidades
 
@@ -16,6 +16,7 @@ Este projeto foi desenvolvido como Trabalho de Conclusão de Curso na área de C
 - **Integração com IA**: Utilize modelos de linguagem para gerar descrições, histórias e detalhes de personagens
 - **Dashboard Personalizado**: Acompanhe todas suas criações em um painel intuitivo e organizado
 - **Exportação de Conteúdo**: Exporte fichas e informações em diversos formatos (PDF, imagem)
+- **Criação de camapnhas**: Crie camapanhas e gerencie os personagens dos jogadres de maneira integrada
 
 ## 🧰 Stack Tecnológica
 
@@ -92,7 +93,7 @@ docker-compose up -d
 
 O frontend estará disponível em `http://localhost:3000` e a API em `http://localhost:8080`.
 
-## 💼 Modelo de Negócio
+## 💼 Modelo de Negócio (teórico)
 
 O Taverna do Mestre opera em um modelo de negócio freemium com assinaturas:
 
