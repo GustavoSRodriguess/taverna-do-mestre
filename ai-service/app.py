@@ -4,8 +4,8 @@ from dotenv import load_dotenv
 import numpy as np
 import noise
 import json
-from create_npc import generate_character, calculate_modifiers
-from create_encounter import gerar_encontro
+from create_npc import handle_generate_npc
+from create_encounter import handle_generate_encounter
 
 # Carrega as variáveis de ambiente
 load_dotenv()
@@ -55,28 +55,12 @@ def generate_npc_api():
     manual = data.get('manual', False)
     
     # Utiliza a função existente do create_npc.py
-    character = generate_character(level, attributes_method, manual)
+    npc_data = handle_generate_npc({
+        "level": level, 
+        "attributes_method": attributes_method, 
+        "manual": manual
+    })
     
-    # Formata para o formato esperado pela API
-    npc_data = {
-        "name": f"{character['Raça']} {character['Classe']}", 
-        "description": f"Um(a) {character['Raça']} {character['Classe']} com antecedente de {character['Antecedente']}",
-        "level": character['Nível'],
-        "race": character['Raça'],
-        "class": character['Classe'],
-        "attributes": character['Atributos'],
-        "abilities": character['Habilidades'],
-        "equipment": character['Equipamento'],
-        "hp": character['HP'],
-        "ca": character['CA'],
-    }
-    
-    # Adiciona magias se existirem
-    if character['Magias']:
-        spells = []
-        for level_spells, spell_list in character['Magias'].items():
-            spells.extend(spell_list)
-        npc_data["spells"] = spells
     
     return jsonify(npc_data)
 
@@ -85,30 +69,16 @@ def generate_encounter_api():
     data = request.json
     player_level = data.get('player_level', 1)
     player_count = data.get('player_count', 4)
-    difficulty = data.get('difficulty', 'm')  # f, m, d, mo
+    difficulty = data.get('difficulty', 'd')  # e, m, d, mo
     
-    # Gera o encontro usando a função do create_encounter.py
-    encontro, xp_total, tema = gerar_encontro(player_level, player_count, difficulty)
-    
-    # Formata o resultado para a API
-    monsters = []
-    for monstro in encontro:
-        monsters.append({
-            "name": monstro["nome"],
-            "xp": monstro["xp"],
-            "cr": monstro["cr"]
-        })
-    
-    response = {
-        "theme": tema,
-        "difficulty": difficulty,
-        "total_xp": xp_total,
+    # Use the improved encounter generator
+    encounter_data = handle_generate_encounter({
         "player_level": player_level,
         "player_count": player_count,
-        "monsters": monsters
-    }
+        "difficulty": difficulty
+    })
     
-    return jsonify(response)
+    return jsonify(encounter_data)
 
 @app.route('/generate-map', methods=['POST'])
 def generate_map_api():

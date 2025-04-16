@@ -1,514 +1,784 @@
 import random
+import requests
+import json
+import math
 
-racas = {
-    "Humano": {"Força": 1, "Destreza": 1, "Constituição": 1, "Inteligência": 1, "Sabedoria": 1, "Carisma": 1},
-    "Elfo": {"Destreza": 2, "Inteligência": 1},
-    "Anão": {"Constituição": 2},
-    "Halfling": {"Destreza": 2, "Carisma": 1},
-    "Tiefling": {"Inteligência": 1, "Carisma": 2},
-    "Dragonborn": {"Força": 2, "Carisma": 1},
-    "Gnomo": {"Inteligência": 2},
-    "Meio-Elfo": {"Carisma": 2, "Outros": 2},
-    "Meio-Orc": {"Força": 2, "Constituição": 1},
-    "Aarakocra": {"Destreza": 2, "Sabedoria": 1},
-    "Goliath": {"Força": 2, "Constituição": 1},
-    "Tabaxi": {"Destreza": 2, "Carisma": 1},
-    "Tritão": {"Força": 1, "Constituição": 1, "Carisma": 1},
-    "Firbolg": {"Sabedoria": 2, "Força": 1},
-    "Kenku": {"Destreza": 2, "Sabedoria": 1},
-    "Lizardfolk": {"Constituição": 2, "Sabedoria": 1},
-    "Hobgoblin": {"Constituição": 2, "Inteligência": 1},
-    "Yuan-Ti Pureblood": {"Carisma": 2, "Inteligência": 1},
-    "Aasimar": {"Carisma": 2},
-    "Bugbear": {"Força": 2, "Destreza": 1},
-    "Githyanki": {"Força": 2, "Inteligência": 1},
-    "Githzerai": {"Sabedoria": 2, "Inteligência": 1},
-    "Centaur": {"Força": 2, "Sabedoria": 1},
-    "Loxodon": {"Constituição": 2, "Sabedoria": 1},
-    "Minotauro": {"Força": 2, "Constituição": 1},
-    "Simic Hybrid": {"Constituição": 2, "Outro": 1},
-    "Vedalken": {"Inteligência": 2, "Sabedoria": 1},
-}
+class DndApiClient:
+    """Client for interacting with the D&D 5e API"""
+    
+    BASE_URL = "https://www.dnd5eapi.co/api/2014"
+    
+    @classmethod
+    def get_classes(cls):
+        """Get all available classes"""
+        response = requests.get(f"{cls.BASE_URL}/classes")
+        if response.status_code == 200:
+            return response.json()["results"]
+        return []
+    
+    @classmethod
+    def get_class_details(cls, class_index):
+        """Get detailed information about a specific class"""
+        response = requests.get(f"{cls.BASE_URL}/classes/{class_index}")
+        if response.status_code == 200:
+            return response.json()
+        return None
+    
+    @classmethod
+    def get_races(cls):
+        """Get all available races"""
+        response = requests.get(f"{cls.BASE_URL}/races")
+        if response.status_code == 200:
+            return response.json()["results"]
+        return []
+    
+    @classmethod
+    def get_race_details(cls, race_index):
+        """Get detailed information about a specific race"""
+        response = requests.get(f"{cls.BASE_URL}/races/{race_index}")
+        if response.status_code == 200:
+            return response.json()
+        return None
+    
+    @classmethod
+    def get_backgrounds(cls):
+        """Get all available backgrounds"""
+        # Note: The 5e API doesn't have backgrounds endpoint, so we'll use a fallback
+        return cls.get_fallback_backgrounds()
+    
+    @classmethod
+    def get_fallback_backgrounds(cls):
+        """Fallback backgrounds when API doesn't provide them"""
+        return [
+            {"index": "acolyte", "name": "Acolyte"},
+            {"index": "charlatan", "name": "Charlatan"},
+            {"index": "criminal", "name": "Criminal"},
+            {"index": "entertainer", "name": "Entertainer"},
+            {"index": "folk-hero", "name": "Folk Hero"},
+            {"index": "guild-artisan", "name": "Guild Artisan"},
+            {"index": "hermit", "name": "Hermit"},
+            {"index": "noble", "name": "Noble"},
+            {"index": "outlander", "name": "Outlander"},
+            {"index": "sage", "name": "Sage"},
+            {"index": "sailor", "name": "Sailor"},
+            {"index": "soldier", "name": "Soldier"},
+            {"index": "urchin", "name": "Urchin"}
+        ]
+    
+    @classmethod
+    def get_spells_by_class(cls, class_index, level=None):
+        """Get spells available to a specific class"""
+        url = f"{cls.BASE_URL}/classes/{class_index}/spells"
+        if level is not None:
+            url += f"?level={level}"
+        
+        response = requests.get(url)
+        if response.status_code == 200:
+            return response.json()["results"]
+        return []
+    
+    @classmethod
+    def get_spell_details(cls, spell_index):
+        """Get detailed information about a specific spell"""
+        response = requests.get(f"{cls.BASE_URL}/spells/{spell_index}")
+        if response.status_code == 200:
+            return response.json()
+        return None
+    
+    @classmethod
+    def get_equipment(cls, category=None):
+        """Get equipment items, optionally filtered by category"""
+        url = f"{cls.BASE_URL}/equipment"
+        if category:
+            url += f"?equipment-category={category}"
+        
+        response = requests.get(url)
+        if response.status_code == 200:
+            return response.json()["results"]
+        return []
+    
+    @classmethod
+    def get_equipment_categories(cls):
+        """Get all equipment categories"""
+        response = requests.get(f"{cls.BASE_URL}/equipment-categories")
+        if response.status_code == 200:
+            return response.json()["results"]
+        return []
 
-# Dados de Classes e Habilidades por Nível
-classes = {
-    "Guerreiro": {
-        "Atributos Prioritários": ["Força", "Constituição"],
-        "Habilidades por Nível": {
-            1: ["Estilo de Combate", "Segunda Ventilação"],
-            2: ["Ataque Extra"],
-            3: ["Arquétipo de Guerreiro"],
-            4: ["Aumento de Atributo"],
-            5: ["Ataque Extra (2x)"],
-        },
-    },
-    "Mago": {
-        "Atributos Prioritários": ["Inteligência", "Sabedoria"],
-        "Habilidades por Nível": {
-            1: ["Conjuração de Magias", "Recuperação Arcana"],
-            2: ["Tradição Arcana"],
-            3: ["Aprimorar Magias"],
-            4: ["Aumento de Atributo"],
-            5: ["Magias de Nível 3"],
-        },
-    },
-    "Ladino": {
-        "Atributos Prioritários": ["Destreza", "Inteligência"],
-        "Habilidades por Nível": {
-            1: ["Ataque Furtivo", "Especialização"],
-            2: ["Esquiva Ágil"],
-            3: ["Arquétipo de Ladino"],
-            4: ["Aumento de Atributo"],
-            5: ["Ataque Furtivo Aprimorado"],
-        },
-    },
-    "Clérigo": {
-        "Atributos Prioritários": ["Sabedoria", "Carisma"],
-        "Habilidades por Nível": {
-            1: ["Conjuração de Magias", "Domínio Divino"],
-            2: ["Canalizar Divindade"],
-            3: ["Aprimorar Magias"],
-            4: ["Aumento de Atributo"],
-            5: ["Destruir Mortos-Vivos"],
-        },
-    },
-    "Bardo": {
-        "Atributos Prioritários": ["Carisma", "Destreza"],
-        "Habilidades por Nível": {
-            1: ["Inspiração Bárdica", "Conjuração de Magias"],
-            2: ["Canção de Descanso"],
-            3: ["Colégio Bárdico"],
-            4: ["Aumento de Atributo"],
-            5: ["Inspiração Aprimorada"],
-        },
-    },
-    "Druida": {
-        "Atributos Prioritários": ["Sabedoria", "Constituição"],
-        "Habilidades por Nível": {
-            1: ["Conjuração de Magias", "Transformação Selvagem"],
-            2: ["Círculo Druídico"],
-            3: ["Aprimorar Magias"],
-            4: ["Aumento de Atributo"],
-            5: ["Transformação Selvagem Aprimorada"],
-        },
-    },
-    "Monge": {
-        "Atributos Prioritários": ["Destreza", "Sabedoria"],
-        "Habilidades por Nível": {
-            1: ["Defesa sem Armadura", "Artes Marciais"],
-            2: ["Ki", "Movimento Acrobático"],
-            3: ["Tradição Monástica"],
-            4: ["Aumento de Atributo"],
-            5: ["Ataque Desarmado Aprimorado"],
-        },
-    },
-    "Paladino": {
-        "Atributos Prioritários": ["Força", "Carisma"],
-        "Habilidades por Nível": {
-            1: ["Juramento Sagrado", "Cura pelas Mãos"],
-            2: ["Estilo de Combate", "Conjuração de Magias"],
-            3: ["Juramento Divino"],
-            4: ["Aumento de Atributo"],
-            5: ["Aura de Proteção"],
-        },
-    },
-    "Patrulheiro": {
-        "Atributos Prioritários": ["Destreza", "Sabedoria"],
-        "Habilidades por Nível": {
-            1: ["Exploração", "Inimigo Favorecido"],
-            2: ["Estilo de Combate", "Conjuração de Magias"],
-            3: ["Arquétipo de Patrulheiro"],
-            4: ["Aumento de Atributo"],
-            5: ["Ataque Extra"],
-        },
-    },
-    "Feiticeiro": {
-        "Atributos Prioritários": ["Carisma", "Constituição"],
-        "Habilidades por Nível": {
-            1: ["Magia Inata", "Origem Feiticeira"],
-            2: ["Metamagia"],
-            3: ["Aprimorar Magias"],
-            4: ["Aumento de Atributo"],
-            5: ["Magias de Nível 3"],
-        },
-    },
-    "Bruxo": {
-        "Atributos Prioritários": ["Carisma", "Inteligência"],
-        "Habilidades por Nível": {
-            1: ["Pacto Mágico", "Eldritch Invocations"],
-            2: ["Pacto com o Patrono"],
-            3: ["Aprimorar Magias"],
-            4: ["Aumento de Atributo"],
-            5: ["Magias de Nível 3"],
-        },
-    },
-}
 
-# Dados de Antecedentes
-antecedentes = {
-    "Nobre": {"Habilidade": "Posição de Privilégio", "Equipamento": ["Roupas finas", "Selo de família"]},
-    "Eremita": {"Habilidade": "Descoberta", "Equipamento": ["Kit de herbalismo", "Livro de orações"]},
-    "Soldado": {"Habilidade": "Hierarquia Militar", "Equipamento": ["Insígnia militar", "Kit de aventura"]},
-    "Criminoso": {"Habilidade": "Contato Criminoso", "Equipamento": ["Ferramentas de ladrão", "Kit de disfarce"]},
-    "Sábio": {"Habilidade": "Pesquisador", "Equipamento": ["Livro de conhecimento", "Tinta e pena"]},
-    "Charlatão": {"Habilidade": "Falsidade", "Equipamento": ["Kit de falsificação", "Roupas finas"]},
-    "Artífice": {"Habilidade": "Criação de Itens", "Equipamento": ["Ferramentas de artesão", "Kit de alquimia"]},
-    "Forasteiro": {"Habilidade": "Sobrevivência", "Equipamento": ["Kit de sobrevivência", "Arco e flecha"]},
-    "Herói": {"Habilidade": "Inspiração", "Equipamento": ["Armadura leve", "Arma simples"]},
-    "Mercenário": {"Habilidade": "Táticas de Combate", "Equipamento": ["Armadura média", "Arma marcial"]},
-}
-
-# Dados de Magias por Classe e Nível
-magias = {
-    "Mago": {
-        1: ["Bola de Fogo", "Escudo Mágico", "Raio Arcano", "Detectar Magia", "Disfarçar-se"],
-        2: ["Nevasca", "Invisibilidade", "Teia", "Sugestão", "Levitar"],
-        3: ["Contramágica", "Dissipar Magia", "Relâmpago"],
-        4: ["Muralha de Fogo", "Porta Dimensional", "Polimorfar"],
-        5: ["Cone de Frio", "Teletransporte", "Mísseis Mágicos Avançados"],
-    },
-    "Clérigo": {
-        1: ["Curar Ferimentos", "Proteção contra o Mal", "Bênção", "Causar Ferimentos", "Detectar Mal e Bem"],
-        2: ["Restauração Menor", "Silêncio", "Proteção contra Veneno", "Arma Espiritual", "Augúrio"],
-        3: ["Revivificar", "Dispensar Maldição", "Proteção contra Energia"],
-        4: ["Guardião da Fé", "Libertação", "Cura Crítica"],
-        5: ["Comunhão", "Planar Ally", "Raio Solar"],
-    },
-    "Bruxo": {
-        1: ["Eldritch Blast", "Armadura de Agathys", "Hex", "Proteção contra o Mal e Bem", "Compreender Idiomas"],
-        2: ["Coroa da Loucura", "Escuridão", "Invisibilidade", "Mísseis Mágicos", "Sugestão"],
-        3: ["Contramágica", "Dissipar Magia", "Relâmpago"],
-        4: ["Muralha de Fogo", "Porta Dimensional", "Polimorfar"],
-        5: ["Cone de Frio", "Teletransporte", "Mísseis Mágicos Avançados"],
-    },
-    "Druida": {
-        1: ["Cura pelas Mãos", "Entender Animais", "Falar com Animais", "Crescer Espinhos", "Névoa Obscurecente"],
-        2: ["Chamas da Fênix", "Transformação de Pedra", "Chuva de Espinhos", "Proteção contra Veneno", "Calmaria"],
-        3: ["Conjurar Animais", "Lentidão", "Relâmpago"],
-        4: ["Muralha de Fogo", "Porta Dimensional", "Polimorfar"],
-        5: ["Cone de Frio", "Teletransporte", "Mísseis Mágicos Avançados"],
-    },
-    "Bardo": {
-        1: ["Cura pelas Mãos", "Disfarçar-se", "Detectar Magia", "Sono", "Compreender Idiomas"],
-        2: ["Invisibilidade", "Sugestão", "Curar Ferimentos", "Silêncio", "Aprimorar Habilidade"],
-        3: ["Contramágica", "Dissipar Magia", "Relâmpago"],
-        4: ["Muralha de Fogo", "Porta Dimensional", "Polimorfar"],
-        5: ["Cone de Frio", "Teletransporte", "Mísseis Mágicos Avançados"],
-    },
-}
-
-# Dados de Inimigos
-inimigos = {
-    "Goblin": {
-        "Atributos": {"Força": 8, "Destreza": 14, "Constituição": 10, "Inteligência": 10, "Sabedoria": 8, "Carisma": 8},
-        "Habilidades": ["Ataque Furtivo", "Esquiva Ágil"],
-        "Equipamento": ["Adaga", "Arco Curto"],
-    },
-    "Orc": {
-        "Atributos": {"Força": 16, "Destreza": 12, "Constituição": 14, "Inteligência": 7, "Sabedoria": 8, "Carisma": 10},
-        "Habilidades": ["Ataque Poderoso", "Resistência à Dor"],
-        "Equipamento": ["Machado Grande", "Armadura de Couro"],
-    },
-    "Esqueleto": {
-        "Atributos": {"Força": 10, "Destreza": 14, "Constituição": 12, "Inteligência": 6, "Sabedoria": 8, "Carisma": 5},
-        "Habilidades": ["Imunidade a Veneno", "Vulnerabilidade a Dano Radiante"],
-        "Equipamento": ["Espada Curta", "Escudo"],
-    },
-    "Lobisomem": {
-        "Atributos": {"Força": 15, "Destreza": 13, "Constituição": 14, "Inteligência": 10, "Sabedoria": 11, "Carisma": 10},
-        "Habilidades": ["Transformação", "Regeneração"],
-        "Equipamento": ["Garras", "Pelagem Resistente"],
-    },
-}
-
-# Função para gerar atributos (rolagem 4d6 descartando o menor)
-def roll_attributes():
-    attributes = {}
-    for stat in ["Força", "Destreza", "Constituição", "Inteligência", "Sabedoria", "Carisma"]:
-        rolls = sorted([random.randint(1, 6) for _ in range(4)], reverse=True)
-        attributes[stat] = sum(rolls[:3])
-    return attributes
-
-def calculate_hp(classe, level, constitution_modifier):
-    # Dados de vida inicial por classe
-    hit_dice = {
-        "Guerreiro": 10,
-        "Mago": 6,
-        "Ladino": 8,
-        "Clérigo": 8,
-        "Bardo": 8,
-        "Druida": 8,
-        "Monge": 8,
-        "Paladino": 10,
-        "Patrulheiro": 10,
-        "Feiticeiro": 6,
-        "Bruxo": 8,
+def generate_attributes(method="standard_array", class_name=None):
+    """Generate character attributes based on the specified method"""
+    attributes = {
+        "strength": 0,
+        "dexterity": 0,
+        "constitution": 0,
+        "intelligence": 0,
+        "wisdom": 0,
+        "charisma": 0
     }
-
-    # Vida inicial (máximo do dado de vida + modificador de Constituição)
-    hp = hit_dice.get(classe, 6) + constitution_modifier
-
-    # Adiciona vida para cada nível acima do 1
-    for _ in range(2, level + 1):
-        hp += random.randint(1, hit_dice.get(classe, 6)) + constitution_modifier
-
-    return hp
-
-def calculate_ca(dexterity_modifier, armor=None, shield=False):
-    # CA base (10 + modificador de Destreza)
-    ca = 10 + dexterity_modifier
-
-    # Bônus de armadura
-    if armor == "Leve":
-        ca += 11 + dexterity_modifier
-    elif armor == "Média":
-        ca += 13 + min(2, dexterity_modifier)
-    elif armor == "Pesada":
-        ca += 15  # Sem bônus de Destreza para armaduras pesadas
-
-    # Bônus de escudo
-    if shield:
-        ca += 2
-
-    return ca
-
-# Função para gerar atributos usando array padrão
-def standard_array(classe):
-    # Valores fixos do array padrão
-    values = [15, 14, 13, 12, 10, 8]
-    # Atributos prioritários da classe
-    priority_stats = classes[classe]["Atributos Prioritários"]
-    # Outros atributos
-    other_stats = [stat for stat in ["Força", "Destreza", "Constituição", "Inteligência", "Sabedoria", "Carisma"] if stat not in priority_stats]
-
-    # Distribui os maiores valores para os atributos prioritários
-    attributes = {}
-    for i, stat in enumerate(priority_stats):
-        attributes[stat] = values[i]
-
-    # Distribui os valores restantes aleatoriamente para os outros atributos
-    random.shuffle(other_stats)
-    for i, stat in enumerate(other_stats):
-        attributes[stat] = values[len(priority_stats) + i]
-
-    return attributes
-
-# Função para gerar atributos usando compra de pontos
-def point_buy():
-    points = 27
-    attributes = {"Força": 8, "Destreza": 8, "Constituição": 8, "Inteligência": 8, "Sabedoria": 8, "Carisma": 8}
-    costs = {8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 15: 9}
-
-    print("\nDistribua 27 pontos entre os atributos (custo por ponto):")
-    for stat in attributes:
-        while True:
-            try:
-                value = int(input(f"{stat} (8-15): "))
-                if value < 8 or value > 15:
-                    print("Valor deve estar entre 8 e 15.")
-                    continue
-                cost = costs[value]
-                if points - cost < 0:
-                    print("Pontos insuficientes.")
-                    continue
-                points -= cost
-                attributes[stat] = value
+    
+    # Class priorities (which attributes are most important for each class)
+    class_priorities = {
+        "barbarian": ["strength", "constitution"],
+        "bard": ["charisma", "dexterity"],
+        "cleric": ["wisdom", "constitution"],
+        "druid": ["wisdom", "constitution"],
+        "fighter": ["strength", "constitution"],
+        "monk": ["dexterity", "wisdom"],
+        "paladin": ["strength", "charisma"],
+        "ranger": ["dexterity", "wisdom"],
+        "rogue": ["dexterity", "intelligence"],
+        "sorcerer": ["charisma", "constitution"],
+        "warlock": ["charisma", "constitution"],
+        "wizard": ["intelligence", "constitution"]
+    }
+    
+    # Determine attribute priorities based on class
+    if class_name and class_name.lower() in class_priorities:
+        priorities = class_priorities[class_name.lower()]
+    else:
+        priorities = random.sample(list(attributes.keys()), 2)
+    
+    # Secondary attributes (everything except the priorities)
+    secondary = [attr for attr in attributes.keys() if attr not in priorities]
+    
+    # Generate attributes based on method
+    if method == "standard_array":
+        # Standard array: 15, 14, 13, 12, 10, 8
+        values = [15, 14, 13, 12, 10, 8]
+        
+        # Assign values to attributes based on priorities
+        attributes[priorities[0]] = values[0]  # Primary attribute gets 15
+        attributes[priorities[1]] = values[1]  # Secondary attribute gets 14
+        
+        # Assign remaining values to other attributes
+        random.shuffle(secondary)
+        for i, attr in enumerate(secondary):
+            attributes[attr] = values[i + 2]
+    
+    elif method == "roll":
+        # 4d6, drop the lowest
+        for attr in attributes:
+            rolls = sorted([random.randint(1, 6) for _ in range(4)])
+            attributes[attr] = sum(rolls[1:])  # Drop the lowest roll
+        
+        # Ensure priority attributes are higher
+        # If primary attribute is not at least 14, reroll
+        while attributes[priorities[0]] < 14:
+            rolls = sorted([random.randint(1, 6) for _ in range(4)])
+            attributes[priorities[0]] = sum(rolls[1:])
+    
+    elif method == "point_buy":
+        # Simplified point buy
+        # Start with all 8s, then distribute 27 points
+        points = 27
+        for attr in attributes:
+            attributes[attr] = 8
+        
+        # Cost table
+        # 8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 15: 9
+        costs = {9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 15: 9}
+        
+        # Prioritize the primary and secondary attributes
+        # Try to get primary to 15 and secondary to 14
+        if points >= costs[15]:
+            attributes[priorities[0]] = 15
+            points -= costs[15]
+        
+        if points >= costs[14]:
+            attributes[priorities[1]] = 14
+            points -= costs[14]
+        
+        # Distribute remaining points randomly
+        while points > 0:
+            # Pick a random attribute
+            attr = random.choice(list(attributes.keys()))
+            
+            # Try to increase it if possible
+            if attributes[attr] < 15 and points >= costs.get(attributes[attr] + 1, 0):
+                points -= costs.get(attributes[attr] + 1, 0)
+                attributes[attr] += 1
+            else:
+                # If we can't increase any more, break
                 break
-            except ValueError:
-                print("Entrada inválida.")
+    
     return attributes
 
-# Função para aplicar bônus de raça
-def apply_race_bonus(attributes, race):
-    for stat, bonus in racas[race].items():
-        if stat == "Outros":
-            # Escolhe dois atributos aleatórios para receber +1
-            other_stats = random.sample(["Força", "Destreza", "Constituição", "Inteligência", "Sabedoria", "Carisma"], 2)
-            for other_stat in other_stats:
-                attributes[other_stat] += 1
-        else:
-            attributes[stat] += bonus
-    return attributes
 
-# Função para calcular modificadores de atributos
+def apply_racial_bonuses(attributes, race_details):
+    """Apply racial ability score bonuses"""
+    if not race_details:
+        return attributes
+    
+    # Copy attributes to avoid modifying the original
+    modified_attributes = attributes.copy()
+    
+    # Apply ability bonuses from race
+    ability_bonuses = race_details.get("ability_bonuses", [])
+    for bonus in ability_bonuses:
+        ability_name = bonus.get("ability_score", {}).get("index", "")
+        bonus_value = bonus.get("bonus", 0)
+        
+        if ability_name and ability_name in modified_attributes:
+            modified_attributes[ability_name] += bonus_value
+    
+    return modified_attributes
+
+
 def calculate_modifiers(attributes):
-    modifiers = {}
-    for stat, value in attributes.items():
-        modifiers[stat] = (value - 10) // 2
-    return modifiers
+    """Calculate ability score modifiers"""
+    return {attr: (value - 10) // 2 for attr, value in attributes.items()}
 
-# Função para gerar magias aleatórias
-def generate_random_spells(classe, level):
+
+def calculate_hp(class_name, level, constitution_modifier):
+    """Calculate HP based on class, level, and constitution modifier"""
+    hit_dice = {
+        "barbarian": 12,
+        "fighter": 10,
+        "paladin": 10,
+        "ranger": 10,
+        "bard": 8,
+        "cleric": 8,
+        "druid": 8,
+        "monk": 8,
+        "rogue": 8,
+        "warlock": 8,
+        "sorcerer": 6,
+        "wizard": 6
+    }
+    
+    # Get hit die for class (default to d8)
+    hit_die = hit_dice.get(class_name.lower(), 8)
+    
+    # First level: max hit die + constitution modifier
+    hp = hit_die + constitution_modifier
+    
+    # Additional levels: roll hit die + constitution modifier
+    if level > 1:
+        for _ in range(1, level):
+            # Average roll: (hit_die / 2) + 1
+            hp += ((hit_die / 2) + 1) + constitution_modifier
+    
+    return max(1, int(hp))  # Minimum HP is 1
+
+
+def calculate_ac(attributes, armor=None, shield=False):
+    """Calculate Armor Class based on attributes and equipment"""
+    dex_mod = calculate_modifiers(attributes)["dexterity"]
+    
+    # Base AC (unarmored)
+    ac = 10 + dex_mod
+    
+    # Adjustments based on armor type
+    if armor == "light":
+        ac = 12 + dex_mod  # Leather armor (AC 11) as base
+    elif armor == "medium":
+        ac = 14 + min(2, dex_mod)  # Scale mail (AC 14) as base, dex capped at +2
+    elif armor == "heavy":
+        ac = 16  # Chain mail (AC 16) as base, no dex bonus
+    
+    # Add shield bonus
+    if shield:
+        ac += 2
+    
+    return ac
+
+
+def get_class_features(class_details, level):
+    """Get class features for a specific level"""
+    if not class_details:
+        return []
+    
+    features = []
+    class_features = class_details.get("class_features", [])
+    
+    for feature in class_features:
+        feature_level = feature.get("level", 1)
+        if feature_level <= level:
+            features.append(feature.get("name", "Unknown Feature"))
+    
+    return features
+
+
+def select_equipment(class_details, background=None):
+    """Select appropriate equipment based on class and background"""
+    equipment = []
+    
+    # Base equipment for all classes
+    equipment.append("Adventurer's Pack")
+    equipment.append("Clothes, common")
+    
+    # Class-specific equipment
+    class_name = class_details.get("name", "").lower() if class_details else ""
+    
+    if class_name == "barbarian":
+        equipment.extend(["Greataxe", "Handaxe (2)", "Javelin (4)", "Backpack"])
+    elif class_name == "bard":
+        equipment.extend(["Rapier", "Lute", "Leather Armor", "Dagger"])
+    elif class_name == "cleric":
+        equipment.extend(["Mace", "Scale Mail", "Shield", "Holy Symbol"])
+    elif class_name == "druid":
+        equipment.extend(["Scimitar", "Leather Armor", "Explorer's Pack", "Druidic Focus"])
+    elif class_name == "fighter":
+        equipment.extend(["Longsword", "Shield", "Chain Mail", "Light Crossbow and 20 bolts"])
+    elif class_name == "monk":
+        equipment.extend(["Shortsword", "10 Darts", "Explorer's Pack"])
+    elif class_name == "paladin":
+        equipment.extend(["Longsword", "Shield", "Chain Mail", "Holy Symbol"])
+    elif class_name == "ranger":
+        equipment.extend(["Shortsword (2)", "Longbow and Quiver of 20 Arrows", "Leather Armor"])
+    elif class_name == "rogue":
+        equipment.extend(["Rapier", "Shortbow and Quiver of 20 Arrows", "Leather Armor", "Thieves' Tools"])
+    elif class_name == "sorcerer":
+        equipment.extend(["Light Crossbow and 20 bolts", "Arcane Focus", "Dagger (2)"])
+    elif class_name == "warlock":
+        equipment.extend(["Light Crossbow and 20 bolts", "Arcane Focus", "Leather Armor", "Dagger (2)"])
+    elif class_name == "wizard":
+        equipment.extend(["Quarterstaff", "Arcane Focus", "Spellbook", "Dagger"])
+    
+    # Add background-specific equipment
+    if background == "acolyte":
+        equipment.extend(["Holy Symbol", "Prayer Book", "Incense (5 sticks)", "Vestments"])
+    elif background == "criminal":
+        equipment.extend(["Crowbar", "Dark Clothes with Hood", "Thieves' Tools"])
+    elif background == "noble":
+        equipment.extend(["Fine Clothes", "Signet Ring", "Scroll of Pedigree"])
+    elif background == "sage":
+        equipment.extend(["Book of Lore", "Ink and Quill", "Small Knife", "Letter from a colleague"])
+    elif background == "soldier":
+        equipment.extend(["Insignia of Rank", "Trophy from a fallen enemy", "Dice Set", "Common Clothes"])
+    
+    return equipment
+
+
+def select_spells(class_name, level):
+    """Select appropriate spells based on class and level"""
+    if not class_name:
+        return {}
+    
+    spellcasting_classes = ["bard", "cleric", "druid", "paladin", "ranger", "sorcerer", "warlock", "wizard"]
+    if class_name.lower() not in spellcasting_classes:
+        return {}
+    
     spells_by_level = {}
-    if classe in magias:
-        for lvl in range(1, level + 1):
-            if lvl in magias[classe]:
-                available_spells = magias[classe][lvl]
-                # Escolhe até 3 magias aleatórias por nível
-                num_spells = min(3, len(available_spells))
-                spells_by_level[f"Magias de Nível {lvl}"] = random.sample(available_spells, num_spells)
+    
+    try:
+        # Determine max spell level known
+        if class_name.lower() in ["bard", "cleric", "druid", "sorcerer", "wizard"]:
+            max_spell_level = min(9, (level + 1) // 2)
+        elif class_name.lower() in ["paladin", "ranger"]:
+            max_spell_level = min(5, (level - 1) // 4 + 1) if level >= 2 else 0
+        elif class_name.lower() == "warlock":
+            max_spell_level = min(5, (level + 1) // 2)
+        else:
+            max_spell_level = 0
+        
+        # Get spells for each level
+        if max_spell_level > 0:
+            for spell_level in range(0, max_spell_level + 1):  # Include cantrips (level 0)
+                available_spells = DndApiClient.get_spells_by_class(class_name.lower(), spell_level)
+                
+                # Determine number of spells to select
+                if spell_level == 0:  # Cantrips
+                    if class_name.lower() in ["bard", "druid", "warlock"]:
+                        num_spells = min(2 + (level // 4), 4)
+                    elif class_name.lower() in ["cleric", "wizard"]:
+                        num_spells = min(3 + (level // 2), 5)
+                    elif class_name.lower() == "sorcerer":
+                        num_spells = min(4 + (level // 6), 6)
+                    else:
+                        num_spells = 0
+                else:  # Level 1+ spells
+                    if class_name.lower() in ["bard", "sorcerer", "warlock"]:
+                        num_spells = min(2 + (level // 2), 8)
+                    elif class_name.lower() in ["wizard"]:
+                        num_spells = min(4 + level, 20)
+                    elif class_name.lower() in ["cleric", "druid"]:
+                        num_spells = 0  # They know all their spells
+                    elif class_name.lower() in ["paladin", "ranger"]:
+                        num_spells = min(2 + (level // 2), 8) if level >= 2 else 0
+                    else:
+                        num_spells = 0
+                
+                # Select random spells
+                if available_spells and num_spells > 0:
+                    selected = random.sample(available_spells, min(num_spells, len(available_spells)))
+                    spells_by_level[f"level_{spell_level}"] = [spell["name"] for spell in selected]
+                elif class_name.lower() in ["cleric", "druid"] and spell_level > 0:
+                    # Clerics and druids know all their spells, just grab some representative ones
+                    selected = random.sample(available_spells, min(3, len(available_spells))) if available_spells else []
+                    spells_by_level[f"level_{spell_level}"] = [spell["name"] for spell in selected]
+    except Exception as e:
+        # Fallback to predefined spells if API fails
+        return get_fallback_spells(class_name, level)
+    
     return spells_by_level
 
-def choose_race():
-    print("\nEscolha uma raça:")
-    for i, race in enumerate(racas.keys(), 1):
-        print(f"{i}. {race}")
-    choice = int(input("Escolha (1-{}): ".format(len(racas))))
-    return list(racas.keys())[choice - 1]
-
-def choose_class():
-    print("\nEscolha uma classe:")
-    for i, classe in enumerate(classes.keys(), 1):
-        print(f"{i}. {classe}")
-    choice = int(input("Escolha (1-{}): ".format(len(classes))))
-    return list(classes.keys())[choice - 1]
-
-def choose_background():
-    print("\nEscolha um antecedente:")
-    for i, background in enumerate(antecedentes.keys(), 1):
-        print(f"{i}. {background}")
-    choice = int(input("Escolha (1-{}): ".format(len(antecedentes))))
-    return list(antecedentes.keys())[choice - 1]
-
-# Função para gerar um inimigo
-def generate_enemy():
-    # Escolhe um inimigo aleatório
-    enemy_name = random.choice(list(inimigos.keys()))
-    enemy_data = inimigos[enemy_name]
-    return {
-        "Nome": enemy_name,
-        "Atributos": enemy_data["Atributos"],
-        "Habilidades": enemy_data["Habilidades"],
-        "Equipamento": enemy_data["Equipamento"],
+def get_fallback_spells(class_name, level):
+    """Fallback spells when API isn't available"""
+    fallback_spells = {
+        "wizard": {
+            "level_0": ["Light", "Mage Hand", "Prestidigitation", "Ray of Frost"],
+            "level_1": ["Magic Missile", "Shield", "Mage Armor", "Detect Magic"],
+            "level_2": ["Invisibility", "Scorching Ray", "Misty Step"],
+            "level_3": ["Fireball", "Counterspell", "Fly"]
+        },
+        "cleric": {
+            "level_0": ["Light", "Sacred Flame", "Spare the Dying"],
+            "level_1": ["Cure Wounds", "Healing Word", "Bless", "Shield of Faith"],
+            "level_2": ["Lesser Restoration", "Spiritual Weapon", "Hold Person"],
+            "level_3": ["Mass Healing Word", "Revivify", "Dispel Magic"]
+        },
+        "bard": {
+            "level_0": ["Vicious Mockery", "Mage Hand", "Prestidigitation"],
+            "level_1": ["Healing Word", "Charm Person", "Disguise Self"],
+            "level_2": ["Invisibility", "Suggestion", "Hold Person"],
+            "level_3": ["Hypnotic Pattern", "Dispel Magic", "Sending"]
+        },
+        "druid": {
+            "level_0": ["Druidcraft", "Produce Flame", "Shillelagh"],
+            "level_1": ["Cure Wounds", "Entangle", "Faerie Fire"],
+            "level_2": ["Barkskin", "Flame Blade", "Moonbeam"],
+            "level_3": ["Call Lightning", "Dispel Magic", "Plant Growth"]
+        },
+        "sorcerer": {
+            "level_0": ["Fire Bolt", "Mage Hand", "Prestidigitation", "Ray of Frost"],
+            "level_1": ["Magic Missile", "Shield", "Mage Armor"],
+            "level_2": ["Scorching Ray", "Misty Step", "Mirror Image"],
+            "level_3": ["Fireball", "Counterspell", "Haste"]
+        },
+        "warlock": {
+            "level_0": ["Eldritch Blast", "Mage Hand", "Prestidigitation"],
+            "level_1": ["Hex", "Charm Person", "Arms of Hadar"],
+            "level_2": ["Invisibility", "Scorching Ray", "Hold Person"],
+            "level_3": ["Fireball", "Counterspell", "Hypnotic Pattern"]
+        },
+        "paladin": {
+            "level_1": ["Cure Wounds", "Shield of Faith", "Bless"],
+            "level_2": ["Lesser Restoration", "Zone of Truth", "Find Steed"]
+        },
+        "ranger": {
+            "level_1": ["Hunter's Mark", "Goodberry", "Cure Wounds"],
+            "level_2": ["Lesser Restoration", "Pass without Trace", "Silence"]
+        }
     }
+    
+    # Filter spells based on level
+    max_spell_level = (level + 1) // 2 if class_name.lower() in ["bard", "cleric", "druid", "sorcerer", "wizard"] else 1
+    max_spell_level = min(3, max_spell_level)  # Cap at level 3 for fallback
+    
+    result = {}
+    if class_name.lower() in fallback_spells:
+        for spell_level_key, spells in fallback_spells[class_name.lower()].items():
+            level_num = int(spell_level_key.split("_")[1])
+            if level_num <= max_spell_level:
+                result[spell_level_key] = spells
+    
+    return result
 
-# Função para exibir o inimigo
-def display_enemy(enemy):
-    print("\n=== Ficha do Inimigo ===")
-    print(f"Nome: {enemy['Nome']}")
-    print("\nAtributos:")
-    for stat, value in enemy["Atributos"].items():
-        print(f"{stat}: {value}")
-    print("\nHabilidades:")
-    for habilidade in enemy["Habilidades"]:
-        print(f"- {habilidade}")
-    print("\nEquipamento:")
-    for item in enemy["Equipamento"]:
-        print(f"- {item}")
-    print("========================")
-
-# Função para gerar um personagem completo
-def generate_character(level, attributes_method, manual):
-    # Escolha aleatória de raça, classe e antecedente
-    if not manual:
-        race = random.choice(list(racas.keys()))
-        classe = random.choice(list(classes.keys()))
-        background = random.choice(list(antecedentes.keys()))
-    else:
-        race = choose_race()
-        classe = choose_class()
-        background = choose_background()
-
-    # Gera atributos com base no método escolhido
-    if attributes_method == "rolagem":
-        attributes = roll_attributes()
-    elif attributes_method == "array":
-        attributes = standard_array(classe)
-    elif attributes_method == "compra":
-        attributes = point_buy()
-
-    # Aplica bônus de raça
-    attributes = apply_race_bonus(attributes, race)
-
-    # Calcula modificadores
-    modifiers = calculate_modifiers(attributes)
-
-    # Gera magias aleatórias (se a classe for conjuradora)
-    spells = generate_random_spells(classe, level)
-
-    hp = calculate_hp(classe, level, modifiers['Constituição'])
-    ca = calculate_ca(modifiers['Destreza'], armor="Leve", shield=False)
-
-    # Retorna o personagem
-    return {
-        "Raça": race,
-        "Classe": classe,
-        "HP": hp,
-        "CA": ca,
-        "Antecedente": background,
-        "Nível": level,
-        "Atributos": attributes,
-        "Modificadores": modifiers,
-        "Habilidades": classes[classe]["Habilidades por Nível"].get(level, []),
-        "Magias": spells,
-        "Equipamento": antecedentes[background]["Equipamento"],
-        "Traço de Antecedente": antecedentes[background]["Habilidade"],
-    }
-
-# Função para exibir o personagem
-def display_character(character):
-    print("\n=== Ficha do Personagem ===")
-    print(f"Raça: {character['Raça']}")
-    print(f"Classe: {character['Classe']}")
-    print(f"HP: {character['HP']}")
-    print(f"CA: {character['CA']}")
-    print(f"Antecedente: {character['Antecedente']}")
-    print(f"Nível: {character['Nível']}")
-    print("\nAtributos:")
-    for stat, value in character["Atributos"].items():
-        print(f"{stat}: {value} (Modificador: {character['Modificadores'][stat]})")
-    print("\nHabilidades:")
-    for habilidade in character["Habilidades"]:
-        print(f"- {habilidade}")
-    if character["Magias"]:
-        print("\nMagias:")
-        for level, spells in character["Magias"].items():
-            print(f"{level}:")
-            for spell in spells:
-                print(f"- {spell}")
-    print("\nEquipamento Inicial:")
-    for item in character["Equipamento"]:
-        print(f"- {item}")
-    print(f"\nTraço de Antecedente: {character['Traço de Antecedente']}")
-    print("========================")
-
-# Função principal
-def main():
-    level = int(input("Digite o nível do personagem (1-5): "))
-    if level < 1 or level > 5:
-        print("Nível inválido. Use um nível entre 1 e 5.")
-        return
-
-    manual = input("Você quer fazer isso manualmente? (s/n): ").lower() == "s"
-
-    # Escolha do método de geração de atributos
-    print("\nEscolha o método de geração de atributos:")
-    print("1. Rolagem 4d6 (aleatoriedade completa)")
-    print("2. Array padrão (15, 14, 13, 12, 10, 8)")
-    print("3. Compra de pontos (27 pontos para distribuir)")
-    method_choice = input("Escolha (1, 2 ou 3): ")
-
-    if method_choice == "1":
-        attributes_method = "rolagem"
-    elif method_choice == "2":
-        attributes_method = "array"
-    elif method_choice == "3":
-        attributes_method = "compra"
-    else:
-        print("Escolha inválida. Usando rolagem 4d6 por padrão.")
-        attributes_method = "rolagem"
-
-    # Gerar e exibir um personagem
-    character = generate_character(level, attributes_method, manual)
-    display_character(character)
-
-    # Gerar e exibir um inimigo
-    genEnemy = input('gerar inimigo? s/n: ').lower() == 's'
-    if(genEnemy):
-        enemy = generate_enemy()
-        display_enemy(enemy)
+def generate_npc(level=1, attribute_method="standard_array", manual=False):
+    """Generate a random NPC character"""
+    try:
+        # Get available classes and races from API
+        available_classes = DndApiClient.get_classes()
+        available_races = DndApiClient.get_races()
         
+        # If no classes or races found, use fallback data
+        if not available_classes or not available_races:
+            return generate_fallback_npc(level, attribute_method)
+        
+        # Random selection if not manual
+        if not manual:
+            # Select random class and race
+            class_data = random.choice(available_classes)
+            race_data = random.choice(available_races)
+            background_data = random.choice(DndApiClient.get_backgrounds())
+            
+            # Get detailed information
+            class_details = DndApiClient.get_class_details(class_data["index"])
+            race_details = DndApiClient.get_race_details(race_data["index"])
+        else:
+            # TODO: Implement manual selection
+            # For now, just use random selection
+            class_data = random.choice(available_classes)
+            race_data = random.choice(available_races)
+            background_data = random.choice(DndApiClient.get_backgrounds())
+            
+            # Get detailed information
+            class_details = DndApiClient.get_class_details(class_data["index"])
+            race_details = DndApiClient.get_race_details(race_data["index"])
+        
+        # Generate base attributes
+        attributes = generate_attributes(attribute_method, class_data["index"])
+        
+        # Apply racial bonuses
+        attributes = apply_racial_bonuses(attributes, race_details)
+        
+        # Calculate modifiers
+        modifiers = calculate_modifiers(attributes)
+        
+        # Determine appropriate equipment
+        equipment = select_equipment(class_details, background_data["index"])
+        
+        # Select spells if applicable
+        spells = select_spells(class_data["index"], level)
+        
+        # Calculate HP
+        hp = calculate_hp(class_data["index"], level, modifiers["constitution"])
+        
+        # Determine armor class
+        # For simplicity, assume most classes use appropriate armor from their equipment
+        if class_data["index"] in ["wizard", "sorcerer", "warlock", "monk"]:
+            armor_type = None  # Unarmored
+        elif class_data["index"] in ["rogue", "ranger", "bard", "druid"]:
+            armor_type = "light"
+        elif class_data["index"] in ["cleric", "fighter", "paladin"]:
+            armor_type = "medium"
+            if class_data["index"] in ["fighter", "paladin"]:
+                armor_type = "heavy"
+        else:
+            armor_type = None
+        
+        # Determine if using shield
+        has_shield = class_data["index"] in ["fighter", "cleric", "paladin"]
+        
+        # Calculate AC
+        ac = calculate_ac(attributes, armor_type, has_shield)
+        
+        # Get class features
+        features = get_class_features(class_details, level)
+        
+        # Generate name
+        name = f"{race_data['name']} {class_data['name']}"
+        
+        # Generate description
+        description = f"A level {level} {race_data['name']} {class_data['name']} with a {background_data['name']} background"
+        
+        # Format the NPC data structure
+        npc = {
+            "name": name,
+            "description": description,
+            "level": level,
+            "race": race_data["name"],
+            "class": class_data["name"],
+            "background": background_data["name"],
+            "attributes": attributes,
+            "modifiers": modifiers,
+            "abilities": features,
+            "equipment": equipment,
+            "hp": hp,
+            "ca": ac,
+        }
+        
+        # Add spells if any
+        if spells:
+            npc["spells"] = spells
+        
+        return npc
+    except Exception as e:
+        # If anything fails, use fallback
+        return generate_fallback_npc(level, attribute_method)
 
-# Executa o programa
+def generate_fallback_npc(level=1, attribute_method="standard_array"):
+    """Fallback NPC generator when API isn't available"""
+    # Predefined races and classes
+    races = [
+        "Human", "Elf", "Dwarf", "Halfling", "Tiefling", "Dragonborn", 
+        "Gnome", "Half-Elf", "Half-Orc"
+    ]
+    
+    classes = [
+        "Fighter", "Wizard", "Cleric", "Rogue", "Ranger", "Paladin", 
+        "Bard", "Sorcerer", "Warlock", "Monk", "Druid", "Barbarian"
+    ]
+    
+    backgrounds = [
+        "Acolyte", "Criminal", "Folk Hero", "Noble", "Sage", "Soldier",
+        "Charlatan", "Entertainer", "Hermit", "Outlander", "Sailor", "Urchin"
+    ]
+    
+    # Generate basic character data
+    race = random.choice(races)
+    character_class = random.choice(classes)
+    background = random.choice(backgrounds)
+    
+    # Generate attributes based on method
+    if attribute_method == "roll":
+        # 4d6 drop lowest
+        attributes = {
+            "strength": sum(sorted([random.randint(1, 6) for _ in range(4)])[1:]),
+            "dexterity": sum(sorted([random.randint(1, 6) for _ in range(4)])[1:]),
+            "constitution": sum(sorted([random.randint(1, 6) for _ in range(4)])[1:]),
+            "intelligence": sum(sorted([random.randint(1, 6) for _ in range(4)])[1:]),
+            "wisdom": sum(sorted([random.randint(1, 6) for _ in range(4)])[1:]),
+            "charisma": sum(sorted([random.randint(1, 6) for _ in range(4)])[1:])
+        }
+    else:
+        # Standard array: 15, 14, 13, 12, 10, 8
+        values = [15, 14, 13, 12, 10, 8]
+        random.shuffle(values)
+        
+        attributes = {
+            "strength": values[0],
+            "dexterity": values[1],
+            "constitution": values[2],
+            "intelligence": values[3],
+            "wisdom": values[4],
+            "charisma": values[5]
+        }
+    
+    # Apply racial modifiers (simplified)
+    if race == "Human":
+        for attr in attributes:
+            attributes[attr] += 1
+    elif race == "Dwarf":
+        attributes["constitution"] += 2
+    elif race == "Elf":
+        attributes["dexterity"] += 2
+    elif race == "Halfling":
+        attributes["dexterity"] += 2
+    elif race == "Dragonborn":
+        attributes["strength"] += 2
+        attributes["charisma"] += 1
+    elif race == "Gnome":
+        attributes["intelligence"] += 2
+    elif race == "Half-Elf":
+        attributes["charisma"] += 2
+        # Choose two other attributes to increase by 1
+        other_attrs = [a for a in attributes.keys() if a != "charisma"]
+        selected = random.sample(other_attrs, 2)
+        for attr in selected:
+            attributes[attr] += 1
+    elif race == "Half-Orc":
+        attributes["strength"] += 2
+        attributes["constitution"] += 1
+    elif race == "Tiefling":
+        attributes["intelligence"] += 1
+        attributes["charisma"] += 2
+    
+    # Calculate modifiers
+    modifiers = {attr: (value - 10) // 2 for attr, value in attributes.items()}
+    
+    # Calculate HP
+    hit_dice = {
+        "Barbarian": 12,
+        "Fighter": 10,
+        "Paladin": 10,
+        "Ranger": 10,
+        "Bard": 8,
+        "Cleric": 8,
+        "Druid": 8,
+        "Monk": 8,
+        "Rogue": 8,
+        "Warlock": 8,
+        "Sorcerer": 6,
+        "Wizard": 6
+    }
+    
+    # First level: max hit die + constitution modifier
+    base_hp = hit_dice.get(character_class, 8) + modifiers["constitution"]
+    
+    # Additional levels: average roll for hit die + constitution modifier
+    if level > 1:
+        for _ in range(1, level):
+            hp_per_level = (hit_dice.get(character_class, 8) / 2 + 1) + modifiers["constitution"]
+            base_hp += max(1, int(hp_per_level))
+    
+    hp = max(1, base_hp)  # Minimum HP is 1
+    
+    # Calculate AC based on class and modifiers
+    ac = 10 + modifiers["dexterity"]  # Base AC
+    
+    # Adjust based on class expectations
+    if character_class in ["Fighter", "Paladin"]:
+        ac = 16  # Chain mail base (no dex bonus)
+        if character_class == "Fighter":
+            ac += 1  # Defense fighting style
+    elif character_class in ["Barbarian", "Ranger", "Rogue"]:
+        ac = 12 + modifiers["dexterity"]  # Leather armor base + dex
+    elif character_class in ["Cleric", "Druid"]:
+        ac = 14 + min(2, modifiers["dexterity"])  # Scale mail/hide + limited dex
+    
+    # Add shield bonus for appropriate classes
+    if character_class in ["Fighter", "Cleric", "Paladin"]:
+        ac += 2
+    
+    # Generate class abilities
+    abilities = []
+    if character_class == "Fighter":
+        abilities = ["Second Wind", "Action Surge"] if level >= 2 else ["Second Wind"]
+    elif character_class == "Barbarian":
+        abilities = ["Rage", "Unarmored Defense"]
+    elif character_class == "Rogue":
+        abilities = ["Sneak Attack", "Expertise"]
+    elif character_class == "Wizard":
+        abilities = ["Arcane Recovery", "Spellcasting"]
+    elif character_class == "Cleric":
+        abilities = ["Divine Domain", "Spellcasting"]
+    # Add more for other classes...
+    
+    # Generate equipment based on class
+    equipment = ["Adventurer's Pack", "Bedroll", "Tinderbox", "10 Torches"]
+    
+    if character_class == "Fighter":
+        equipment.extend(["Longsword", "Shield", "Chain Mail"])
+    elif character_class == "Wizard":
+        equipment.extend(["Spellbook", "Component Pouch", "Quarterstaff"])
+    elif character_class == "Cleric":
+        equipment.extend(["Mace", "Scale Mail", "Shield", "Holy Symbol"])
+    elif character_class == "Rogue":
+        equipment.extend(["Shortsword", "Shortbow", "Leather Armor", "Thieves' Tools"])
+    # Add more for other classes...
+    
+    # Add spells if applicable
+    spells = {}
+    spell_classes = ["Wizard", "Cleric", "Bard", "Druid", "Sorcerer", "Warlock", "Paladin", "Ranger"]
+    
+    if character_class in spell_classes:
+        class_name_lower = character_class.lower()
+        spells = get_fallback_spells(class_name_lower, level)
+    
+    # Generate description
+    description = f"A level {level} {race} {character_class} with a {background} background"
+    
+    # Format the NPC data structure
+    npc = {
+        "name": f"{race} {character_class}",  # Generic name
+        "description": description,
+        "level": level,
+        "race": race,
+        "class": character_class,
+        "background": background,
+        "attributes": attributes,
+        "modifiers": modifiers,
+        "abilities": abilities,
+        "equipment": equipment,
+        "hp": hp,
+        "ca": ac,
+    }
+    
+    # Add spells if any
+    if spells:
+        npc["spells"] = spells
+    
+    return npc
+
+def handle_generate_npc(request_data):
+    """Handle API requests to generate NPCs"""
+    level = request_data.get("level", 1)
+    attributes_method = request_data.get("attributes_method", "standard_array")
+    manual = request_data.get("manual", False)
+    
+    return generate_npc(level, attributes_method, manual)
+
+# Example usage
 if __name__ == "__main__":
-    main()
+    # Test the NPC generator
+    test_request = {
+        "level": 3,
+        "attributes_method": "standard_array",
+        "manual": False
+    }
+    
+    result = handle_generate_npc(test_request)
+    print(json.dumps(result, indent=2))
