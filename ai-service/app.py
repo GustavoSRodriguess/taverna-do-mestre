@@ -6,6 +6,7 @@ import noise
 import json
 from create_npc import handle_generate_npc
 from create_encounter import handle_generate_encounter
+from loot_generator import handle_generate_items
 
 # Carrega as variáveis de ambiente
 load_dotenv()
@@ -89,6 +90,15 @@ def generate_map_api():
     
     map_data = generate_procedural_map(width, height, scale)
     return jsonify({"map": map_data})
+
+@app.route('/generate-loot', methods=['POST'])
+def generate_items_api():
+    data = request.json
+    
+    # Use the item generator
+    items_data = handle_generate_items(data)
+    
+    return jsonify(items_data)
 
 @app.route('/health', methods=['GET'])
 def health_check():

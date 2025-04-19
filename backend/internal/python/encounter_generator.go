@@ -1,11 +1,10 @@
-// internal/python/encounter_generator.go
 package python
 
 import (
 	"context"
 	"fmt"
 	"net/http"
-	
+
 	"rpg-saas-backend/internal/models"
 )
 
@@ -40,12 +39,12 @@ func (c *Client) GenerateEncounter(ctx context.Context, playerLevel, playerCount
 		PlayerCount: playerCount,
 		Difficulty:  difficulty,
 	}
-	
+
 	var response EncounterResponse
 	if err := c.makeRequest(ctx, http.MethodPost, "/generate-encounter", request, &response); err != nil {
 		return nil, fmt.Errorf("failed to generate encounter: %w", err)
 	}
-	
+
 	// Converte a resposta para o modelo Encounter
 	encounter := &models.Encounter{
 		Theme:       response.Theme,
@@ -55,7 +54,7 @@ func (c *Client) GenerateEncounter(ctx context.Context, playerLevel, playerCount
 		PlayerCount: response.PlayerCount,
 		Monsters:    make([]models.Monster, len(response.Monsters)),
 	}
-	
+
 	// Converte cada monstro
 	for i, monster := range response.Monsters {
 		encounter.Monsters[i] = models.Monster{
@@ -64,6 +63,6 @@ func (c *Client) GenerateEncounter(ctx context.Context, playerLevel, playerCount
 			CR:   monster.CR,
 		}
 	}
-	
+
 	return encounter, nil
 }

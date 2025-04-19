@@ -8,6 +8,9 @@ DROP TABLE IF EXISTS classes CASCADE;
 DROP TABLE IF EXISTS races CASCADE;
 DROP TABLE IF EXISTS encounters CASCADE;
 DROP TABLE IF EXISTS encounter_monsters CASCADE;
+DROP TABLE IF EXISTS treasures CASCADE;
+DROP TABLE IF EXISTS hoards CASCADE;
+DROP TABLE IF EXISTS items CASCADE;
 
 -- Criar tabela races (raças)
 CREATE TABLE races (
@@ -79,6 +82,36 @@ CREATE TABLE encounter_monsters (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Criar tabela de tesouros
+CREATE TABLE treasures (
+    id SERIAL PRIMARY KEY,
+    level INTEGER DEFAULT 1,
+    name VARCHAR(100) NOT NULL,
+    total_value INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Criar tabela de hoards (pilhas de tesouro)
+CREATE TABLE hoards (
+    id SERIAL PRIMARY KEY,
+    treasure_id INTEGER REFERENCES treasures(id) ON DELETE CASCADE,
+    value DECIMAL(12,2) DEFAULT 0,
+    coins JSONB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Criar tabela de itens
+CREATE TABLE items (
+    id SERIAL PRIMARY KEY,
+    hoard_id INTEGER REFERENCES hoards(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    type VARCHAR(50) NOT NULL, -- "magic_item", "gem", "art_object"
+    category VARCHAR(50),    -- For magic items: armor, weapon, etc.
+    value DECIMAL(12,2) DEFAULT 0,
+    rank VARCHAR(20),       -- minor, medium, major
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Criar tabela de mapas
 CREATE TABLE maps (
     id SERIAL PRIMARY KEY,
@@ -113,9 +146,33 @@ INSERT INTO npcs (name, description, level, race, class) VALUES
 ('Orc Bárbaro', 'Um temível guerreiro orc', 5, 'Orc', 'Bárbaro'),
 ('Mago Ancião', 'Um poderoso mago humano de barba branca', 8, 'Humano', 'Mago');
 
+-- Tesouros de exemplo
+INSERT INTO treasures (level, name, total_value) VALUES
+(1, 'Tesouro de Goblin', 100),
+(5, 'Tesouro de Dragão Jovem', 5000),
+(10, 'Tesouro de Lich', 20000);
+
+-- Hoards de exemplo
+INSERT INTO hoards (treasure_id, value, coins) VALUES
+(1, 100, '{"gp": 50, "sp": 200, "cp": 1000}'),
+(2, 5000, '{"gp": 2000, "pp": 300}'),
+(3, 20000, '{"gp": 10000, "pp": 1000}');
+
+-- Itens de exemplo
+INSERT INTO items (hoard_id, name, type, category, value, rank) VALUES
+(1, 'Adaga +1', 'magic_item', 'weapons', 50, 'minor'),
+(2, 'Rubi', 'gem', NULL, 500, 'medium'),
+(2, 'Espada Longa +2', 'magic_item', 'weapons', 1000, 'medium'),
+(3, 'Coroa Ornamentada', 'art_object', NULL, 2500, 'major'),
+(3, 'Cajado do Poder', 'magic_item', 'staves', 5000, 'major');
+
 -- Índices para melhorar performance
 CREATE INDEX idx_npcs_race ON npcs(race);
 CREATE INDEX idx_npcs_class ON npcs(class);
 CREATE INDEX idx_pcs_race ON pcs(race);
 CREATE INDEX idx_pcs_class ON pcs(class);
 CREATE INDEX idx_encounter_monsters_encounter_id ON encounter_monsters(encounter_id);
+CREATE INDEX idx_hoards_treasure_id ON hoards(treasure_id);
+CREATE INDEX idx_items_hoard_id ON items(hoard_id);
+CREATE INDEX idx_items_type ON items(type);
+CREATE INDEX idx_items_category ON items(category);
