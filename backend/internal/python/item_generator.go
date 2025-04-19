@@ -19,7 +19,7 @@ func (c *Client) GenerateTreasure(ctx context.Context, request models.TreasureRe
 				Name  string  `json:"name"`
 				Value float64 `json:"value"`
 				Rank  string  `json:"rank"`
-			} `json:"valueables"`
+			} `json:"valuables"`
 			Items []struct {
 				Type     string `json:"type"`
 				Category string `json:"category"`

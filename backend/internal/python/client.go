@@ -1,4 +1,3 @@
-// internal/python/client.go
 package python
 
 import (
@@ -60,6 +59,7 @@ func (c *Client) makeRequest(ctx context.Context, method, endpoint string, body 
 	// Verifica o código de status
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
+		fmt.Printf("Erro da API (%s): %s\n", url, string(bodyBytes))
 		return fmt.Errorf("API returned non-200 status: %d, body: %s", resp.StatusCode, string(bodyBytes))
 	}
 

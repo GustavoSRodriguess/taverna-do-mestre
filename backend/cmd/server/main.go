@@ -7,13 +7,13 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
-	
+
 	"github.com/joho/godotenv"
-	
+
 	"rpg-saas-backend/internal/api"
 	"rpg-saas-backend/internal/db"
 	"rpg-saas-backend/internal/python"
@@ -24,7 +24,7 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, using environment variables")
 	}
-	
+
 	// Configuração do banco de dados
 	dbConfig := db.Config{
 		Host:     getEnv("DB_HOST", "db"),
@@ -34,37 +34,37 @@ func main() {
 		DBName:   getEnv("DB_NAME", "rpg_saas"),
 		SSLMode:  getEnv("DB_SSLMODE", "disable"),
 	}
-	
+
 	// Conecta ao banco de dados
 	dbClient, err := db.NewPostgresDB(dbConfig)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 	defer dbClient.Close()
-	
+
 	// Configura cliente Python
-	pythonBaseURL := getEnv("PYTHON_SERVICE_URL", "http://localhost:5000")
+	//pythonBaseURL := getEnv("PYTHON_SERVICE_URL", "http://127.0.0.1:5000")
 	pythonTimeout := time.Duration(getEnvAsInt("PYTHON_TIMEOUT", 10)) * time.Second
-	pythonClient := python.NewClient(pythonBaseURL, pythonTimeout)
-	
+	pythonClient := python.NewClient("http://host.docker.internal:5000", pythonTimeout)
+
 	// Verifica se o serviço Python está ativo
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	
+
 	if err := pythonClient.HealthCheck(ctx); err != nil {
 		log.Printf("Warning: Python service health check failed: %v", err)
 		log.Printf("The API will start, but generation features may not work")
 	} else {
 		log.Println("Python service is healthy")
 	}
-	
+
 	// Configura as rotas
 	router := api.SetupRoutes(dbClient, pythonClient)
-	
+
 	// Configura o servidor HTTP
 	port := getEnv("PORT", "8080")
 	addr := fmt.Sprintf(":%s", port)
-	
+
 	srv := &http.Server{
 		Addr:         addr,
 		Handler:      router,
@@ -72,7 +72,7 @@ func main() {
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
-	
+
 	// Inicia o servidor em uma goroutine
 	go func() {
 		log.Printf("Server starting on port %s", port)
@@ -80,23 +80,23 @@ func main() {
 			log.Fatalf("Failed to start server: %v", err)
 		}
 	}()
-	
+
 	// Configura o canal para capturar sinais de término
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	
+
 	// Bloqueia até receber um sinal
 	<-quit
 	log.Println("Shutting down server...")
-	
+
 	// Encerra o servidor graciosamente
 	ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	
+
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatalf("Server forced to shutdown: %v", err)
 	}
-	
+
 	log.Println("Server exiting")
 }
 
