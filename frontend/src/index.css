@@ -1,6 +1,14 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
-body {
-    font-family: 'Cinzel', serif;
-}
+@font-face {
+    font-family: Oswald;
+    font-style: normal;
+    font-weight: 200 700;
+    font-display: swap;
+    src: url("../public/Minecraft.ttf") format("ttf");
+  }
+  
+  @theme {
+    --font-minecraft: 'Minecraft', sans-serif;
+  }

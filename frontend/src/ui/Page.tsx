@@ -62,7 +62,7 @@ export const Page: React.FC<PageType> = ({ children, theme = 'cosmic' }) => {
     };
 
     return (
-        <div className={`font-serif ${getBackgroundClasses()} text-white min-h-screen relative`}>
+        <div className={`font-minecraft ${getBackgroundClasses()} text-white min-h-screen relative`}>
             {/* Névoa animada */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-0 left-0 w-full h-full opacity-20 

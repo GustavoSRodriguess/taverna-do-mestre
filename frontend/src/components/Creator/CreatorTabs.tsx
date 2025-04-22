@@ -27,6 +27,11 @@ export const CreatorTabs: React.FC<GeneratorTabsProps> = ({ activeTab, onTabChan
             id: 'encounter',
             label: 'Encontro',
             icon: '⚔️'
+        },
+        {
+            id: 'loot',
+            label: 'Loot',
+            icon: '㊙'
         }
     ];
 

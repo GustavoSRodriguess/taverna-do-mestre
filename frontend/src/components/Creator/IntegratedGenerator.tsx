@@ -71,6 +71,8 @@ const IntegratedGenerator: React.FC = () => {
                 return "Geração de NPC";
             case 'encounter':
                 return "Gerador de Encontros";
+            case 'loot':
+                return 'Gerador de Loot'
             default:
                 return "Criação";
         }
@@ -126,6 +128,17 @@ const IntegratedGenerator: React.FC = () => {
                 return (
                     <div className="text-center py-8">
                         <h2 className="text-2xl font-bold mb-4">Gerador de Encontros</h2>
+                        <p className="text-indigo-300 mb-4">Esta funcionalidade será implementada em breve!</p>
+                        <Button
+                            buttonLabel="Voltar para Personagens"
+                            onClick={() => setActiveTab('character')}
+                        />
+                    </div>
+                );
+            case 'loot':
+                return (
+                    <div className="text-center py-8">
+                        <h2 className="text-2xl font-bold mb-4">Gerador de loot</h2>
                         <p className="text-indigo-300 mb-4">Esta funcionalidade será implementada em breve!</p>
                         <Button
                             buttonLabel="Voltar para Personagens"
