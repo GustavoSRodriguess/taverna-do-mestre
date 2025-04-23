@@ -31,7 +31,7 @@ export const CreatorTabs: React.FC<GeneratorTabsProps> = ({ activeTab, onTabChan
         {
             id: 'loot',
             label: 'Loot',
-            icon: '㊙'
+            icon: '💎'
         }
     ];
 
@@ -42,7 +42,7 @@ export const CreatorTabs: React.FC<GeneratorTabsProps> = ({ activeTab, onTabChan
                     key={tab.id}
                     onClick={() => onTabChange(tab.id)}
                     className={`px-4 py-2 text-sm font-medium flex items-center transition-colors rounded-t-lg
-            ${activeTab === tab.id
+                    ${activeTab === tab.id
                             ? 'bg-indigo-800 text-white border-t border-l border-r border-purple-600'
                             : 'bg-indigo-900/50 text-indigo-300 hover:bg-indigo-800/70 hover:text-white'
                         }`}

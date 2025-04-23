@@ -2,13 +2,14 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @font-face {
-    font-family: Oswald;
+    font-family: Minecraft;
     font-style: normal;
-    font-weight: 200 700;
+    font-weight: 400 800;
     font-display: swap;
-    src: url("../public/Minecraft.ttf") format("ttf");
+    src: url("../public/Minecraft.ttf") format("truetype");
   }
   
   @theme {
     --font-minecraft: 'Minecraft', sans-serif;
   }
+  

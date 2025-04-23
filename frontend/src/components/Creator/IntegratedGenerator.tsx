@@ -163,6 +163,12 @@ const IntegratedGenerator: React.FC = () => {
                         <p className="text-indigo-300">O gerador de encontros será implementado em breve!</p>
                     </CardBorder>
                 );
+            case 'loot':
+                return (
+                    <CardBorder className="h-full flex items-center justify-center text-center bg-indigo-950/50">
+                        <p className="text-indigo-300">O gerador de loot será implementado em breve!</p>
+                    </CardBorder>
+                );
             default:
                 return null;
         }
