@@ -1,8 +1,8 @@
 import React from 'react';
 
-type BadgeVariant = 'primary' | 'success' | 'warning' | 'danger' | 'info';
+export type BadgeVariant = 'primary' | 'success' | 'warning' | 'danger' | 'info';
 
-interface BadgeProps {
+export interface BadgeProps {
     text: string;
     variant?: BadgeVariant;
     className?: string;

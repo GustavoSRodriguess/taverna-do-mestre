@@ -3,6 +3,7 @@
 import { mockCharacter } from "../mocks/characterMocks";
 import { mockEncounter } from "../mocks/encounterMocks";
 import { mockNPC } from "../mocks/npcMocks";
+import { mockLoot } from "../mocks/lootMocks";
 
 // Tipos para os dados de formulário
 type CharacterFormData = {
@@ -28,82 +29,194 @@ type EncounterFormData = {
     tema?: string;
 };
 
+type LootFormData = {
+    nivel: string;
+    tipoMoedas: string;
+    itemCategories: string[];
+    quantidade: string;
+};
+
 // URL base da API - pode ser configurada com base no ambiente
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
-// Gerar personagem
-export const generateCharacter = async (formData: CharacterFormData) => {
+// Função auxiliar para fazer requisições
+const fetchFromAPI = async (endpoint: string, method: string = 'GET', data?: any) => {
     try {
-        const response = await fetch(`${API_BASE_URL}/character/generate`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(formData),
-        });
+        const headers: HeadersInit = {
+            'Content-Type': 'application/json',
+        };
+
+        // Adiciona token de autenticação, se disponível
+        const token = localStorage.getItem('authToken');
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const options: RequestInit = {
+            method,
+            headers,
+            credentials: 'include',
+        };
+
+        if (data) {
+            options.body = JSON.stringify(data);
+        }
+
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
 
         if (!response.ok) {
-            throw new Error(`Erro na API: ${response.status}`);
+            const errorData = await response.json().catch(() => null);
+            throw new Error(errorData?.message || `Error ${response.status}: ${response.statusText}`);
         }
 
         return await response.json();
     } catch (error) {
-        console.error('Erro ao gerar personagem:', error);
+        console.error(`API Error (${endpoint}):`, error);
         throw error;
+    }
+};
+
+// Gerar personagem
+export const generateCharacter = async (formData: CharacterFormData) => {
+    try {
+        return await fetchFromAPI('/character/generate', 'POST', formData);
+    } catch (error) {
+        console.log('Error generating character, using mock data instead:', error);
+        return mockGenerateCharacter(formData);
     }
 };
 
 // Gerar NPC
 export const generateNPC = async (formData: NPCFormData) => {
     try {
-        const response = await fetch(`${API_BASE_URL}/npc/generate`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(formData),
-        });
+        const data = {
+            level: parseInt(formData.nivel),
+            attributes_method: formData.metodo === 'manual' ? 'manual' : 'rolagem',
+            manual: formData.metodo === 'manual',
+            race: formData.raca,
+            class: formData.classe,
+            background: formData.antecedente
+        };
 
-        if (!response.ok) {
-            throw new Error(`Erro na API: ${response.status}`);
-        }
-
-        return await response.json();
+        return await fetchFromAPI('/npcs/generate', 'POST', data);
     } catch (error) {
-        console.error('Erro ao gerar NPC:', error);
-        throw error;
+        console.log('Error generating NPC, using mock data instead:', error);
+        return mockGenerateNPC(formData);
     }
 };
 
 // Gerar encontro
 export const generateEncounter = async (formData: EncounterFormData) => {
     try {
-        const response = await fetch(`${API_BASE_URL}/encounter/generate`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(formData),
-        });
+        const data = {
+            player_level: parseInt(formData.nivelJogadores),
+            player_count: parseInt(formData.quantidadeJogadores),
+            difficulty: formData.dificuldade,
+            theme: formData.tema
+        };
 
-        if (!response.ok) {
-            throw new Error(`Erro na API: ${response.status}`);
-        }
+        const result = await fetchFromAPI('/encounters/generate', 'POST', data);
 
-        return await response.json();
+        // Adaptar a resposta da API para o formato esperado pelo front
+        return {
+            tema: result.theme || 'Variado',
+            xpTotal: result.total_xp,
+            monstros: result.monsters.map((monster: any) => ({
+                nome: monster.name,
+                xp: monster.xp,
+                cr: monster.cr
+            })),
+            descricaoNarrativa: result.description || 'Sem descrição disponível.'
+        };
     } catch (error) {
-        console.error('Erro ao gerar encontro:', error);
-        throw error;
+        console.log('Error generating encounter, using mock data instead:', error);
+        return mockGenerateEncounter(formData);
     }
 };
 
-// Mockups para desenvolvimento (quando a API não estiver disponível)
-// Dados importados dos mocks para simular respostas da API
+// Gerar loot/tesouro
+export const generateLoot = async (formData: LootFormData) => {
+    try {
+        const data = {
+            level: parseInt(formData.nivel),
+            coin_type: formData.tipoMoedas,
+            magic_item_categories: formData.itemCategories,
+            quantity: parseInt(formData.quantidade),
+            gems: true,
+            art_objects: true,
+            magic_items: true,
+            ranks: ["minor", "medium", "major"]
+        };
+        console.log(data)
 
+        const result = await fetchFromAPI('/treasures/generate', 'POST', data);
 
-// Versões mockadas das funções para desenvolvimento
+        // Adaptar a resposta da API para o formato esperado pelo front
+        return {
+            nivel: result.level,
+            valorTotal: result.total_value,
+            hoards: result.hoards.map((hoard: any) => ({
+                valor: hoard.value,
+                coins: hoard.coins || {},
+                items: Object.entries(hoard.valuables || {}).map(([type, items]: [string, any]) =>
+                    items.map((item: any) => ({
+                        nome: item.name,
+                        tipo: type,
+                        valor: item.value,
+                        raridade: item.rarity || 'Comum'
+                    }))
+                ).flat()
+            }))
+        };
+    } catch (error) {
+        console.log('Error generating loot, using mock data instead:', error);
+        return mockGenerateLoot(formData);
+    }
+};
+
+// Buscar personagens existentes
+export const getCharacters = async () => {
+    try {
+        return await fetchFromAPI('/characters');
+    } catch (error) {
+        console.log('Error fetching characters:', error);
+        return [];
+    }
+};
+
+// Buscar NPCs existentes
+export const getNPCs = async () => {
+    try {
+        return await fetchFromAPI('/npcs');
+    } catch (error) {
+        console.log('Error fetching NPCs:', error);
+        return [];
+    }
+};
+
+// Buscar encontros existentes
+export const getEncounters = async () => {
+    try {
+        return await fetchFromAPI('/encounters');
+    } catch (error) {
+        console.log('Error fetching encounters:', error);
+        return [];
+    }
+};
+
+// Buscar loots existentes
+export const getLoot = async () => {
+    try {
+        return await fetchFromAPI('/treasures');
+    } catch (error) {
+        console.log('Error fetching treasures:', error);
+        return [];
+    }
+};
+
+// Versões mockadas das funções para desenvolvimento/fallback
 export const mockGenerateCharacter = async (formData: CharacterFormData) => {
-    console.log('Gerando personagem com dados:', formData);
+    console.log('Gerando personagem com dados mockados:', formData);
     // Simula um delay de rede
     await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -118,7 +231,7 @@ export const mockGenerateCharacter = async (formData: CharacterFormData) => {
 };
 
 export const mockGenerateNPC = async (formData: NPCFormData) => {
-    console.log('Gerando NPC com dados:', formData);
+    console.log('Gerando NPC com dados mockados:', formData);
     // Simula um delay de rede
     await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -142,19 +255,54 @@ export const mockGenerateNPC = async (formData: NPCFormData) => {
 };
 
 export const mockGenerateEncounter = async (formData: EncounterFormData) => {
-    console.log('Gerando encontro com dados:', formData);
+    console.log('Gerando encontro com dados mockados:', formData);
     // Simula um delay de rede
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    return mockEncounter;
+    // Ajustes simples baseados no formulário para parecer mais realista
+    return {
+        ...mockEncounter,
+        tema: formData.tema || mockEncounter.tema,
+        dificuldade: formData.dificuldade
+    };
 };
 
-// Função auxiliar para decidir qual versão usar (real ou mock)
-// Use isto para facilitar a alternância entre desenvolvimento e produção
-const USE_MOCKS = true; // Mude para false quando tiver uma API real
+export const mockGenerateLoot = async (formData: LootFormData) => {
+    console.log('Gerando tesouro com dados mockados:', formData);
+    // Simula um delay de rede
+    await new Promise(resolve => setTimeout(resolve, 500));
 
+    // Usa o mock predefinido, mas adapta o nível
+    const levelFactor = parseInt(formData.nivel) / mockLoot.nivel;
+
+    return {
+        ...mockLoot,
+        nivel: parseInt(formData.nivel),
+        valorTotal: Math.round(mockLoot.valorTotal * levelFactor),
+        hoards: mockLoot.hoards.map(hoard => ({
+            ...hoard,
+            valor: Math.round(hoard.valor * levelFactor),
+            coins: Object.fromEntries(
+                Object.entries(hoard.coins).map(([coin, amount]) =>
+                    [coin, Math.round(amount * levelFactor)]
+                )
+            ),
+            items: hoard.items.map(item => ({
+                ...item,
+                valor: Math.round(item.valor * levelFactor)
+            }))
+        }))
+    };
+};
+
+// Exporta as funções reais (que tentam a API primeiro, mas fazem fallback para mocks)
 export default {
-    generateCharacter: USE_MOCKS ? mockGenerateCharacter : generateCharacter,
-    generateNPC: USE_MOCKS ? mockGenerateNPC : generateNPC,
-    generateEncounter: USE_MOCKS ? mockGenerateEncounter : generateEncounter
+    generateCharacter,
+    generateNPC,
+    generateEncounter,
+    generateLoot,
+    getCharacters,
+    getNPCs,
+    getEncounters,
+    getLoot
 };
