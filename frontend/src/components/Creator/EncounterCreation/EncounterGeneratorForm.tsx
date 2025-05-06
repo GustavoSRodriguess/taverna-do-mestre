@@ -19,7 +19,7 @@ export const EncounterGeneratorForm: React.FC<EncounterGeneratorFormProps> = ({ 
     const [theme, setTheme] = useState("");
 
     const difficultyOptions = [
-        { value: 'f', label: 'Fácil' },
+        { value: 'e', label: 'Fácil' },
         { value: 'm', label: 'Médio' },
         { value: 'd', label: 'Difícil' },
         { value: 'mo', label: 'Mortal' }
@@ -37,6 +37,7 @@ export const EncounterGeneratorForm: React.FC<EncounterGeneratorFormProps> = ({ 
     ];
 
     const handleGenerateEncounter = () => {
+        // alert(difficulty)
         onGenerateEncounter({
             nivelJogadores: playerLevel,
             quantidadeJogadores: playerCount,

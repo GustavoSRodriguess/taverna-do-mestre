@@ -74,14 +74,14 @@ const Header: React.FC<HeaderProps> = ({ logo, menuItems }) => {
                                             Meu Perfil
                                         </Link>
                                         <Link
-                                            to="/char-creation"
+                                            to="/generator"
                                             className="block px-4 py-2 text-sm text-indigo-100 hover:bg-indigo-700"
                                             onClick={() => setUserMenuOpen(false)}
                                         >
                                             Criar Personagem
                                         </Link>
                                         <Link
-                                            to="/npc-creation"
+                                            to="/generator"
                                             className="block px-4 py-2 text-sm text-indigo-100 hover:bg-indigo-700"
                                             onClick={() => setUserMenuOpen(false)}
                                         >
