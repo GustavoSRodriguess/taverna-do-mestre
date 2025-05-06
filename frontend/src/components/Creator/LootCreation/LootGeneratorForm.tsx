@@ -7,6 +7,10 @@ interface LootGeneratorFormProps {
         tipoMoedas: string;
         itemCategories: string[];
         quantidade: string;
+        gems: boolean;
+        artObjects: boolean;
+        magicItems: boolean;
+        ranks: string[];
     }) => void;
 }
 
@@ -69,7 +73,12 @@ export const LootGeneratorForm: React.FC<LootGeneratorFormProps> = ({ onGenerate
             nivel: level,
             tipoMoedas: coinType,
             itemCategories: selectedCategories,
-            quantidade: quantity
+            quantidade: quantity,
+            // Pass the state values to the callback
+            gems: includeGems,
+            artObjects: includeArtObjects,
+            magicItems: includeMagicItems,
+            ranks: itemRanks
         });
     };
 

@@ -14,12 +14,14 @@ type CharacterFormData = {
     metodoAtributos: 'rolagem' | 'array' | 'compra';
 };
 
+// Updated NPCFormData to include attributesMethod from the form
 type NPCFormData = {
     nivel: string;
-    metodo: 'automatic' | 'manual';
-    raca?: string;
-    classe?: string;
-    antecedente?: string;
+    metodo: 'automatic' | 'manual'; // Indicates user preference for specifying race/class/background
+    attributesMethod: 'rolagem' | 'array' | 'compra'; // The actual attribute generation method for the backend
+    raca?: string; // Kept for potential display/future use, not sent to /generate
+    classe?: string; // Kept for potential display/future use, not sent to /generate
+    antecedente?: string; // Kept for potential display/future use, not sent to /generate
 };
 
 type EncounterFormData = {
@@ -29,11 +31,16 @@ type EncounterFormData = {
     tema?: string;
 };
 
+// Updated LootFormData to include the missing fields from the form
 type LootFormData = {
     nivel: string;
     tipoMoedas: string;
     itemCategories: string[];
     quantidade: string;
+    gems: boolean;
+    artObjects: boolean;
+    magicItems: boolean;
+    ranks: string[];
 };
 
 // URL base da API - pode ser configurada com base no ambiente
@@ -89,18 +96,20 @@ export const generateCharacter = async (formData: CharacterFormData) => {
 // Gerar NPC
 export const generateNPC = async (formData: NPCFormData) => {
     try {
+        // Construct the payload exactly as the backend /npcs/generate endpoint expects
         const data = {
-            level: parseInt(formData.nivel),
-            attributes_method: formData.metodo === 'manual' ? 'manual' : 'rolagem',
-            manual: formData.metodo === 'manual',
-            race: formData.raca,
-            class: formData.classe,
-            background: formData.antecedente
+            level: parseInt(formData.nivel), // Correct: integer level
+            attributes_method: formData.attributesMethod, // Correct: Use the selected attribute method
+            manual: formData.metodo === 'manual' // Correct: Backend expects a boolean 'manual' flag
+            // Do NOT send race, class, or background to this endpoint
         };
+
+        console.log('Sending data to /npcs/generate:', data); // Log the data being sent
 
         return await fetchFromAPI('/npcs/generate', 'POST', data);
     } catch (error) {
         console.log('Error generating NPC, using mock data instead:', error);
+        // Pass the original formData to the mock function as it might use race/class/background
         return mockGenerateNPC(formData);
     }
 };
@@ -137,17 +146,28 @@ export const generateEncounter = async (formData: EncounterFormData) => {
 // Gerar loot/tesouro
 export const generateLoot = async (formData: LootFormData) => {
     try {
+        // Construct the payload using data from the form, matching backend expectations
         const data = {
             level: parseInt(formData.nivel),
             coin_type: formData.tipoMoedas,
             magic_item_categories: formData.itemCategories,
             quantity: parseInt(formData.quantidade),
-            gems: true,
-            art_objects: true,
-            magic_items: true,
-            ranks: ["minor", "medium", "major"]
+            // Use values from formData instead of hardcoded ones
+            gems: formData.gems,
+            art_objects: formData.artObjects,
+            magic_items: formData.magicItems,
+            ranks: formData.ranks,
+            // Include other fields expected by backend, using defaults if not in form
+            valuable_type: "standard", // Assuming default, not in form
+            item_type: "standard", // Assuming default, not in form
+            more_random_coins: false, // Assuming default, not in form
+            trade: "none", // Assuming default, not in form
+            psionic_items: false, // Assuming default, not in form
+            chaositech_items: false, // Assuming default, not in form
+            max_value: 0, // Assuming default, not in form
+            combine_hoards: false // Assuming default, not in form
         };
-        console.log(data)
+        console.log('Sending data to /treasures/generate:', data); // Log the data being sent
 
         const result = await fetchFromAPI('/treasures/generate', 'POST', data);
 
@@ -275,7 +295,8 @@ export const mockGenerateLoot = async (formData: LootFormData) => {
     // Usa o mock predefinido, mas adapta o nível
     const levelFactor = parseInt(formData.nivel) / mockLoot.nivel;
 
-    return {
+    // Update mock generation to potentially use new fields if needed
+    let adjustedMock = {
         ...mockLoot,
         nivel: parseInt(formData.nivel),
         valorTotal: Math.round(mockLoot.valorTotal * levelFactor),
@@ -293,7 +314,23 @@ export const mockGenerateLoot = async (formData: LootFormData) => {
             }))
         }))
     };
+
+    // Example: Filter mock items based on formData (optional)
+    if (!formData.gems) {
+        adjustedMock.hoards.forEach(hoard => {
+            hoard.items = hoard.items.filter(item => item.tipo !== 'Gemas');
+        });
+    }
+    if (!formData.artObjects) {
+        adjustedMock.hoards.forEach(hoard => {
+            hoard.items = hoard.items.filter(item => item.tipo !== 'Objetos de Arte');
+        });
+    }
+    // Add similar logic for magicItems, ranks, categories if needed for mock
+
+    return adjustedMock;
 };
+
 
 // Exporta as funções reais (que tentam a API primeiro, mas fazem fallback para mocks)
 export default {

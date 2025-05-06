@@ -30,17 +30,23 @@ export const LootSheet: React.FC<LootSheetProps> = ({ loot }) => {
     if (!loot) {
         return (
             <CardBorder className="h-full flex items-center justify-center text-center bg-indigo-950/50">
-                <p className="text-indigo-300">Preencha o formulário e clique em "Gerar Tesouro" para ver os resultados aqui.</p>
+                <p className="text-indigo-300">Preencha o formulário e clique em \"Gerar Tesouro\" para ver os resultados aqui.</p>
             </CardBorder>
         );
     }
+    console.log(loot);
 
-    // Função para formatar valores como moeda
+    // Função para formatar valores como moeda (corrigida para PO)
     const formatCurrency = (value: number): string => {
-        return new Intl.NumberFormat('pt-BR', {
+        // Usa BRL como base para formatação numérica, depois substitui o símbolo
+        const formatted = new Intl.NumberFormat('pt-BR', {
             style: 'currency',
-            currency: 'PO'
-        }).format(value).replace('PO', 'PO');
+            currency: 'BRL', // Usa um código válido
+            minimumFractionDigits: 0, // PO não costuma ter centavos
+            maximumFractionDigits: 0
+        }).format(value);
+        // Substitui o símbolo padrão 'R$' por 'PO '
+        return formatted.replace('R$', 'PO ');
     };
 
     // Função para obter a variante do badge com base na raridade
