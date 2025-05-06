@@ -1,4 +1,3 @@
-// internal/db/items.go
 package db
 
 import (
@@ -10,7 +9,6 @@ import (
 	"rpg-saas-backend/internal/models"
 )
 
-// GetTreasures returns all treasures paginated
 func (p *PostgresDB) GetTreasures(ctx context.Context, limit, offset int) ([]models.Treasure, error) {
 	treasures := []models.Treasure{}
 	query := `SELECT * FROM treasures ORDER BY id LIMIT $1 OFFSET $2`
@@ -20,7 +18,6 @@ func (p *PostgresDB) GetTreasures(ctx context.Context, limit, offset int) ([]mod
 		return nil, fmt.Errorf("failed to fetch treasures: %w", err)
 	}
 
-	// For each treasure, fetch its hoards
 	for i := range treasures {
 		hoards, err := p.GetHoardsByTreasureID(ctx, treasures[i].ID)
 		if err != nil {
@@ -32,7 +29,6 @@ func (p *PostgresDB) GetTreasures(ctx context.Context, limit, offset int) ([]mod
 	return treasures, nil
 }
 
-// GetTreasureByID returns a treasure by ID
 func (p *PostgresDB) GetTreasureByID(ctx context.Context, id int) (*models.Treasure, error) {
 	var treasure models.Treasure
 	query := `SELECT * FROM treasures WHERE id = $1`
@@ -42,7 +38,6 @@ func (p *PostgresDB) GetTreasureByID(ctx context.Context, id int) (*models.Treas
 		return nil, fmt.Errorf("failed to fetch treasure with ID %d: %w", id, err)
 	}
 
-	// Fetch this treasure's hoards
 	hoards, err := p.GetHoardsByTreasureID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -52,7 +47,6 @@ func (p *PostgresDB) GetTreasureByID(ctx context.Context, id int) (*models.Treas
 	return &treasure, nil
 }
 
-// GetHoardsByTreasureID returns all hoards for a specific treasure
 func (p *PostgresDB) GetHoardsByTreasureID(ctx context.Context, treasureID int) ([]models.Hoard, error) {
 	hoards := []models.Hoard{}
 	query := `SELECT * FROM hoards WHERE treasure_id = $1`
@@ -62,21 +56,17 @@ func (p *PostgresDB) GetHoardsByTreasureID(ctx context.Context, treasureID int) 
 		return nil, fmt.Errorf("failed to fetch hoards for treasure ID %d: %w", treasureID, err)
 	}
 
-	// For each hoard, fetch its items
 	for i := range hoards {
 		_, err := p.GetItemsByHoardID(ctx, hoards[i].ID)
 		if err != nil {
 			return nil, err
 		}
 
-		// We don't have a direct items field in the Hoard struct,
-		// but we could store the count or other metadata if needed
 	}
 
 	return hoards, nil
 }
 
-// GetItemsByHoardID returns all items for a specific hoard
 func (p *PostgresDB) GetItemsByHoardID(ctx context.Context, hoardID int) ([]models.Item, error) {
 	items := []models.Item{}
 	query := `SELECT * FROM items WHERE hoard_id = $1`
@@ -89,16 +79,13 @@ func (p *PostgresDB) GetItemsByHoardID(ctx context.Context, hoardID int) ([]mode
 	return items, nil
 }
 
-// CreateTreasure creates a new treasure with its hoards and items
 func (p *PostgresDB) CreateTreasure(ctx context.Context, treasure *models.Treasure) error {
-	// Start a transaction
 	tx, err := p.DB.BeginTxx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer tx.Rollback()
 
-	// Insert the treasure
 	query := `
 		INSERT INTO treasures 
 		(level, name, total_value) 
@@ -116,7 +103,6 @@ func (p *PostgresDB) CreateTreasure(ctx context.Context, treasure *models.Treasu
 		return fmt.Errorf("failed to insert treasure: %w", err)
 	}
 
-	// Insert the hoards associated with this treasure
 	for i := range treasure.Hoards {
 		treasure.Hoards[i].TreasureID = treasure.ID
 		err = p.createHoardTx(ctx, tx, &treasure.Hoards[i])
@@ -128,7 +114,6 @@ func (p *PostgresDB) CreateTreasure(ctx context.Context, treasure *models.Treasu
 	return tx.Commit()
 }
 
-// createHoardTx inserts a hoard in a transaction
 func (p *PostgresDB) createHoardTx(ctx context.Context, tx *sqlx.Tx, hoard *models.Hoard) error {
 	query := `
 		INSERT INTO hoards 
@@ -147,12 +132,9 @@ func (p *PostgresDB) createHoardTx(ctx context.Context, tx *sqlx.Tx, hoard *mode
 		return fmt.Errorf("failed to insert hoard: %w", err)
 	}
 
-	// If needed, insert items associated with this hoard here
-
 	return nil
 }
 
-// createItemTx inserts an item in a transaction
 func (p *PostgresDB) createItemTx(ctx context.Context, tx *sqlx.Tx, item *models.Item) error {
 	query := `
 		INSERT INTO items 
@@ -169,7 +151,6 @@ func (p *PostgresDB) createItemTx(ctx context.Context, tx *sqlx.Tx, item *models
 	return row.Scan(&item.ID, &item.CreatedAt)
 }
 
-// DeleteTreasure removes a treasure by ID (cascades to hoards and items)
 func (p *PostgresDB) DeleteTreasure(ctx context.Context, id int) error {
 	query := `DELETE FROM treasures WHERE id = $1`
 

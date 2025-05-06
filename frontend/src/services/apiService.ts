@@ -98,18 +98,17 @@ export const generateNPC = async (formData: NPCFormData) => {
     try {
         // Construct the payload exactly as the backend /npcs/generate endpoint expects
         const data = {
-            level: parseInt(formData.nivel), // Correct: integer level
-            attributes_method: formData.attributesMethod, // Correct: Use the selected attribute method
-            manual: formData.metodo === 'manual' // Correct: Backend expects a boolean 'manual' flag
-            // Do NOT send race, class, or background to this endpoint
+            level: parseInt(formData.nivel),
+            attributes_method: formData.attributesMethod,
+            manual: formData.metodo === 'manual'
         };
 
-        console.log('Sending data to /npcs/generate:', data); // Log the data being sent
+        console.log('Sending data to /npcs/generate:', data);
 
         return await fetchFromAPI('/npcs/generate', 'POST', data);
     } catch (error) {
         console.log('Error generating NPC, using mock data instead:', error);
-        // Pass the original formData to the mock function as it might use race/class/background
+        // Pass the original formData to the mock function
         return mockGenerateNPC(formData);
     }
 };
@@ -152,41 +151,58 @@ export const generateLoot = async (formData: LootFormData) => {
             coin_type: formData.tipoMoedas,
             magic_item_categories: formData.itemCategories,
             quantity: parseInt(formData.quantidade),
-            // Use values from formData instead of hardcoded ones
             gems: formData.gems,
             art_objects: formData.artObjects,
             magic_items: formData.magicItems,
             ranks: formData.ranks,
-            // Include other fields expected by backend, using defaults if not in form
-            valuable_type: "standard", // Assuming default, not in form
-            item_type: "standard", // Assuming default, not in form
-            more_random_coins: false, // Assuming default, not in form
-            trade: "none", // Assuming default, not in form
-            psionic_items: false, // Assuming default, not in form
-            chaositech_items: false, // Assuming default, not in form
-            max_value: 0, // Assuming default, not in form
-            combine_hoards: false // Assuming default, not in form
+            valuable_type: "standard",
+            item_type: "standard",
+            more_random_coins: false,
+            trade: "none",
+            psionic_items: false,
+            chaositech_items: false,
+            max_value: 0,
+            combine_hoards: false
         };
-        console.log('Sending data to /treasures/generate:', data); // Log the data being sent
+        console.log('Sending data to /treasures/generate:', data);
 
         const result = await fetchFromAPI('/treasures/generate', 'POST', data);
+        console.log('Received data from /treasures/generate:', result); // Log the received data
 
-        // Adaptar a resposta da API para o formato esperado pelo front
+        // Adaptar a resposta da API para o formato esperado pelo front (LootSheet.tsx)
         return {
             nivel: result.level,
             valorTotal: result.total_value,
-            hoards: result.hoards.map((hoard: any) => ({
-                valor: hoard.value,
-                coins: hoard.coins || {},
-                items: Object.entries(hoard.valuables || {}).map(([type, items]: [string, any]) =>
-                    items.map((item: any) => ({
-                        nome: item.name,
-                        tipo: type,
-                        valor: item.value,
-                        raridade: item.rarity || 'Comum'
-                    }))
-                ).flat()
-            }))
+            hoards: result.hoards.map((hoard: any) => {
+                // Ensure valuables and items are arrays, even if null/undefined from backend (fallback)
+                const valuablesArray = Array.isArray(hoard.valuables) ? hoard.valuables : [];
+                const itemsArray = Array.isArray(hoard.items) ? hoard.items : [];
+
+                // Map valuables (gems/art) to the frontend item format
+                const mappedValuables = valuablesArray.map((item: any) => ({
+                    nome: item.name,
+                    tipo: item.type, // Use the type directly from the item
+                    valor: item.value,
+                    raridade: item.rank || 'Comum' // Use rank from backend
+                }));
+
+                // Map items (magic items) to the frontend item format
+                const mappedItems = itemsArray.map((item: any) => ({
+                    nome: item.name,
+                    tipo: item.type, // Use the type directly from the item
+                    valor: item.value || 0, // Use value or default to 0
+                    raridade: item.rank || 'Comum' // Use rank from backend
+                }));
+
+                // Combine valuables and magic items into a single list for the frontend
+                const combinedItems = [...mappedValuables, ...mappedItems];
+
+                return {
+                    valor: hoard.value,
+                    coins: hoard.coins || {},
+                    items: combinedItems // Use the combined and correctly mapped list
+                };
+            })
         };
     } catch (error) {
         console.log('Error generating loot, using mock data instead:', error);
@@ -237,10 +253,7 @@ export const getLoot = async () => {
 // Versões mockadas das funções para desenvolvimento/fallback
 export const mockGenerateCharacter = async (formData: CharacterFormData) => {
     console.log('Gerando personagem com dados mockados:', formData);
-    // Simula um delay de rede
     await new Promise(resolve => setTimeout(resolve, 500));
-
-    // Para fins de simulação, podemos fazer pequenos ajustes no mock baseado no formulário
     return {
         ...mockCharacter,
         Raça: formData.raca,
@@ -252,34 +265,24 @@ export const mockGenerateCharacter = async (formData: CharacterFormData) => {
 
 export const mockGenerateNPC = async (formData: NPCFormData) => {
     console.log('Gerando NPC com dados mockados:', formData);
-    // Simula um delay de rede
     await new Promise(resolve => setTimeout(resolve, 500));
-
-    // Ajustes baseados no formulário
     let npc = { ...mockNPC, Nível: parseInt(formData.nivel) };
-
     if (formData.metodo === 'manual' && formData.raca && formData.classe && formData.antecedente) {
         npc.Raça = formData.raca;
         npc.Classe = formData.classe;
         npc.Antecedente = formData.antecedente;
-
-        // Ajustes específicos por classe
         if (formData.classe === 'Mago') {
             npc.Magias = {
                 "Magias de Nível 1": ["Míssil Mágico", "Escudo Arcano", "Detectar Magia"]
             };
         }
     }
-
     return npc;
 };
 
 export const mockGenerateEncounter = async (formData: EncounterFormData) => {
     console.log('Gerando encontro com dados mockados:', formData);
-    // Simula um delay de rede
     await new Promise(resolve => setTimeout(resolve, 500));
-
-    // Ajustes simples baseados no formulário para parecer mais realista
     return {
         ...mockEncounter,
         tema: formData.tema || mockEncounter.tema,
@@ -289,13 +292,8 @@ export const mockGenerateEncounter = async (formData: EncounterFormData) => {
 
 export const mockGenerateLoot = async (formData: LootFormData) => {
     console.log('Gerando tesouro com dados mockados:', formData);
-    // Simula um delay de rede
     await new Promise(resolve => setTimeout(resolve, 500));
-
-    // Usa o mock predefinido, mas adapta o nível
     const levelFactor = parseInt(formData.nivel) / mockLoot.nivel;
-
-    // Update mock generation to potentially use new fields if needed
     let adjustedMock = {
         ...mockLoot,
         nivel: parseInt(formData.nivel),
@@ -314,8 +312,6 @@ export const mockGenerateLoot = async (formData: LootFormData) => {
             }))
         }))
     };
-
-    // Example: Filter mock items based on formData (optional)
     if (!formData.gems) {
         adjustedMock.hoards.forEach(hoard => {
             hoard.items = hoard.items.filter(item => item.tipo !== 'Gemas');
@@ -326,13 +322,11 @@ export const mockGenerateLoot = async (formData: LootFormData) => {
             hoard.items = hoard.items.filter(item => item.tipo !== 'Objetos de Arte');
         });
     }
-    // Add similar logic for magicItems, ranks, categories if needed for mock
-
     return adjustedMock;
 };
 
 
-// Exporta as funções reais (que tentam a API primeiro, mas fazem fallback para mocks)
+// Exporta as funções reais
 export default {
     generateCharacter,
     generateNPC,
@@ -343,3 +337,4 @@ export default {
     getEncounters,
     getLoot
 };
+

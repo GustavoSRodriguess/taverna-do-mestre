@@ -8,14 +8,12 @@ import (
 	"rpg-saas-backend/internal/models"
 )
 
-// NPCRequest contém os parâmetros para gerar um NPC
 type NPCRequest struct {
 	Level            int    `json:"level"`
 	AttributesMethod string `json:"attributes_method"`
 	Manual           bool   `json:"manual"`
 }
 
-// NPCResponse contém a resposta da API de geração de NPC
 type NPCResponse struct {
 	Name        string              `json:"name"`
 	Description string              `json:"description"`
@@ -32,7 +30,6 @@ type NPCResponse struct {
 	Spells      map[string][]string `json:"spells,omitempty"`
 }
 
-// GenerateNPC chama o serviço Python para gerar um NPC
 func (c *Client) GenerateNPC(ctx context.Context, level int, attributesMethod string, manual bool) (*models.NPC, error) {
 	request := NPCRequest{
 		Level:            level,
@@ -45,28 +42,23 @@ func (c *Client) GenerateNPC(ctx context.Context, level int, attributesMethod st
 		return nil, fmt.Errorf("failed to generate NPC: %w", err)
 	}
 
-	// Converte atributos e modificadores para JSONB
 	attributes := models.JSONB{}
 	for k, v := range response.Attributes {
 		attributes[k] = v
 	}
 
-	// Converte habilidades para JSONB
 	abilities := models.JSONB{
 		"abilities": response.Abilities,
 	}
 
-	// Converte equipamento para JSONB
 	equipment := models.JSONB{
 		"items": response.Equipment,
 	}
 
-	// Se houver magias, adiciona ao campo abilities
 	if len(response.Spells) > 0 {
 		abilities["spells"] = response.Spells
 	}
 
-	// Converte a resposta para o modelo NPC
 	npc := &models.NPC{
 		Name:        response.Name,
 		Description: response.Description,

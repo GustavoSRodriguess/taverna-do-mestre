@@ -1,40 +1,9 @@
-// internal/models/npc.go
 package models
 
 import (
-	"database/sql/driver"
-	"encoding/json"
-	"errors"
 	"time"
 )
 
-// JSONB é um tipo personalizado para lidar com JSONB do PostgreSQL
-type JSONB map[string]interface{}
-
-// Value converte JSONB para formato adequado para o driver do BD
-func (j JSONB) Value() (driver.Value, error) {
-	if j == nil {
-		return nil, nil
-	}
-	return json.Marshal(j)
-}
-
-// Scan converte do formato do BD para JSONB
-func (j *JSONB) Scan(value interface{}) error {
-	if value == nil {
-		*j = nil
-		return nil
-	}
-	
-	s, ok := value.([]byte)
-	if !ok {
-		return errors.New("invalid scan source for JSONB")
-	}
-	
-	return json.Unmarshal(s, j)
-}
-
-// NPC representa um personagem não jogável
 type NPC struct {
 	ID          int       `json:"id" db:"id"`
 	Name        string    `json:"name" db:"name"`
@@ -50,7 +19,6 @@ type NPC struct {
 	CreatedAt   time.Time `json:"created_at" db:"created_at"`
 }
 
-// PC representa um personagem jogável
 type PC struct {
 	ID          int       `json:"id" db:"id"`
 	Name        string    `json:"name" db:"name"`
@@ -67,7 +35,6 @@ type PC struct {
 	CreatedAt   time.Time `json:"created_at" db:"created_at"`
 }
 
-// Race representa uma raça de personagem
 type Race struct {
 	ID          int       `json:"id" db:"id"`
 	Name        string    `json:"name" db:"name"`
@@ -75,7 +42,6 @@ type Race struct {
 	CreatedAt   time.Time `json:"created_at" db:"created_at"`
 }
 
-// Class representa uma classe de personagem
 type Class struct {
 	ID          int       `json:"id" db:"id"`
 	Name        string    `json:"name" db:"name"`
@@ -83,7 +49,6 @@ type Class struct {
 	CreatedAt   time.Time `json:"created_at" db:"created_at"`
 }
 
-// Encounter representa um encontro
 type Encounter struct {
 	ID          int       `json:"id" db:"id"`
 	Theme       string    `json:"theme" db:"theme"`
@@ -92,10 +57,9 @@ type Encounter struct {
 	PlayerLevel int       `json:"player_level" db:"player_level"`
 	PlayerCount int       `json:"player_count" db:"player_count"`
 	CreatedAt   time.Time `json:"created_at" db:"created_at"`
-	Monsters    []Monster `json:"monsters,omitempty"` // Relacionamento
+	Monsters    []Monster `json:"monsters,omitempty"`
 }
 
-// Monster representa um monstro em um encontro
 type Monster struct {
 	ID          int       `json:"id" db:"id"`
 	EncounterID int       `json:"encounter_id" db:"encounter_id"`
@@ -105,7 +69,6 @@ type Monster struct {
 	CreatedAt   time.Time `json:"created_at" db:"created_at"`
 }
 
-// Map representa um mapa do jogo
 type Map struct {
 	ID        int       `json:"id" db:"id"`
 	Name      string    `json:"name" db:"name"`

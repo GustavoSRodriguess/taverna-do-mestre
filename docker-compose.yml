@@ -11,7 +11,7 @@ services:
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
-  
+
   pgadmin:
     image: dpage/pgadmin4
     container_name: rpg_saas_pgadmin
@@ -28,19 +28,19 @@ services:
       - db
 
   python-api:
-      build: ./ai-service
-      container_name: rpg_saas_python
-      ports:
-        - "5000:5000"
-      environment:
-        - OPENAI_API_KEY=${OPENAI_API_KEY}
-        - DATABASE_URL=postgresql://user:password@db:5432/rpg_saas
-        - PYTHONPATH=/app
-      volumes:
-        - ./ai-service:/app
-      depends_on:
-        - db
-      command: sh -c "python -m flask run --host=0.0.0.0"
+    build: ./ai-service
+    container_name: rpg_saas_python
+    ports:
+      - "5000:5000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DATABASE_URL=postgresql://user:password@db:5432/rpg_saas
+      - PYTHONPATH=/app
+    volumes:
+      - ./ai-service:/app
+    depends_on:
+      - db
+    command: sh -c "python -m flask run --host=0.0.0.0"
 
   backend:
     build: ./backend
@@ -53,14 +53,13 @@ services:
     depends_on:
       - db
       - python-api
-  
-  frontend:
-    build: ./frontend
-    container_name: rpg_saas_frontend
-    ports:
-      - "5173:5173"
-    depends_on:
-      - backend
+  # frontend:
+  #   build: ./frontend
+  #   container_name: rpg_saas_frontend
+  #   ports:
+  #     - "5173:5173"
+  #   depends_on:
+  #     - backend
 
 volumes:
   pgadmin_data:
