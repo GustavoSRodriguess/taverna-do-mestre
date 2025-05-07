@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { Button, SelectField, NumberField } from '../../../ui';
 
-type GenerationMethod = 'automatic' | 'manual';
-
 const racas = [
     "Humano", "Elfo", "Anão", "Halfling", "Tiefling",
     "Dragonborn", "Gnomo", "Meio-Elfo", "Meio-Orc"
@@ -18,39 +16,51 @@ const antecedentes = [
     "Charlatão", "Artífice", "Forasteiro", "Herói", "Mercenário"
 ];
 
+const attributeMethods = [
+    { value: 'rolagem', label: 'Rolagem de Dados (4d6dL)' },
+    { value: 'array', label: 'Array Padrão (15,14,13,12,10,8)' },
+    { value: 'compra', label: 'Compra de Pontos' },
+];
+
 interface NPCGeneratorFormProps {
     onGenerateNPC: (npcData: {
-        nivel: string;
-        metodo: GenerationMethod;
-        raca?: string;
-        classe?: string;
-        antecedente?: string;
+        level: string;
+        manual: boolean;
+        attributes_method?: string;
+        race?: string;
+        npcClass?: string;
+        background?: string;
     }) => void;
 }
 
 export const NPCGeneratorForm: React.FC<NPCGeneratorFormProps> = ({ onGenerateNPC }) => {
     const [level, setLevel] = useState("1");
-    const [generationMethod, setGenerationMethod] = useState<GenerationMethod>('automatic');
+    const [isManual, setIsManual] = useState(false);
+    const [selectedAttributesMethod, setSelectedAttributesMethod] = useState(attributeMethods[0].value);
     const [race, setRace] = useState(racas[0]);
     const [npcClass, setNpcClass] = useState(classes[0]);
     const [background, setBackground] = useState(antecedentes[0]);
 
     const handleGenerateNPC = () => {
         const npcData: {
-            nivel: string;
-            metodo: GenerationMethod;
-            raca?: string;
-            classe?: string;
-            antecedente?: string;
+            level: string;
+            manual: boolean;
+            attributes_method?: string;
+            race?: string;
+            npcClass?: string;
+            background?: string;
         } = {
-            nivel: level,
-            metodo: generationMethod,
+            level: level,
+            manual: isManual,
         };
 
-        if (generationMethod === 'manual') {
-            npcData.raca = race;
-            npcData.classe = npcClass;
-            npcData.antecedente = background;
+        if (isManual) {
+            npcData.race = race;
+            npcData.npcClass = npcClass;
+            npcData.background = background;
+            // attributes_method não é enviado pelo form se manual, será tratado no apiService se necessário
+        } else {
+            npcData.attributes_method = selectedAttributesMethod;
         }
 
         onGenerateNPC(npcData);
@@ -68,56 +78,65 @@ export const NPCGeneratorForm: React.FC<NPCGeneratorFormProps> = ({ onGenerateNP
                 />
 
                 <div className="mb-4">
-                    <label className="block text-indigo-200 mb-2">Método de Geração</label>
+                    <label className="block text-indigo-200 mb-2">Modo de Geração</label>
                     <div className="flex space-x-4">
                         <div className="flex items-center">
                             <input
                                 type="radio"
-                                id="automatic"
-                                name="generationMethod"
+                                id="automatic_npc"
+                                name="generationModeNpc"
                                 value="automatic"
-                                checked={generationMethod === 'automatic'}
-                                onChange={() => setGenerationMethod('automatic')}
+                                checked={!isManual}
+                                onChange={() => setIsManual(false)}
                                 className="mr-2 text-purple-600 focus:ring-purple-500"
                             />
-                            <label htmlFor="automatic" className="text-white">Automático (Aleatório)</label>
+                            <label htmlFor="automatic_npc" className="text-white">Automático (Atributos Gerados)</label>
                         </div>
                         <div className="flex items-center">
                             <input
                                 type="radio"
-                                id="manual"
-                                name="generationMethod"
+                                id="manual_npc"
+                                name="generationModeNpc"
                                 value="manual"
-                                checked={generationMethod === 'manual'}
-                                onChange={() => setGenerationMethod('manual')}
+                                checked={isManual}
+                                onChange={() => setIsManual(true)}
                                 className="mr-2 text-purple-600 focus:ring-purple-500"
                             />
-                            <label htmlFor="manual" className="text-white">Manual (Personalizado)</label>
+                            <label htmlFor="manual_npc" className="text-white">Manual (Detalhes Personalizados)</label>
                         </div>
                     </div>
                 </div>
 
-                {generationMethod === 'manual' && (
+                {!isManual && (
+                    <SelectField
+                        label="Método de Geração de Atributos"
+                        value={selectedAttributesMethod}
+                        onChange={setSelectedAttributesMethod}
+                        options={attributeMethods}
+                    />
+                )}
+
+                {isManual && (
                     <div className="space-y-4 pl-4 border-l-2 border-purple-600">
                         <SelectField
                             label="Raça"
                             value={race}
                             onChange={setRace}
-                            options={racas.map(raca => ({ value: raca, label: raca }))}
+                            options={racas.map(r => ({ value: r, label: r }))}
                         />
 
                         <SelectField
                             label="Classe"
                             value={npcClass}
                             onChange={setNpcClass}
-                            options={classes.map(classe => ({ value: classe, label: classe }))}
+                            options={classes.map(c => ({ value: c, label: c }))}
                         />
 
                         <SelectField
                             label="Antecedente"
                             value={background}
                             onChange={setBackground}
-                            options={antecedentes.map(antecedente => ({ value: antecedente, label: antecedente }))}
+                            options={antecedentes.map(a => ({ value: a, label: a }))}
                         />
                     </div>
                 )}

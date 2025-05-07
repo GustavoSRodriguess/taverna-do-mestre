@@ -14,6 +14,7 @@ export const NPCCreation: React.FC = () => {
         setError(null);
 
         try {
+            console.log(formData);
             const npcData = await apiService.generateNPC(formData);
             setNPC(npcData);
         } catch (err) {

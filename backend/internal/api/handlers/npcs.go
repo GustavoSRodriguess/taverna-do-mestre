@@ -133,18 +133,20 @@ func (h *NPCHandler) DeleteNPC(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// GenerateRandomNPC handles requests for generating NPCs, both random and manual.
 func (h *NPCHandler) GenerateRandomNPC(w http.ResponseWriter, r *http.Request) {
 	var request struct {
 		Level            int    `json:"level"`
-		AttributesMethod string `json:"attributes_method"`
+		AttributesMethod string `json:"attributes_method,omitempty"`
 		Manual           bool   `json:"manual"`
+		Race             string `json:"race,omitempty"`
+		Class            string `json:"class,omitempty"`      // Frontend sends 'class', ensure this matches
+		Background       string `json:"background,omitempty"` // Frontend sends 'background'
 	}
 
-	err := json.NewDecoder(r.Body).Decode(&request)
-	if err != nil {
-		request.Level = 1
-		request.AttributesMethod = "rolagem"
-		request.Manual = false
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, "Invalid request body: "+err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	if request.Level < 1 || request.Level > 20 {
@@ -152,21 +154,37 @@ func (h *NPCHandler) GenerateRandomNPC(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if request.AttributesMethod == "" {
+	// Default attributes_method if not manual and not provided
+	if !request.Manual && request.AttributesMethod == "" {
 		request.AttributesMethod = "rolagem"
 	}
-	if request.AttributesMethod != "rolagem" && request.AttributesMethod != "array" && request.AttributesMethod != "compra" {
-		http.Error(w, "Invalid attributes method. Must be 'rolagem', 'array' or 'compra'", http.StatusBadRequest)
-		return
+
+	// Validate attributes_method only if not manual or if provided
+	if !request.Manual || request.AttributesMethod != "" {
+		if request.AttributesMethod != "rolagem" && request.AttributesMethod != "array" && request.AttributesMethod != "compra" {
+			http.Error(w, "Invalid attributes_method. Must be 'rolagem', 'array', or 'compra'", http.StatusBadRequest)
+			return
+		}
 	}
 
-	npc, err := h.Python.GenerateNPC(r.Context(), request.Level, request.AttributesMethod, request.Manual)
+	// If manual, ensure race, class, and background are provided (or handle defaults in Python service)
+	if request.Manual {
+		if request.Race == "" || request.Class == "" || request.Background == "" {
+			// Consider if these should be strictly required or if Python service can handle defaults
+			// For now, let it pass, Python service might have defaults.
+		}
+		// For manual generation, attributes_method might be implicitly handled by Python or could be required.
+		// If Python service needs it for manual, ensure it's passed or defaulted.
+		// Current frontend sends it for PCs (manual=true).
+	}
+
+	npc, err := h.Python.GenerateNPC(r.Context(), request.Level, request.AttributesMethod, request.Manual, request.Race, request.Class, request.Background)
 	if err != nil {
 		http.Error(w, "Failed to generate NPC: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	err = h.DB.CreateNPC(r.Context(), npc)
+	err = h.DB.CreateNPC(r.Context(), npc) // Assuming npc is of type *models.NPC
 	if err != nil {
 		http.Error(w, "Failed to save generated NPC: "+err.Error(), http.StatusInternalServerError)
 		return

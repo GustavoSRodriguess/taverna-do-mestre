@@ -3,16 +3,16 @@ import { CardBorder } from '../../../ui/CardBorder';
 import { Button } from '../../../ui/Button';
 
 type NPCAttributes = {
-    Força: number;
+    Forca: number;
     Destreza: number;
-    Constituição: number;
+    Constituicão: number;
     Inteligência: number;
     Sabedoria: number;
     Carisma: number;
 };
 
 type NPCData = {
-    Raça: string;
+    Raca: string;
     Classe: string;
     HP: number;
     CA: number;
@@ -23,7 +23,7 @@ type NPCData = {
     Habilidades: string[];
     Magias: Record<string, string[]>;
     Equipamento: string[];
-    "Traço de Antecedente": string;
+    "Traco de Antecedente": string;
 };
 
 interface NPCSheetProps {
@@ -45,8 +45,8 @@ export const NPCSheet: React.FC<NPCSheetProps> = ({ npc }) => {
 
             <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                    <h3 className="text-indigo-300 text-sm">Raça</h3>
-                    <p className="font-semibold">{npc.Raça}</p>
+                    <h3 className="text-indigo-300 text-sm">Raca</h3>
+                    <p className="font-semibold">{npc.Raca}</p>
                 </div>
                 <div>
                     <h3 className="text-indigo-300 text-sm">Classe</h3>
@@ -121,8 +121,8 @@ export const NPCSheet: React.FC<NPCSheetProps> = ({ npc }) => {
             </div>
 
             <div>
-                <h3 className="text-indigo-300 text-sm mb-2">Traço de Antecedente</h3>
-                <p>{npc["Traço de Antecedente"]}</p>
+                <h3 className="text-indigo-300 text-sm mb-2">Traco de Antecedente</h3>
+                <p>{npc["Traco de Antecedente"]}</p>
             </div>
 
             <div className="mt-6 flex justify-end">

@@ -765,6 +765,7 @@ def generate_fallback_npc(level=1, attribute_method="standard_array"):
 
 def handle_generate_npc(request_data):
     """Handle API requests to generate NPCs"""
+    print("Received request data:", request_data)
     level = request_data.get("level", 1)
     attributes_method = request_data.get("attributes_method", "standard_array")
     manual = request_data.get("manual", False)

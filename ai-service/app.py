@@ -51,6 +51,7 @@ def generate_description():
 @app.route('/generate-npc', methods=['POST'])
 def generate_npc_api():
     data = request.json
+    print(data)
     level = data.get('level', 1)
     attributes_method = data.get('attributes_method', 'rolagem')
     manual = data.get('manual', False)

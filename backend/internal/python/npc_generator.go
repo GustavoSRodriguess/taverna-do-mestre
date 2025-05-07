@@ -8,10 +8,15 @@ import (
 	"rpg-saas-backend/internal/models"
 )
 
+// NPCRequest defines the structure for the request to the Python NPC generation service.
+// It includes fields for both automatic and manual generation.
 type NPCRequest struct {
 	Level            int    `json:"level"`
-	AttributesMethod string `json:"attributes_method"`
+	AttributesMethod string `json:"attributes_method,omitempty"` // Used for non-manual generation
 	Manual           bool   `json:"manual"`
+	Race             string `json:"race,omitempty"`       // Used for manual generation
+	Class            string `json:"class,omitempty"`      // Used for manual generation
+	Background       string `json:"background,omitempty"` // Used for manual generation
 }
 
 type NPCResponse struct {
@@ -30,11 +35,21 @@ type NPCResponse struct {
 	Spells      map[string][]string `json:"spells,omitempty"`
 }
 
-func (c *Client) GenerateNPC(ctx context.Context, level int, attributesMethod string, manual bool) (*models.NPC, error) {
+// GenerateNPC calls the Python service to generate an NPC.
+// It now accepts race, class, and background for manual generation.
+func (c *Client) GenerateNPC(ctx context.Context, level int, attributesMethod string, manual bool, race string, class string, background string) (*models.NPC, error) {
 	request := NPCRequest{
 		Level:            level,
 		AttributesMethod: attributesMethod,
 		Manual:           manual,
+	}
+
+	if manual {
+		request.Race = race
+		request.Class = class
+		request.Background = background
+		// attributesMethod might still be relevant for manual if Python service uses it
+		// or it could be ignored by Python if manual implies specific stat handling.
 	}
 
 	var response NPCResponse
@@ -65,6 +80,7 @@ func (c *Client) GenerateNPC(ctx context.Context, level int, attributesMethod st
 		Level:       response.Level,
 		Race:        response.Race,
 		Class:       response.Class,
+		Background:  response.Background, // Ensure this is populated from response
 		Attributes:  attributes,
 		Abilities:   abilities,
 		Equipment:   equipment,
