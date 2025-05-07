@@ -115,8 +115,8 @@ func (h *EncounterHandler) GenerateRandomEncounter(w http.ResponseWriter, r *htt
 	if request.Difficulty == "" {
 		request.Difficulty = "m"
 	}
-	if request.Difficulty != "f" && request.Difficulty != "m" && request.Difficulty != "d" && request.Difficulty != "mo" {
-		http.Error(w, "Invalid difficulty. Must be 'f', 'm', 'd', or 'mo'", http.StatusBadRequest)
+	if request.Difficulty != "e" && request.Difficulty != "m" && request.Difficulty != "d" && request.Difficulty != "mo" {
+		http.Error(w, "Invalid difficulty. Must be 'e', 'm', 'd', or 'mo'", http.StatusBadRequest)
 		return
 	}
 
