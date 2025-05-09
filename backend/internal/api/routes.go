@@ -90,5 +90,13 @@ func SetupRoutes(dbClient *db.PostgresDB, pythonClient *python.Client) *chi.Mux 
 		r.Post("/generate", itemHandler.GenerateRandomTreasure)
 	})
 
+	router.Route("/api/users", func(r chi.Router) {
+		r.Get("/", userHandler.GetUsers)
+		r.Post("/", userHandler.CreateUser)
+		r.Get("/{id}", userHandler.GetUserByID)
+		r.Put("/{id}", userHandler.UpdateUser)
+		r.Delete("/{id}", userHandler.DeleteUser)
+	})
+
 	return router
 }
