@@ -240,6 +240,7 @@ const IntegratedGenerator: React.FC = () => {
     const renderSheet = () => {
         switch (activeTab) {
             case 'character':
+                console.log(character);
                 return <CharacterSheet character={character} />;
             case 'npc':
                 return <NPCSheet npc={npc} />;

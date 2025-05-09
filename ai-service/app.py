@@ -51,18 +51,9 @@ def generate_description():
 @app.route('/generate-npc', methods=['POST'])
 def generate_npc_api():
     data = request.json
-    print(data)
-    level = data.get('level', 1)
-    attributes_method = data.get('attributes_method', 'rolagem')
-    manual = data.get('manual', False)
-    
+
     # Utiliza a função existente do create_npc.py
-    npc_data = handle_generate_npc({
-        "level": level, 
-        "attributes_method": attributes_method, 
-        "manual": manual
-    })
-    
+    npc_data = handle_generate_npc(data)
     
     return jsonify(npc_data)
 

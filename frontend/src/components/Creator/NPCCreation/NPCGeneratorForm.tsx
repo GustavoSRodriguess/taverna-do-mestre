@@ -2,8 +2,15 @@ import React, { useState } from 'react';
 import { Button, SelectField, NumberField } from '../../../ui';
 
 const racas = [
-    "Humano", "Elfo", "Anão", "Halfling", "Tiefling",
-    "Dragonborn", "Gnomo", "Meio-Elfo", "Meio-Orc"
+    { value: "human", label: "Humano" },
+    { value: "elf", label: "Elfo" },
+    { value: "dwarf", label: "Anão" },
+    { value: "halfling", label: "Halfling" },
+    { value: "tiefling", label: "Tiefling" },
+    { value: "dragonborn", label: "Dragonborn" },
+    { value: "gnome", label: "Gnomo" },
+    { value: "half-elf", label: "Meio-Elfo" },
+    { value: "half-orc", label: "Meio-Orc" }
 ];
 
 const classes = [
@@ -55,7 +62,7 @@ export const NPCGeneratorForm: React.FC<NPCGeneratorFormProps> = ({ onGenerateNP
         };
 
         if (isManual) {
-            npcData.race = race;
+            npcData.race = race.value;
             npcData.npcClass = npcClass;
             npcData.background = background;
             // attributes_method não é enviado pelo form se manual, será tratado no apiService se necessário
@@ -120,9 +127,9 @@ export const NPCGeneratorForm: React.FC<NPCGeneratorFormProps> = ({ onGenerateNP
                     <div className="space-y-4 pl-4 border-l-2 border-purple-600">
                         <SelectField
                             label="Raça"
-                            value={race}
-                            onChange={setRace}
-                            options={racas.map(r => ({ value: r, label: r }))}
+                            value={race.value}
+                            onChange={(value) => setRace(racas.find(r => r.value === value)!)}
+                            options={racas.map(r => ({ value: r.value, label: r.label }))}
                         />
 
                         <SelectField

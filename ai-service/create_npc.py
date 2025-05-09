@@ -476,7 +476,7 @@ def get_fallback_spells(class_name, level):
     
     return result
 
-def generate_npc(level=1, attribute_method="standard_array", manual=False):
+def generate_npc(level=1, attribute_method="standard_array", manual=False,  race=None, character_class=None):
     """Generate a random NPC character"""
     try:
         # Get available classes and races from API
@@ -498,15 +498,13 @@ def generate_npc(level=1, attribute_method="standard_array", manual=False):
             class_details = DndApiClient.get_class_details(class_data["index"])
             race_details = DndApiClient.get_race_details(race_data["index"])
         else:
-            # TODO: Implement manual selection
-            # For now, just use random selection
-            class_data = random.choice(available_classes)
-            race_data = random.choice(available_races)
-            background_data = random.choice(DndApiClient.get_backgrounds())
+            class_data = character_class if character_class else random.choice(available_classes)
+            race_data = race if race else random.choice(available_races)
+            background_data = background_data if background_data else random.choice(DndApiClient.get_backgrounds())
             
             # Get detailed information
-            class_details = DndApiClient.get_class_details(class_data["index"])
-            race_details = DndApiClient.get_race_details(race_data["index"])
+            class_details = DndApiClient.get_class_details(class_data)
+            race_details = DndApiClient.get_race_details(race_data)
         
         # Generate base attributes
         attributes = generate_attributes(attribute_method, class_data["index"])
@@ -769,8 +767,11 @@ def handle_generate_npc(request_data):
     level = request_data.get("level", 1)
     attributes_method = request_data.get("attributes_method", "standard_array")
     manual = request_data.get("manual", False)
+    race = request_data.get("race", None)
+    character_class = request_data.get("character_class", None)
+    background = request_data.get("background", None)
     
-    return generate_npc(level, attributes_method, manual)
+    return generate_npc(level, attributes_method, manual, race, character_class)
 
 # Example usage
 if __name__ == "__main__":

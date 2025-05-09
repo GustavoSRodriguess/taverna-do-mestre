@@ -4,18 +4,42 @@ import { Button, SelectField, NumberField, RadioGroup } from '../../../ui';
 type AttributeMethod = 'rolagem' | 'array' | 'compra';
 
 const racas = [
-    "Humano", "Elfo", "Anão", "Halfling", "Tiefling",
-    "Dragonborn", "Gnomo", "Meio-Elfo", "Meio-Orc"
+    { value: "human", label: "Humano" },
+    { value: "elf", label: "Elfo" },
+    { value: "dwarf", label: "Anão" },
+    { value: "halfling", label: "Halfling" },
+    { value: "tiefling", label: "Tiefling" },
+    { value: "dragonborn", label: "Dragonborn" },
+    { value: "gnome", label: "Gnomo" },
+    { value: "half-elf", label: "Meio-Elfo" },
+    { value: "half-orc", label: "Meio-Orc" }
 ];
 
 const classes = [
-    "Guerreiro", "Mago", "Ladino", "Clérigo", "Bardo",
-    "Druida", "Monge", "Paladino", "Patrulheiro", "Feiticeiro", "Bruxo"
+    { value: "warrior", label: "Guerreiro" },
+    { value: "wizard", label: "Mago" },
+    { value: "rogue", label: "Ladino" },
+    { value: "cleric", label: "Clérigo" },
+    { value: "bard", label: "Bardo" },
+    { value: "druid", label: "Druida" },
+    { value: "monk", label: "Monge" },
+    { value: "paladin", label: "Paladino" },
+    { value: "ranger", label: "Patrulheiro" },
+    { value: "sorcerer", label: "Feiticeiro" },
+    { value: "warlock", label: "Bruxo" }
 ];
 
 const antecedentes = [
-    "Nobre", "Eremita", "Soldado", "Criminoso", "Sábio",
-    "Charlatão", "Artífice", "Forasteiro", "Herói", "Mercenário"
+    { value: "noble", label: "Nobre" },
+    { value: "hermit", label: "Eremita" },
+    { value: "soldier", label: "Soldado" },
+    { value: "criminal", label: "Criminoso" },
+    { value: "sage", label: "Sábio" },
+    { value: "charlatan", label: "Charlatão" },
+    { value: "artisan", label: "Artífice" },
+    { value: "outlander", label: "Forasteiro" },
+    { value: "hero", label: "Herói" },
+    { value: "mercenary", label: "Mercenário" }
 ];
 
 const attributeMethods = [
@@ -56,9 +80,9 @@ export const CharacterGeneratorForm: React.FC<CharacterGeneratorFormProps> = ({ 
     const handleGenerateCharacter = () => {
         onGenerateCharacter({
             nivel: level,
-            raca: race,
-            classe: characterClass,
-            antecedente: background,
+            raca: race.value,
+            classe: characterClass.value,
+            antecedente: background.value,
             metodoAtributos: attributeMethod
         });
     };
@@ -76,23 +100,23 @@ export const CharacterGeneratorForm: React.FC<CharacterGeneratorFormProps> = ({ 
 
                 <SelectField
                     label="Raça"
-                    value={race}
-                    onChange={setRace}
-                    options={racas.map(raca => ({ value: raca, label: raca }))}
+                    value={race.value}
+                    onChange={(value) => setRace(racas.find(raca => raca.value === value) || racas[0])}
+                    options={racas.map(raca => ({ value: raca.value, label: raca.label }))}
                 />
 
                 <SelectField
                     label="Classe"
-                    value={characterClass}
-                    onChange={setCharacterClass}
-                    options={classes.map(classe => ({ value: classe, label: classe }))}
+                    value={characterClass.value}
+                    onChange={(value) => setCharacterClass(classes.find(classe => classe.value === value) || classes[0])}
+                    options={classes.map(classe => ({ value: classe.value, label: classe.label }))}
                 />
 
                 <SelectField
                     label="Antecedente"
-                    value={background}
-                    onChange={setBackground}
-                    options={antecedentes.map(antecedente => ({ value: antecedente, label: antecedente }))}
+                    value={background.value}
+                    onChange={(value) => setBackground(antecedentes.find(antecedente => antecedente.value === value) || antecedentes[0])}
+                    options={antecedentes.map(antecedente => ({ value: antecedente.value, label: antecedente.label }))}
                 />
 
                 <RadioGroup

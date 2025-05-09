@@ -31,6 +31,7 @@ interface CharacterSheetProps {
 }
 
 export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character }) => {
+    console.log(character);
     if (!character) {
         return (
             <CardBorder className="h-full flex items-center justify-center text-center bg-indigo-950/50">
