@@ -11,8 +11,19 @@ DROP TABLE IF EXISTS encounter_monsters CASCADE;
 DROP TABLE IF EXISTS treasures CASCADE;
 DROP TABLE IF EXISTS hoards CASCADE;
 DROP TABLE IF EXISTS items CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
 
--- Criar tabela races (raças)
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(100) NOT NULL UNIQUE,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    admin BOOLEAN NOT NULL DEFAULT FALSE
+    plan INTEGER DEFAULT 0
+);
+
 CREATE TABLE races (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -20,7 +31,6 @@ CREATE TABLE races (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Criar tabela classes
 CREATE TABLE classes (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -28,7 +38,6 @@ CREATE TABLE classes (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Criar tabela npcs
 CREATE TABLE npcs (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -42,26 +51,27 @@ CREATE TABLE npcs (
     hp INTEGER,
     ca INTEGER,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    player_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Criar tabela pcs (personagens jogáveis)
 CREATE TABLE pcs (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     description TEXT,
-    level INTEGER DEFAULT 1,
+    level INTEGER NOT NULL DEFAULT 1,
     race VARCHAR(100),
     class VARCHAR(100),
-    attributes JSONB,
-    abilities JSONB,
-    equipment JSONB,
+    attributes JSONB,   -- ex: {"strength":10,"dexterity":12,...}
+    abilities JSONB,    -- ex: [{"name":"Fireball","level":3},...]
+    equipment JSONB,    -- ex: [{"item":"Sword","bonus":2},...]
     hp INTEGER,
     ca INTEGER,
     player_name VARCHAR(100),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    player_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Criar tabela encounters (encontros)
+
 CREATE TABLE encounters (
     id SERIAL PRIMARY KEY,
     theme VARCHAR(100),
@@ -72,7 +82,6 @@ CREATE TABLE encounters (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Criar tabela de relacionamento encounter_monsters
 CREATE TABLE encounter_monsters (
     id SERIAL PRIMARY KEY,
     encounter_id INTEGER REFERENCES encounters(id) ON DELETE CASCADE,
@@ -82,7 +91,6 @@ CREATE TABLE encounter_monsters (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Criar tabela de tesouros
 CREATE TABLE treasures (
     id SERIAL PRIMARY KEY,
     level INTEGER DEFAULT 1,
@@ -91,7 +99,6 @@ CREATE TABLE treasures (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Criar tabela de hoards (pilhas de tesouro)
 CREATE TABLE hoards (
     id SERIAL PRIMARY KEY,
     treasure_id INTEGER REFERENCES treasures(id) ON DELETE CASCADE,
@@ -100,7 +107,6 @@ CREATE TABLE hoards (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Criar tabela de itens
 CREATE TABLE items (
     id SERIAL PRIMARY KEY,
     hoard_id INTEGER REFERENCES hoards(id) ON DELETE CASCADE,
@@ -112,7 +118,6 @@ CREATE TABLE items (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Criar tabela de mapas
 CREATE TABLE maps (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100),

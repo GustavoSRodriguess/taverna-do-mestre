@@ -62,6 +62,7 @@ func SetupRoutes(dbClient *db.PostgresDB, pythonClient *python.Client) *chi.Mux 
 	nphandler := handlers.NewNPCHandler(dbClient, pythonClient)
 	encounterHandler := handlers.NewEncounterHandler(dbClient, pythonClient)
 	itemHandler := handlers.NewItemHandler(dbClient, pythonClient)
+	userHandler := handlers.NewUserHandler(dbClient)
 
 	// Rotas relacionadas a NPCs
 	router.Route("/api/npcs", func(r chi.Router) {
@@ -92,10 +93,11 @@ func SetupRoutes(dbClient *db.PostgresDB, pythonClient *python.Client) *chi.Mux 
 
 	router.Route("/api/users", func(r chi.Router) {
 		r.Get("/", userHandler.GetUsers)
-		r.Post("/", userHandler.CreateUser)
+		r.Post("/register", userHandler.CreateUser)
 		r.Get("/{id}", userHandler.GetUserByID)
 		r.Put("/{id}", userHandler.UpdateUser)
 		r.Delete("/{id}", userHandler.DeleteUser)
+		r.Post("/login", userHandler.Login)
 	})
 
 	return router

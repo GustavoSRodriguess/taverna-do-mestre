@@ -1,5 +1,19 @@
 package db
 
+import (
+	"context"
+	"fmt"
+
+	"rpg-saas-backend/internal/models"
+)
+
+// como em teoria é um sass
+// PLANOS:
+// 0 - Plebe
+// 1 - Aprendiz
+// 2 - Mago
+// 3 - Arqui-mago
+
 func (p *PostgresDB) GetUserByID(ctx context.Context, id int) (*models.User, error) {
 	user := &models.User{}
 	query := `SELECT * FROM users WHERE id = $1`
@@ -20,6 +34,16 @@ func (p *PostgresDB) GetUserByUsername(ctx context.Context, username string) (*m
 	return user, nil
 }
 
+func (p *PostgresDB) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
+	user := &models.User{}
+	query := `SELECT * FROM users WHERE email = $1`
+	err := p.DB.GetContext(ctx, user, query, email)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch user by email: %w", err)
+	}
+	return user, nil
+}
+
 func (p *PostgresDB) GetUserByEmailAndPwd(ctx context.Context, email, password string) (*models.User, error) {
 	user := &models.User{}
 	query := `SELECT * FROM users WHERE email = $1 AND password = $2`
@@ -31,7 +55,7 @@ func (p *PostgresDB) GetUserByEmailAndPwd(ctx context.Context, email, password s
 }
 
 func (p *PostgresDB) CreateUser(ctx context.Context, user *models.User) error {
-	query := `INSERT INTO users (username, email, password, created_at, updated_at, admin) VALUES ($1, $2, $3, $4, $5, $6)`
+	query := `INSERT INTO users (username, email, password, created_at, updated_at, admin, plan) VALUES ($1, $2, $3, $4, $5, $6, 0)`
 	_, err := p.DB.ExecContext(ctx, query, user.Username, user.Email, user.Password, user.CreatedAt, user.UpdatedAt, user.Admin)
 	if err != nil {
 		return fmt.Errorf("failed to create user: %w", err)
