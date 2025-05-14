@@ -93,8 +93,8 @@ const Login: React.FC = () => {
                                     Nome Completo
                                 </label>
                                 <input
-                                    id="name"
-                                    name="name"
+                                    id="username"
+                                    name="username"
                                     type="text"
                                     required
                                     value={name}

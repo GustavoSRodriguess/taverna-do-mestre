@@ -19,7 +19,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
 
 export const login = async (credentials: LoginCredentials): Promise<User> => {
     try {
-        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        const response = await fetch(`${API_BASE_URL}/users/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -46,7 +46,7 @@ export const login = async (credentials: LoginCredentials): Promise<User> => {
 
 export const register = async (userData: RegisterData): Promise<User> => {
     try {
-        const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        const response = await fetch(`${API_BASE_URL}/users/register`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -79,8 +79,8 @@ export const logout = (): void => {
 
 // Verificar se o usuário está autenticado
 export const isAuthenticated = (): boolean => {
-    console.log('chego aqui'); 
-    console.log(!!localStorage.getItem('authToken')); 
+    console.log('chego aqui');
+    console.log(!!localStorage.getItem('authToken'));
     return !!localStorage.getItem('authToken');
 };
 
@@ -173,7 +173,7 @@ export const mockRegister = async (userData: RegisterData): Promise<User> => {
 };
 
 // Função auxiliar para decidir qual versão usar (real ou mock)
-const USE_MOCKS = true; // Mude para false quando tiver uma API real
+const USE_MOCKS = false; // Mude para false quando tiver uma API real
 
 export default {
     login: USE_MOCKS ? mockLogin : login,
