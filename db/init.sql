@@ -50,7 +50,7 @@ CREATE TABLE npcs (
     equipment JSONB,
     hp INTEGER,
     ca INTEGER,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     player_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE
 );
 
@@ -61,9 +61,9 @@ CREATE TABLE pcs (
     level INTEGER NOT NULL DEFAULT 1,
     race VARCHAR(100),
     class VARCHAR(100),
-    attributes JSONB,   -- ex: {"strength":10,"dexterity":12,...}
-    abilities JSONB,    -- ex: [{"name":"Fireball","level":3},...]
-    equipment JSONB,    -- ex: [{"item":"Sword","bonus":2},...]
+    attributes JSONB,
+    abilities JSONB,
+    equipment JSONB,
     hp INTEGER,
     ca INTEGER,
     player_name VARCHAR(100),

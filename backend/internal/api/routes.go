@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 
 	"rpg-saas-backend/internal/api/handlers"
+	customMiddleware "rpg-saas-backend/internal/api/middleware" // Importando o middleware de autenticação
 	"rpg-saas-backend/internal/db"
 	"rpg-saas-backend/internal/python"
 )
@@ -64,8 +65,9 @@ func SetupRoutes(dbClient *db.PostgresDB, pythonClient *python.Client) *chi.Mux 
 	itemHandler := handlers.NewItemHandler(dbClient, pythonClient)
 	userHandler := handlers.NewUserHandler(dbClient)
 
-	// Rotas relacionadas a NPCs
+	// Rotas relacionadas a NPCs (protegidas)
 	router.Route("/api/npcs", func(r chi.Router) {
+		r.Use(customMiddleware.AuthMiddleware) // Aplicando middleware de autenticação
 		r.Get("/", nphandler.GetNPCs)
 		r.Post("/", nphandler.CreateNPC)
 		r.Get("/{id}", nphandler.GetNPCByID)
@@ -74,16 +76,18 @@ func SetupRoutes(dbClient *db.PostgresDB, pythonClient *python.Client) *chi.Mux 
 		r.Post("/generate", nphandler.GenerateRandomNPC)
 	})
 
-	// Rotas relacionadas a encontros
+	// Rotas relacionadas a encontros (protegidas)
 	router.Route("/api/encounters", func(r chi.Router) {
+		r.Use(customMiddleware.AuthMiddleware) // Aplicando middleware de autenticação
 		r.Get("/", encounterHandler.GetEncounters)
 		r.Post("/", encounterHandler.CreateEncounter)
 		r.Get("/{id}", encounterHandler.GetEncounterByID)
 		r.Post("/generate", encounterHandler.GenerateRandomEncounter)
 	})
 
-	// Rotas relacionadas a tesouros e itens
+	// Rotas relacionadas a tesouros e itens (protegidas)
 	router.Route("/api/treasures", func(r chi.Router) {
+		r.Use(customMiddleware.AuthMiddleware) // Aplicando middleware de autenticação
 		r.Get("/", itemHandler.GetTreasures)
 		r.Post("/", itemHandler.CreateTreasure)
 		r.Get("/{id}", itemHandler.GetTreasureByID)
@@ -92,12 +96,19 @@ func SetupRoutes(dbClient *db.PostgresDB, pythonClient *python.Client) *chi.Mux 
 	})
 
 	router.Route("/api/users", func(r chi.Router) {
-		r.Get("/", userHandler.GetUsers)
+		// Rotas públicas
 		r.Post("/register", userHandler.CreateUser)
-		r.Get("/{id}", userHandler.GetUserByID)
-		r.Put("/{id}", userHandler.UpdateUser)
-		r.Delete("/{id}", userHandler.DeleteUser)
 		r.Post("/login", userHandler.Login)
+
+		// Rotas protegidas
+		r.Group(func(r chi.Router) {
+			r.Use(customMiddleware.AuthMiddleware)    // Aplicando middleware de autenticação
+			r.Get("/me", userHandler.GetCurrentUser)  // Rota para obter o usuário logado
+			r.Get("/", userHandler.GetUsers)          // Exemplo: Listar todos os usuários (geralmente admin)
+			r.Get("/{id}", userHandler.GetUserByID)   // Exemplo: Obter usuário específico
+			r.Put("/{id}", userHandler.UpdateUser)    // Exemplo: Atualizar usuário
+			r.Delete("/{id}", userHandler.DeleteUser) // Exemplo: Deletar usuário
+		})
 	})
 
 	return router

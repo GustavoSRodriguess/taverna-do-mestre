@@ -1,10 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, use } from 'react';
 import authService from '../services/authService';
 
 // Definição do tipo de usuário
 type User = {
     id: string;
-    name: string;
+    username: string;
     email: string;
 };
 
@@ -16,7 +16,7 @@ type LoginCredentials = {
 
 // Tipo dos dados de registro
 type RegisterData = {
-    name: string;
+    username: string;
     email: string;
     password: string;
 };
@@ -92,6 +92,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         try {
             const newUser = await authService.register(userData);
+            console.log(userData);
             setUser(newUser);
         } catch (err) {
             setError('Erro ao criar conta. Este e-mail pode já estar em uso.');

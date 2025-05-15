@@ -4,14 +4,14 @@ type LoginCredentials = {
 };
 
 type RegisterData = {
-    name: string;
+    username: string;
     email: string;
     password: string;
 };
 
 type User = {
     id: string;
-    name: string;
+    username: string;
     email: string;
 };
 
@@ -46,6 +46,7 @@ export const login = async (credentials: LoginCredentials): Promise<User> => {
 
 export const register = async (userData: RegisterData): Promise<User> => {
     try {
+        console.log(userData)
         const response = await fetch(`${API_BASE_URL}/users/register`, {
             method: 'POST',
             headers: {
@@ -103,7 +104,7 @@ export const getCurrentUser = async (): Promise<User | null> => {
 
             return {
                 id: '1',
-                name: 'Usuário Mockado',
+                username: 'Usuário Mockado',
                 email: 'usuario@exemplo.com',
             };
         }
@@ -138,7 +139,7 @@ export const mockLogin = async (credentials: LoginCredentials): Promise<User> =>
     if (credentials.email === 'admin@example.com' && credentials.password === 'password') {
         const user = {
             id: '1',
-            name: 'Admin User',
+            username: 'Admin User',
             email: credentials.email,
         };
 
@@ -162,7 +163,7 @@ export const mockRegister = async (userData: RegisterData): Promise<User> => {
 
     const user = {
         id: Math.floor(Math.random() * 1000).toString(),
-        name: userData.name,
+        username: userData.username,
         email: userData.email,
     };
 

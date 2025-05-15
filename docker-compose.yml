@@ -47,9 +47,12 @@ services:
     container_name: rpg_saas_backend
     ports:
       - "8080:8080"
+    env_file:
+      - ./backend/.env
     environment:
       - PYTHON_API_URL=http://python-api:5000
       - DATABASE_URL=postgresql://user:password@db:5432/rpg_saas
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
     depends_on:
       - db
       - python-api

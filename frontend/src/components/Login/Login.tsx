@@ -15,7 +15,7 @@ const Login: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [isRegisterMode, setIsRegisterMode] = useState(false);
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [name, setName] = useState('');
+    const [username, setUsername] = useState('');
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -41,7 +41,7 @@ const Login: React.FC = () => {
         }
 
         if (isRegisterMode) {
-            if (!name) {
+            if (!username) {
                 setError('Por favor, informe seu nome.');
                 return;
             }
@@ -52,7 +52,7 @@ const Login: React.FC = () => {
             }
 
             try {
-                await register({ name, email, password });
+                await register({ username, email, password });
             } catch (err) {
                 console.error('Erro', err);
             }
@@ -97,8 +97,8 @@ const Login: React.FC = () => {
                                     name="username"
                                     type="text"
                                     required
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
                                     className="w-full px-3 py-2 border border-indigo-700 rounded-md 
                              focus:outline-none focus:ring-2 focus:ring-indigo-500 
                              bg-indigo-900/50 text-white"

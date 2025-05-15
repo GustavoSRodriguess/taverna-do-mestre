@@ -28,7 +28,7 @@ const UserProfile: React.FC = () => {
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-indigo-300 mb-1">Nome</label>
-                                    <div className="text-white font-medium">{user?.name}</div>
+                                    <div className="text-white font-medium">{user?.username}</div>
                                 </div>
 
                                 <div>

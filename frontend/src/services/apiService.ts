@@ -239,6 +239,7 @@ export const generateLoot = async (formData: LootFormData) => {
             valuable_type: "standard", item_type: "standard", more_random_coins: false,
             trade: "none", psionic_items: false, chaositech_items: false, max_value: 0, combine_hoards: false
         };
+        console.log('Sending data to /treasures/generate:', data);
         const result = await fetchFromAPI('/treasures/generate', 'POST', data);
         return {
             nivel: result.level,
