@@ -128,6 +128,71 @@ CREATE TABLE maps (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Tabela de campanhas
+CREATE TABLE campaigns (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    dm_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    max_players INTEGER DEFAULT 6,
+    current_session INTEGER DEFAULT 1,
+    status VARCHAR(20) DEFAULT 'planning', -- planning, active, paused, completed
+    invite_code VARCHAR(10) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabela para relacionar jogadores com campanhas
+CREATE TABLE campaign_players (
+    id SERIAL PRIMARY KEY,
+    campaign_id INTEGER NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(20) DEFAULT 'active', -- active, inactive, removed
+    UNIQUE(campaign_id, user_id)
+);
+
+-- Tabela para personagens da campanha (PCs dos jogadores)
+CREATE TABLE campaign_characters (
+    id SERIAL PRIMARY KEY,
+    campaign_id INTEGER NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+    player_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    pc_id INTEGER NOT NULL REFERENCES pcs(id) ON DELETE CASCADE,
+    
+    -- Status específico da campanha
+    status VARCHAR(20) DEFAULT 'active', -- active, inactive, dead, retired, removed
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Stats que podem mudar durante a campanha (opcionais)
+    current_hp INTEGER NULL, -- HP atual (pode ser diferente do PC original)
+    temp_ac INTEGER NULL,    -- AC temporária (buffs/debuffs)
+    campaign_notes TEXT,     -- Notas específicas da campanha
+    
+    -- Constraints
+    UNIQUE(campaign_id, pc_id) -- Um PC só pode estar uma vez por campanha ativa
+);
+
+-- Atualizar tabela de NPCs para associar com campanhas
+ALTER TABLE npcs ADD COLUMN campaign_id INTEGER REFERENCES campaigns(id) ON DELETE SET NULL;
+ALTER TABLE npcs DROP COLUMN IF EXISTS player_id;
+
+-- Atualizar tabela de PCs para associar com campanhas (opcional, mantém independente)
+ALTER TABLE pcs DROP COLUMN IF EXISTS player_id;
+
+-- Atualizar tabela de encounters para associar com campanhas
+ALTER TABLE encounters ADD COLUMN campaign_id INTEGER REFERENCES campaigns(id) ON DELETE SET NULL;
+
+-- Índices para melhorar performance
+CREATE INDEX idx_campaigns_dm_id ON campaigns(dm_id);
+CREATE INDEX idx_campaigns_status ON campaigns(status);
+CREATE INDEX idx_campaign_players_campaign_id ON campaign_players(campaign_id);
+CREATE INDEX idx_campaign_players_user_id ON campaign_players(user_id);
+CREATE INDEX idx_campaign_players_status ON campaign_players(status);
+CREATE INDEX idx_campaign_characters_campaign ON campaign_characters(campaign_id);
+CREATE INDEX idx_npcs_campaign_id ON npcs(campaign_id);
+CREATE INDEX idx_encounters_campaign_id ON encounters(campaign_id);
+CREATE INDEX idx_campaigns_invite_code ON campaigns(invite_code);
+
 -- Inserir dados iniciais nas tabelas
 -- Raças
 INSERT INTO races (name, description) VALUES 

@@ -27,6 +27,7 @@ type PC struct {
 	Level       int       `json:"level" db:"level"`
 	Race        string    `json:"race" db:"race"`
 	Class       string    `json:"class" db:"class"`
+	Background  string    `json:"background" db:"background"`
 	Attributes  JSONB     `json:"attributes" db:"attributes"`
 	Abilities   JSONB     `json:"abilities" db:"abilities"`
 	Equipment   JSONB     `json:"equipment" db:"equipment"`

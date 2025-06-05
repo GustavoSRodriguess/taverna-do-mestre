@@ -64,6 +64,7 @@ func SetupRoutes(dbClient *db.PostgresDB, pythonClient *python.Client) *chi.Mux 
 	encounterHandler := handlers.NewEncounterHandler(dbClient, pythonClient)
 	itemHandler := handlers.NewItemHandler(dbClient, pythonClient)
 	userHandler := handlers.NewUserHandler(dbClient)
+	campaignHandler := handlers.NewCampaignHandler(dbClient)
 
 	// Rotas relacionadas a NPCs (protegidas)
 	router.Route("/api/npcs", func(r chi.Router) {
@@ -109,6 +110,42 @@ func SetupRoutes(dbClient *db.PostgresDB, pythonClient *python.Client) *chi.Mux 
 			r.Put("/{id}", userHandler.UpdateUser)    // Exemplo: Atualizar usuário
 			r.Delete("/{id}", userHandler.DeleteUser) // Exemplo: Deletar usuário
 		})
+	})
+
+	router.Route("/api/campaigns", func(r chi.Router) {
+		r.Use(customMiddleware.AuthMiddleware)
+
+		// ========================================
+		// CRUD BÁSICO DE CAMPANHAS
+		// ========================================
+		r.Get("/", campaignHandler.GetCampaigns)          // Listar campanhas do usuário
+		r.Post("/", campaignHandler.CreateCampaign)       // Criar nova campanha
+		r.Get("/{id}", campaignHandler.GetCampaignByID)   // Obter campanha específica
+		r.Put("/{id}", campaignHandler.UpdateCampaign)    // Atualizar campanha (apenas DM)
+		r.Delete("/{id}", campaignHandler.DeleteCampaign) // Deletar campanha (apenas DM)
+
+		// ========================================
+		// GERENCIAMENTO DE CÓDIGOS DE CONVITE
+		// ========================================
+		r.Get("/{id}/invite-code", campaignHandler.GetInviteCode)
+		r.Post("/{id}/regenerate-code", campaignHandler.RegenerateInviteCode)
+
+		// ========================================
+		// GERENCIAMENTO DE JOGADORES
+		// ========================================
+		r.Post("/join", campaignHandler.JoinCampaign)
+		r.Delete("/{id}/leave", campaignHandler.LeaveCampaign)
+
+		// ========================================
+		// GERENCIAMENTO DE PERSONAGENS
+		// ========================================
+
+		r.Get("/{id}/available-characters", campaignHandler.GetAvailableCharacters)
+
+		r.Get("/{id}/characters", campaignHandler.GetCampaignCharacters)
+		r.Post("/{id}/characters", campaignHandler.AddCharacterToCampaign)
+		r.Put("/{id}/characters/{characterId}", campaignHandler.UpdateCampaignCharacter)
+		r.Delete("/{id}/characters/{characterId}", campaignHandler.DeleteCampaignCharacter)
 	})
 
 	return router
