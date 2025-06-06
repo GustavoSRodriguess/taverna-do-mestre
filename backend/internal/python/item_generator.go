@@ -9,6 +9,26 @@ import (
 )
 
 func (c *Client) GenerateTreasure(ctx context.Context, request models.TreasureRequest) (*models.Treasure, error) {
+	// Mapeamento correto para o formato esperado pelo Python
+	pythonRequest := map[string]interface{}{
+		"level":                 request.Level,
+		"coin_type":             request.CoinType,
+		"valuable_type":         request.ValuableType,
+		"item_type":             request.ItemType,
+		"more_random_coins":     request.MoreRandomCoins,
+		"trade":                 request.Trade,
+		"gems":                  request.Gems,
+		"art_objects":           request.ArtObjects,
+		"magic_items":           request.MagicItems,
+		"psionic_items":         request.PsionicItems,
+		"chaositech_items":      request.ChaositechItems,
+		"magic_item_categories": request.MagicItemCategories,
+		"ranks":                 request.Ranks,
+		"max_value":             request.MaxValue,
+		"combine_hoards":        request.CombineHoards,
+		"quantity":              request.Quantity,
+	}
+
 	var response struct {
 		Level      int     `json:"level"`
 		TotalValue float64 `json:"total_value"`
@@ -30,7 +50,7 @@ func (c *Client) GenerateTreasure(ctx context.Context, request models.TreasureRe
 		} `json:"hoards"`
 	}
 
-	if err := c.makeRequest(ctx, http.MethodPost, "/generate-loot", request, &response); err != nil {
+	if err := c.makeRequest(ctx, http.MethodPost, "/generate-loot", pythonRequest, &response); err != nil {
 		return nil, fmt.Errorf("error generating treasure: %w", err)
 	}
 
@@ -45,33 +65,36 @@ func (c *Client) GenerateTreasure(ctx context.Context, request models.TreasureRe
 		hoard := models.Hoard{
 			Value:     responseHoard.Value,
 			Coins:     models.JSONB{},
-			Valuables: make([]models.Item, len(responseHoard.Valuables)),
-			Items:     make([]models.Item, len(responseHoard.Items)),
+			Valuables: make([]models.Item, 0),
+			Items:     make([]models.Item, 0),
 		}
 
+		// Adicionar coins
 		for coinType, amount := range responseHoard.Coins {
 			hoard.Coins[coinType] = amount
 		}
 
-		for j, valuable := range responseHoard.Valuables {
-			hoard.Valuables[j] = models.Item{
+		// Adicionar valuables (gems e art objects)
+		for _, valuable := range responseHoard.Valuables {
+			hoard.Valuables = append(hoard.Valuables, models.Item{
 				Name:  valuable.Name,
 				Type:  valuable.Type,
 				Value: valuable.Value,
 				Rank:  valuable.Rank,
-			}
+			})
 		}
 
-		for j, item := range responseHoard.Items {
-			hoard.Items[j] = models.Item{
+		// Adicionar magic items
+		for _, item := range responseHoard.Items {
+			hoard.Items = append(hoard.Items, models.Item{
 				Name:     item.Name,
 				Type:     item.Type,
 				Category: item.Category,
 				Rank:     item.Rank,
-				Value:    0, // Magic items might not have a direct GP value here, depends on Python service
-				// HoardID and ID will be set when saving to DB
-			}
+				Value:    0, // Magic items não têm valor direto em GP
+			})
 		}
+
 		treasure.Hoards[i] = hoard
 	}
 

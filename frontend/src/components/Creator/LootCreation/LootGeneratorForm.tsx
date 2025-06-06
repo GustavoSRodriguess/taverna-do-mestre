@@ -3,14 +3,22 @@ import { Button, SelectField, NumberField } from '../../../ui';
 
 interface LootGeneratorFormProps {
     onGenerateLoot: (lootData: {
-        nivel: string;
-        tipoMoedas: string;
-        itemCategories: string[];
-        quantidade: string;
+        level: string;
+        coin_type: string;
+        item_categories: string[];
+        quantity: number;
         gems: boolean;
-        artObjects: boolean;
-        magicItems: boolean;
+        art_objects: boolean;
+        magic_items: boolean;
         ranks: string[];
+        valuable_type: string;
+        item_type: string;
+        more_random_coins: boolean;
+        trade: string;
+        psionic_items: boolean;
+        chaositech_items: boolean;
+        max_value: number;
+        combine_hoards: boolean;
     }) => void;
 }
 
@@ -68,19 +76,39 @@ export const LootGeneratorForm: React.FC<LootGeneratorFormProps> = ({ onGenerate
         }
     };
 
-    const handleGenerateLoot = () => {
-        onGenerateLoot({
-            nivel: level,
-            tipoMoedas: coinType,
-            itemCategories: selectedCategories,
-            quantidade: quantity,
-            // Pass the state values to the callback
-            gems: includeGems,
-            artObjects: includeArtObjects,
-            magicItems: includeMagicItems,
-            ranks: itemRanks
-        });
-    };
+const handleGenerateLoot = () => {
+        console.log('Sending loot request:', {
+        level: level,
+        coin_type: coinType,
+        quantity: quantity,
+        gems: includeGems,
+        art_objects: includeArtObjects,  // Este campo estava faltando!
+        magic_items: includeMagicItems,   // Este campo estava faltando!
+        magic_item_categories: selectedCategories,  // Nome correto
+        ranks: itemRanks
+    });
+    onGenerateLoot({
+        // Mapeamento correto para o backend
+        level: level,
+        coin_type: coinType,
+        item_categories: selectedCategories,
+        quantity: parseInt(quantity),
+        gems: includeGems,
+        art_objects: includeArtObjects,
+        magic_items: includeMagicItems,
+        ranks: itemRanks,
+        
+        // Campos adicionais que podem ser necessários
+        valuable_type: "standard",
+        item_type: "standard", 
+        more_random_coins: false,
+        trade: "none",
+        psionic_items: false,
+        chaositech_items: false,
+        max_value: 0,
+        combine_hoards: false
+    });
+};
 
     return (
         <div className="text-left">

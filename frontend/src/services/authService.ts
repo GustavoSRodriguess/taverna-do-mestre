@@ -109,7 +109,7 @@ export const getCurrentUser = async (): Promise<User | null> => {
             };
         }
 
-        const response = await fetch(`${API_BASE_URL}/auth/me`, {
+        const response = await fetch(`${API_BASE_URL}/users/me`, {
             headers: {
                 'Authorization': `Bearer ${token}`,
             },

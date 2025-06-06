@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -91,8 +92,10 @@ func (h *ItemHandler) CreateTreasure(w http.ResponseWriter, r *http.Request) {
 func (h *ItemHandler) GenerateRandomTreasure(w http.ResponseWriter, r *http.Request) {
 	var request models.TreasureRequest
 
+	// Primeiro tenta decodificar o request
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
+		// Se houver erro na decodificação, usa valores padrão
 		request = models.TreasureRequest{
 			Level:               1,
 			CoinType:            "standard",
@@ -113,10 +116,29 @@ func (h *ItemHandler) GenerateRandomTreasure(w http.ResponseWriter, r *http.Requ
 		}
 	}
 
+	// Validações
 	if request.Level < 1 || request.Level > 20 {
 		http.Error(w, "Level must be between 1 and 20", http.StatusBadRequest)
 		return
 	}
+
+	if request.Quantity < 1 {
+		request.Quantity = 1
+	}
+
+	// Se não foram especificadas categorias e magic_items está true, usar todas
+	if request.MagicItems && len(request.MagicItemCategories) == 0 {
+		request.MagicItemCategories = []string{"armor", "weapons", "potions", "rings", "rods", "scrolls", "staves", "wands", "wondrous"}
+	}
+
+	// Se não foram especificados ranks, usar todos
+	if len(request.Ranks) == 0 {
+		request.Ranks = []string{"minor", "medium", "major"}
+	}
+
+	// Log para debug (remover em produção)
+	fmt.Printf("Generating treasure with: Level=%d, Gems=%t, ArtObjects=%t, MagicItems=%t, Categories=%v, Ranks=%v\n",
+		request.Level, request.Gems, request.ArtObjects, request.MagicItems, request.MagicItemCategories, request.Ranks)
 
 	treasure, err := h.Python.GenerateTreasure(r.Context(), request)
 	if err != nil {

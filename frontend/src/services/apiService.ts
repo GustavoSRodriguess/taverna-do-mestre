@@ -1,8 +1,8 @@
 // Serviço para chamadas de API ao backend
 
-import { mockCharacter } from "../mocks/characterMocks";
+//import { mockCharacter } from "../mocks/characterMocks";
 import { mockEncounter } from "../mocks/encounterMocks";
-import { mockNPC } from "../mocks/npcMocks";
+//import { mockNPC } from "../mocks/npcMocks";
 import { mockLoot } from "../mocks/lootMocks";
 
 // Tipos para os dados de formulário
@@ -32,14 +32,22 @@ type EncounterFormData = {
 };
 
 type LootFormData = {
-    nivel: string;
-    tipoMoedas: string;
-    itemCategories: string[];
-    quantidade: string;
+    level: string;
+    coin_type: string;
+    item_categories: string[];
+    quantity: number;
     gems: boolean;
-    artObjects: boolean;
-    magicItems: boolean;
+    art_objects: boolean;
+    magic_items: boolean;
     ranks: string[];
+    valuable_type: string;
+    item_type: string;
+    more_random_coins: boolean;
+    trade: string;
+    psionic_items: boolean;
+    chaositech_items: boolean;
+    max_value: number;
+    combine_hoards: boolean;
 };
 
 // Tipos para a ficha de NPC no frontend (NPCSheet.tsx)
@@ -227,17 +235,50 @@ export const generateEncounter = async (formData: EncounterFormData) => {
 // Gerar loot/tesouro
 export const generateLoot = async (formData: LootFormData) => {
     try {
+        // Monta o payload para geração de loot/tesouro, agrupando por categorias para melhor visibilidade
+        const {
+            level,
+            coin_type,
+            item_categories,
+            quantity,
+            gems,
+            art_objects,
+            magic_items,
+            ranks,
+            valuable_type,
+            item_type,
+            more_random_coins,
+            trade,
+            psionic_items,
+            chaositech_items,
+            max_value,
+            combine_hoards
+        } = formData;
+
         const data = {
-            level: parseInt(formData.nivel),
-            coin_type: formData.tipoMoedas,
-            magic_item_categories: formData.itemCategories,
-            quantity: parseInt(formData.quantidade),
-            gems: formData.gems,
-            art_objects: formData.artObjects,
-            magic_items: formData.magicItems,
-            ranks: formData.ranks,
-            valuable_type: "standard", item_type: "standard", more_random_coins: false,
-            trade: "none", psionic_items: false, chaositech_items: false, max_value: 0, combine_hoards: false
+            // Parâmetros principais
+            level: parseInt(level),
+            quantity,
+            max_value,
+
+            // Tipos e categorias
+            coin_type,
+            item_categories,
+            item_type,
+            ranks,
+            valuable_type,
+
+            // Opções de conteúdo
+            gems,
+            art_objects,
+            magic_items,
+            psionic_items,
+            chaositech_items,
+
+            // Outras opções
+            more_random_coins,
+            trade,
+            combine_hoards
         };
         console.log('Sending data to /treasures/generate:', data);
         const result = await fetchFromAPI('/treasures/generate', 'POST', data);

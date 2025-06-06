@@ -116,10 +116,24 @@ const IntegratedGenerator: React.FC = () => {
                 break;
             case 'loot':
                 handleGenerateLoot({
-                    nivel: Math.floor(Math.random() * 10) + 1,
-                    tipoMoedas: "standard",
-                    itemCategories: ["armor", "weapons", "potions", "rings", "wondrous"],
-                    quantidade: "1"
+                    level: Math.floor(Math.random() * 10) + 1,
+                    coin_type: "standard",
+                    item_categories: ["armor", "weapons", "potions", "rings", "rods", "scrolls", "staves", "wands", "wondrous"],
+                    quantity: 1,
+                    gems: Math.random() > 0.3, // 70% chance de incluir gemas
+                    art_objects: Math.random() > 0.4, // 60% chance de incluir objetos de arte
+                    magic_items: Math.random() > 0.2, // 80% chance de incluir itens mágicos
+                    ranks: ["minor", "medium", "major"],
+                    
+                    // Campos adicionais
+                    valuable_type: "standard",
+                    item_type: "standard",
+                    more_random_coins: false,
+                    trade: "none", 
+                    psionic_items: false,
+                    chaositech_items: false,
+                    max_value: 0,
+                    combine_hoards: false
                 });
                 break;
             default:

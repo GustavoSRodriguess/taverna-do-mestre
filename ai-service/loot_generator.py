@@ -576,6 +576,10 @@ def generate_gems_art(level, include_gems=True, include_art_objects=True):
     """Generate gems and art objects based on level"""
     valuables = []
     
+    # Early return if both are disabled
+    if not include_gems and not include_art_objects:
+        return valuables
+    
     # Determine quantity based on level
     quantity_gems = 0
     quantity_art = 0
@@ -594,66 +598,71 @@ def generate_gems_art(level, include_gems=True, include_art_objects=True):
     else:
         rank = "major"
     
-    # Generate gems
-    for _ in range(quantity_gems):
-        # Sometimes generate a higher rank gem
-        gem_rank = rank
-        if random.random() < 0.1:  # 10% chance
-            if rank == "minor":
-                gem_rank = "medium"
-            elif rank == "medium":
-                gem_rank = "major"
-        
-        # Select value category
-        value_category = random.choice(GEMS_BY_VALUE[gem_rank])
-        
-        # Generate gem
-        gem = {
-            "type": "gem",
-            "name": random.choice(value_category["examples"]),
-            "value": value_category["value"],
-            "rank": gem_rank
-        }
-        valuables.append(gem)
+    # Generate gems only if enabled
+    if include_gems:
+        for _ in range(quantity_gems):
+            # Sometimes generate a higher rank gem
+            gem_rank = rank
+            if random.random() < 0.1:  # 10% chance
+                if rank == "minor":
+                    gem_rank = "medium"
+                elif rank == "medium":
+                    gem_rank = "major"
+            
+            # Select value category
+            value_category = random.choice(GEMS_BY_VALUE[gem_rank])
+            
+            # Generate gem
+            gem = {
+                "type": "gem",
+                "name": random.choice(value_category["examples"]),
+                "value": value_category["value"],
+                "rank": gem_rank
+            }
+            valuables.append(gem)
     
-    # Generate art objects
-    for _ in range(quantity_art):
-        # Sometimes generate a higher rank art object
-        art_rank = rank
-        if random.random() < 0.1:  # 10% chance
-            if rank == "minor":
-                art_rank = "medium"
-            elif rank == "medium":
-                art_rank = "major"
-        
-        # Select value category
-        value_category = random.choice(ART_OBJECTS_BY_VALUE[art_rank])
-        
-        # Generate art object
-        art_object = {
-            "type": "art_object",
-            "name": random.choice(value_category["examples"]),
-            "value": value_category["value"],
-            "rank": art_rank
-        }
-        valuables.append(art_object)
+    # Generate art objects only if enabled
+    if include_art_objects:
+        for _ in range(quantity_art):
+            # Sometimes generate a higher rank art object
+            art_rank = rank
+            if random.random() < 0.1:  # 10% chance
+                if rank == "minor":
+                    art_rank = "medium"
+                elif rank == "medium":
+                    art_rank = "major"
+            
+            # Select value category
+            value_category = random.choice(ART_OBJECTS_BY_VALUE[art_rank])
+            
+            # Generate art object
+            art_object = {
+                "type": "art_object",
+                "name": random.choice(value_category["examples"]),
+                "value": value_category["value"],
+                "rank": art_rank
+            }
+            valuables.append(art_object)
     
     return valuables
 
 def generate_treasure(request):
     """Generate a complete treasure hoard based on request parameters"""
-    # Extract parameters
+    # Extract parameters with defaults
     level = request.get('level', 1)
     coin_type = request.get('coin_type', 'standard')
     valuable_type = request.get('valuable_type', 'standard')
     item_type = request.get('item_type', 'standard')
     more_random_coins = request.get('more_random_coins', False)
     trade_option = request.get('trade', 'none')
+    
+    # Checkbox parameters - these are the key ones!
     include_gems = request.get('gems', True)
     include_art = request.get('art_objects', True)
     include_magic_items = request.get('magic_items', True)
     include_psionic_items = request.get('psionic_items', False)
     include_chaositech_items = request.get('chaositech_items', False)
+    
     magic_item_categories = request.get('magic_item_categories', [])
     ranks = request.get('ranks', ['minor', 'medium', 'major'])
     max_value = request.get('max_value', 0)
@@ -670,6 +679,14 @@ def generate_treasure(request):
     except (ValueError, TypeError):
         level = 1
     
+    # Validate quantity
+    try:
+        quantity = int(quantity)
+        if quantity < 1:
+            quantity = 1
+    except (ValueError, TypeError):
+        quantity = 1
+    
     # Generate treasure components
     result = {
         "level": level,
@@ -685,34 +702,47 @@ def generate_treasure(request):
             "items": []
         }
         
-        # Generate coins
+        # Generate coins based on coin_type
         if coin_type != "none":
-            hoard["coins"] = generate_coins(level, more_random_coins)
+            if coin_type == "double":
+                hoard["coins"] = {k: v * 2 for k, v in generate_coins(level, more_random_coins).items()}
+            elif coin_type == "half":
+                hoard["coins"] = {k: v // 2 for k, v in generate_coins(level, more_random_coins).items()}
+            else:  # standard
+                hoard["coins"] = generate_coins(level, more_random_coins)
         
-        # Generate gems and art objects
+        # Generate gems and art objects based on checkboxes
         if valuable_type != "none":
-            hoard["valuables"] = generate_gems_art(level, include_gems, include_art)
+            valuables = generate_gems_art(level, include_gems, include_art)
+            hoard["valuables"] = valuables
         
-        # Generate magic items
+        # Generate magic items based on checkboxes
         if item_type != "none" and include_magic_items:
             # If no categories specified, use all
             if not magic_item_categories:
                 magic_item_categories = list(MAGIC_ITEMS_BY_TYPE.keys())
             
-            hoard["items"] = generate_magic_items(level, magic_item_categories, ranks)
+            magic_items = generate_magic_items(
+                level, 
+                magic_item_categories, 
+                ranks, 
+                include_psionic_items, 
+                include_chaositech_items
+            )
+            hoard["items"] = magic_items
         
         # Calculate hoard value
         hoard_value = 0
         
         # Coins value
-        for coin_type, amount in hoard["coins"].items():
-            if coin_type == "cp":
+        for coin_type_name, amount in hoard["coins"].items():
+            if coin_type_name == "cp":
                 hoard_value += amount / 100
-            elif coin_type == "sp":
+            elif coin_type_name == "sp":
                 hoard_value += amount / 10
-            elif coin_type == "gp":
+            elif coin_type_name == "gp":
                 hoard_value += amount
-            elif coin_type == "pp":
+            elif coin_type_name == "pp":
                 hoard_value += amount * 10
         
         # Valuables value
@@ -728,25 +758,26 @@ def generate_treasure(request):
                 for coin in hoard["coins"]:
                     hoard["coins"][coin] = hoard["coins"][coin] // 2
                 
-                # Add more valuables
-                extra_valuables = generate_gems_art(level, include_gems, include_art)
-                hoard["valuables"].extend(extra_valuables)
+                # Add more valuables if they're enabled
+                if include_gems or include_art:
+                    extra_valuables = generate_gems_art(level, include_gems, include_art)
+                    hoard["valuables"].extend(extra_valuables)
         
         # Apply max value filter if specified
         if max_value > 0 and hoard_value > max_value:
             # Reduce coins first
             excess = hoard_value - max_value
-            for coin_type in ["cp", "sp", "gp", "pp"]:
-                if coin_type in hoard["coins"] and excess > 0:
-                    coin_value = 0.01 if coin_type == "cp" else (0.1 if coin_type == "sp" else (1 if coin_type == "gp" else 10))
-                    max_reduction = hoard["coins"][coin_type] * coin_value
+            for coin_type_name in ["cp", "sp", "gp", "pp"]:
+                if coin_type_name in hoard["coins"] and excess > 0:
+                    coin_value = 0.01 if coin_type_name == "cp" else (0.1 if coin_type_name == "sp" else (1 if coin_type_name == "gp" else 10))
+                    max_reduction = hoard["coins"][coin_type_name] * coin_value
                     actual_reduction = min(excess, max_reduction)
                     
-                    hoard["coins"][coin_type] -= int(actual_reduction / coin_value)
+                    hoard["coins"][coin_type_name] -= int(actual_reduction / coin_value)
                     excess -= actual_reduction
                     
-                    if hoard["coins"][coin_type] <= 0:
-                        del hoard["coins"][coin_type]
+                    if hoard["coins"][coin_type_name] <= 0:
+                        del hoard["coins"][coin_type_name]
             
             # If still over max, remove valuables from least to most valuable
             if excess > 0 and hoard["valuables"]:
@@ -778,11 +809,11 @@ def generate_treasure(request):
         
         for hoard in result["hoards"]:
             # Combine coins
-            for coin_type, amount in hoard["coins"].items():
-                if coin_type in combined_hoard["coins"]:
-                    combined_hoard["coins"][coin_type] += amount
+            for coin_type_name, amount in hoard["coins"].items():
+                if coin_type_name in combined_hoard["coins"]:
+                    combined_hoard["coins"][coin_type_name] += amount
                 else:
-                    combined_hoard["coins"][coin_type] = amount
+                    combined_hoard["coins"][coin_type_name] = amount
             
             # Combine valuables and items
             combined_hoard["valuables"].extend(hoard["valuables"])
@@ -796,12 +827,15 @@ def generate_treasure(request):
 def handle_generate_items(request_data):
     """Handle API requests to generate items/treasure"""
     
+    # Log for debugging
+    print(f"Received treasure request: {request_data}")
+    
     # Set default request parameters if not provided
     if not request_data:
         request_data = {
             "level": 1,
             "coin_type": "standard",
-            "valuable_type": "standard",
+            "valuable_type": "standard", 
             "item_type": "standard",
             "more_random_coins": False,
             "trade": "none",
@@ -817,10 +851,33 @@ def handle_generate_items(request_data):
             "quantity": 1
         }
     
+    # Ensure required fields have defaults
+    request_data.setdefault("level", 1)
+    request_data.setdefault("coin_type", "standard")
+    request_data.setdefault("valuable_type", "standard")
+    request_data.setdefault("item_type", "standard")
+    request_data.setdefault("more_random_coins", False)
+    request_data.setdefault("trade", "none")
+    request_data.setdefault("gems", True)
+    request_data.setdefault("art_objects", True)
+    request_data.setdefault("magic_items", True)
+    request_data.setdefault("psionic_items", False)
+    request_data.setdefault("chaositech_items", False)
+    request_data.setdefault("ranks", ["minor", "medium", "major"])
+    request_data.setdefault("max_value", 0)
+    request_data.setdefault("combine_hoards", False)
+    request_data.setdefault("quantity", 1)
+    
     # Process the provided magic_item_categories
     if "magic_item_categories" in request_data and "*" in request_data["magic_item_categories"]:
         # If "*" is included, use all categories
         request_data["magic_item_categories"] = list(MAGIC_ITEMS_BY_TYPE.keys())
+    elif "magic_item_categories" not in request_data:
+        # If no categories specified, use all
+        request_data["magic_item_categories"] = list(MAGIC_ITEMS_BY_TYPE.keys())
+    
+    # Log final processed request
+    print(f"Processing treasure request with: level={request_data['level']}, gems={request_data['gems']}, art_objects={request_data['art_objects']}, magic_items={request_data['magic_items']}")
     
     return generate_treasure(request_data)
 
