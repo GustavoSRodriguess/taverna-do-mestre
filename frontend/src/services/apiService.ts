@@ -80,7 +80,7 @@ export type NPCSheetData = {
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 // Função auxiliar para fazer requisições
-const fetchFromAPI = async (endpoint: string, method: string = 'GET', data?: any) => {
+export const fetchFromAPI = async (endpoint: string, method: string = 'GET', data?: any) => {
     try {
         const headers: HeadersInit = {
             'Content-Type': 'application/json',
