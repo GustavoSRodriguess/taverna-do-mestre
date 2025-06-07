@@ -1,0 +1,1664 @@
+openapi: 3.0.3
+info:
+  title: RPG SaaS Backend API
+  description: |
+    API para plataforma SaaS de criação de campanhas de RPG
+    
+    Esta API oferece funcionalidades completas para:
+    - Autenticação e gerenciamento de usuários
+    - Criação e geração de NPCs e personagens
+    - Geração de encontros balanceados
+    - Sistema de tesouros e loot
+    - Gerenciamento completo de campanhas
+    
+    ## Autenticação
+    A maioria dos endpoints requer autenticação via JWT Bearer token.
+    
+    ## Códigos de Status
+    - 200: Sucesso
+    - 201: Criado com sucesso
+    - 400: Erro de validação
+    - 401: Não autenticado
+    - 403: Não autorizado
+    - 404: Não encontrado
+    - 500: Erro interno do servidor
+  version: 1.0.0
+  contact:
+    name: RPG SaaS API
+    email: contato@rpgsaas.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Servidor de desenvolvimento
+  - url: https://api.rpgsaas.com
+    description: Servidor de produção
+
+paths:
+  # Health Check
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Verificação de saúde da API
+      description: Endpoint para verificar se a API está funcionando
+      responses:
+        '200':
+          description: API funcionando corretamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+                  service:
+                    type: string
+                    example: "rpg-generator-go"
+
+  # Autenticação e Usuários
+  /api/users/register:
+    post:
+      tags:
+        - Autenticação
+      summary: Registrar novo usuário
+      description: Cria uma nova conta de usuário
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - email
+                - password
+              properties:
+                username:
+                  type: string
+                  example: "João Silva"
+                email:
+                  type: string
+                  format: email
+                  example: "joao@exemplo.com"
+                password:
+                  type: string
+                  minLength: 6
+                  example: "senhaSegura123"
+      responses:
+        '201':
+          description: Usuário criado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  token:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        '400':
+          description: Dados inválidos
+        '500':
+          description: Erro interno do servidor
+
+  /api/users/login:
+    post:
+      tags:
+        - Autenticação
+      summary: Fazer login
+      description: Autentica um usuário e retorna um token JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "joao@exemplo.com"
+                password:
+                  type: string
+                  example: "senhaSegura123"
+      responses:
+        '200':
+          description: Login realizado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  token:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        '401':
+          description: Credenciais inválidas
+
+  /api/users/me:
+    get:
+      tags:
+        - Usuários
+      summary: Obter usuário atual
+      description: Retorna os dados do usuário autenticado
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Dados do usuário
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Token inválido
+
+  /api/users:
+    get:
+      tags:
+        - Usuários
+      summary: Listar usuários
+      description: Lista todos os usuários (admin apenas)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de usuários
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+
+  /api/users/{id}:
+    get:
+      tags:
+        - Usuários
+      summary: Obter usuário por ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Dados do usuário
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    
+    put:
+      tags:
+        - Usuários
+      summary: Atualizar usuário
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: Usuário atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    
+    delete:
+      tags:
+        - Usuários
+      summary: Deletar usuário
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Usuário deletado
+
+  # NPCs
+  /api/npcs:
+    get:
+      tags:
+        - NPCs
+      summary: Listar NPCs
+      description: Lista NPCs com paginação
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Lista de NPCs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  npcs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NPC'
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+                  count:
+                    type: integer
+
+    post:
+      tags:
+        - NPCs
+      summary: Criar NPC
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NPCCreate'
+      responses:
+        '201':
+          description: NPC criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NPC'
+
+  /api/npcs/{id}:
+    get:
+      tags:
+        - NPCs
+      summary: Obter NPC por ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Dados do NPC
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NPC'
+
+    put:
+      tags:
+        - NPCs
+      summary: Atualizar NPC
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NPCUpdate'
+      responses:
+        '200':
+          description: NPC atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NPC'
+
+    delete:
+      tags:
+        - NPCs
+      summary: Deletar NPC
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: NPC deletado
+
+  /api/npcs/generate:
+    post:
+      tags:
+        - NPCs
+      summary: Gerar NPC automaticamente
+      description: Gera um NPC usando IA, com opções automáticas ou manuais
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NPCGenerateRequest'
+      responses:
+        '201':
+          description: NPC gerado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NPC'
+
+  # Encontros
+  /api/encounters:
+    get:
+      tags:
+        - Encontros
+      summary: Listar encontros
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Lista de encontros
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  encounters:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Encounter'
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+                  count:
+                    type: integer
+
+    post:
+      tags:
+        - Encontros
+      summary: Criar encontro
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EncounterCreate'
+      responses:
+        '201':
+          description: Encontro criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Encounter'
+
+  /api/encounters/{id}:
+    get:
+      tags:
+        - Encontros
+      summary: Obter encontro por ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Dados do encontro
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Encounter'
+
+  /api/encounters/generate:
+    post:
+      tags:
+        - Encontros
+      summary: Gerar encontro automaticamente
+      description: Gera um encontro balanceado baseado no nível e quantidade de jogadores
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EncounterGenerateRequest'
+      responses:
+        '201':
+          description: Encontro gerado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Encounter'
+
+  # Tesouros
+  /api/treasures:
+    get:
+      tags:
+        - Tesouros
+      summary: Listar tesouros
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Lista de tesouros
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  treasures:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Treasure'
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+                  count:
+                    type: integer
+
+    post:
+      tags:
+        - Tesouros
+      summary: Criar tesouro
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TreasureCreate'
+      responses:
+        '201':
+          description: Tesouro criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Treasure'
+
+  /api/treasures/{id}:
+    get:
+      tags:
+        - Tesouros
+      summary: Obter tesouro por ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Dados do tesouro
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Treasure'
+
+    delete:
+      tags:
+        - Tesouros
+      summary: Deletar tesouro
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Tesouro deletado
+
+  /api/treasures/generate:
+    post:
+      tags:
+        - Tesouros
+      summary: Gerar tesouro automaticamente
+      description: Gera tesouros com moedas, gemas, objetos de arte e itens mágicos
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TreasureGenerateRequest'
+      responses:
+        '201':
+          description: Tesouro gerado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Treasure'
+
+  # Campanhas
+  /api/campaigns:
+    get:
+      tags:
+        - Campanhas
+      summary: Listar campanhas do usuário
+      description: Lista campanhas onde o usuário é DM ou jogador
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Lista de campanhas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  campaigns:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CampaignSummary'
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+                  count:
+                    type: integer
+
+    post:
+      tags:
+        - Campanhas
+      summary: Criar nova campanha
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CampaignCreate'
+      responses:
+        '201':
+          description: Campanha criada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+
+  /api/campaigns/{id}:
+    get:
+      tags:
+        - Campanhas
+      summary: Obter campanha por ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Dados da campanha
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+
+    put:
+      tags:
+        - Campanhas
+      summary: Atualizar campanha
+      description: Apenas o DM pode atualizar a campanha
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CampaignUpdate'
+      responses:
+        '200':
+          description: Campanha atualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+
+    delete:
+      tags:
+        - Campanhas
+      summary: Deletar campanha
+      description: Apenas o DM pode deletar a campanha
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Campanha deletada
+
+  /api/campaigns/{id}/invite-code:
+    get:
+      tags:
+        - Campanhas
+      summary: Obter código de convite
+      description: Apenas o DM pode visualizar o código de convite
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Código de convite
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InviteCodeResponse'
+
+  /api/campaigns/{id}/regenerate-code:
+    post:
+      tags:
+        - Campanhas
+      summary: Regenerar código de convite
+      description: Apenas o DM pode regenerar o código de convite
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Novo código gerado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InviteCodeResponse'
+
+  /api/campaigns/join:
+    post:
+      tags:
+        - Campanhas
+      summary: Entrar em campanha
+      description: Usa código de convite para entrar em uma campanha
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JoinCampaignRequest'
+      responses:
+        '200':
+          description: Entrou na campanha com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Successfully joined campaign"
+
+  /api/campaigns/{id}/leave:
+    delete:
+      tags:
+        - Campanhas
+      summary: Sair da campanha
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Saiu da campanha
+
+  /api/campaigns/{id}/available-characters:
+    get:
+      tags:
+        - Campanhas
+      summary: Listar personagens disponíveis
+      description: Lista PCs do jogador que podem ser adicionados à campanha
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lista de personagens disponíveis
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  available_characters:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PC'
+                  count:
+                    type: integer
+
+  /api/campaigns/{id}/characters:
+    get:
+      tags:
+        - Campanhas
+      summary: Listar personagens da campanha
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lista de personagens na campanha
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  characters:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CampaignCharacter'
+                  count:
+                    type: integer
+
+    post:
+      tags:
+        - Campanhas
+      summary: Adicionar personagem à campanha
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddCharacterRequest'
+      responses:
+        '201':
+          description: Personagem adicionado à campanha
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CampaignCharacter'
+
+  /api/campaigns/{id}/characters/{characterId}:
+    put:
+      tags:
+        - Campanhas
+      summary: Atualizar status do personagem na campanha
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: characterId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCharacterStatusRequest'
+      responses:
+        '200':
+          description: Status do personagem atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CampaignCharacter'
+
+    delete:
+      tags:
+        - Campanhas
+      summary: Remover personagem da campanha
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: characterId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Personagem removido da campanha
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        username:
+          type: string
+          example: "João Silva"
+        email:
+          type: string
+          format: email
+          example: "joao@exemplo.com"
+        admin:
+          type: boolean
+          example: false
+        plan:
+          type: integer
+          example: 0
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    UserUpdate:
+      type: object
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        admin:
+          type: boolean
+
+    NPC:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "Eldrin, o Sábio"
+        description:
+          type: string
+          example: "Um mago idoso com conhecimento ancestral"
+        level:
+          type: integer
+          example: 5
+        race:
+          type: string
+          example: "Elfo"
+        class:
+          type: string
+          example: "Mago"
+        background:
+          type: string
+          example: "Eremita"
+        attributes:
+          type: object
+          example: {
+            "strength": 8,
+            "dexterity": 14,
+            "constitution": 12,
+            "intelligence": 18,
+            "wisdom": 16,
+            "charisma": 10
+          }
+        abilities:
+          type: object
+          example: {
+            "abilities": ["Conjuração", "Adivinhação"],
+            "spells": {
+              "level_0": ["Luz", "Mão Mágica"],
+              "level_1": ["Míssil Mágico", "Detectar Magia"]
+            }
+          }
+        equipment:
+          type: object
+          example: {
+            "items": ["Cajado", "Livro de Magias", "Componentes de Magia"]
+          }
+        hp:
+          type: integer
+          example: 28
+        ca:
+          type: integer
+          example: 12
+        created_at:
+          type: string
+          format: date-time
+
+    NPCCreate:
+      type: object
+      required:
+        - name
+        - level
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        level:
+          type: integer
+          minimum: 1
+          maximum: 20
+        race:
+          type: string
+        class:
+          type: string
+        background:
+          type: string
+        attributes:
+          type: object
+        abilities:
+          type: object
+        equipment:
+          type: object
+        hp:
+          type: integer
+        ca:
+          type: integer
+
+    NPCUpdate:
+      allOf:
+        - $ref: '#/components/schemas/NPCCreate'
+
+    NPCGenerateRequest:
+      type: object
+      required:
+        - level
+        - manual
+      properties:
+        level:
+          type: integer
+          minimum: 1
+          maximum: 20
+          example: 5
+        manual:
+          type: boolean
+          example: false
+          description: "Se true, usa parâmetros específicos. Se false, gera automaticamente"
+        attributes_method:
+          type: string
+          enum: ["rolagem", "array", "compra"]
+          example: "rolagem"
+          description: "Método de geração de atributos (apenas se manual=false)"
+        race:
+          type: string
+          example: "elf"
+          description: "Raça específica (apenas se manual=true)"
+        class:
+          type: string
+          example: "wizard"
+          description: "Classe específica (apenas se manual=true)"
+        background:
+          type: string
+          example: "sage"
+          description: "Antecedente específico (apenas se manual=true)"
+
+    PC:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        level:
+          type: integer
+        race:
+          type: string
+        class:
+          type: string
+        background:
+          type: string
+        attributes:
+          type: object
+        abilities:
+          type: object
+        equipment:
+          type: object
+        hp:
+          type: integer
+        ca:
+          type: integer
+        player_name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    Encounter:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        theme:
+          type: string
+          example: "Mortos-Vivos"
+        difficulty:
+          type: string
+          example: "d"
+        total_xp:
+          type: integer
+          example: 1800
+        player_level:
+          type: integer
+          example: 5
+        player_count:
+          type: integer
+          example: 4
+        created_at:
+          type: string
+          format: date-time
+        monsters:
+          type: array
+          items:
+            $ref: '#/components/schemas/Monster'
+
+    Monster:
+      type: object
+      properties:
+        id:
+          type: integer
+        encounter_id:
+          type: integer
+        name:
+          type: string
+          example: "Esqueleto"
+        xp:
+          type: integer
+          example: 50
+        cr:
+          type: number
+          format: float
+          example: 0.25
+        created_at:
+          type: string
+          format: date-time
+
+    EncounterCreate:
+      type: object
+      required:
+        - theme
+        - difficulty
+        - player_level
+        - player_count
+      properties:
+        theme:
+          type: string
+        difficulty:
+          type: string
+        total_xp:
+          type: integer
+        player_level:
+          type: integer
+        player_count:
+          type: integer
+        monsters:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              xp:
+                type: integer
+              cr:
+                type: number
+
+    EncounterGenerateRequest:
+      type: object
+      required:
+        - player_level
+        - player_count
+        - difficulty
+      properties:
+        player_level:
+          type: integer
+          minimum: 1
+          maximum: 20
+          example: 5
+        player_count:
+          type: integer
+          minimum: 1
+          maximum: 10
+          example: 4
+        difficulty:
+          type: string
+          enum: ["e", "m", "d", "mo"]
+          example: "d"
+          description: "e=Easy, m=Medium, d=Hard, mo=Mortal"
+
+    Treasure:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        level:
+          type: integer
+          example: 5
+        name:
+          type: string
+          example: "Tesouro de Nível 5"
+        total_value:
+          type: integer
+          example: 2500
+        hoards:
+          type: array
+          items:
+            $ref: '#/components/schemas/Hoard'
+        created_at:
+          type: string
+          format: date-time
+
+    Hoard:
+      type: object
+      properties:
+        id:
+          type: integer
+        treasure_id:
+          type: integer
+        value:
+          type: number
+          format: float
+        coins:
+          type: object
+          example: {
+            "cp": 150,
+            "sp": 75,
+            "gp": 25,
+            "pp": 5
+          }
+        valuables:
+          type: array
+          items:
+            $ref: '#/components/schemas/Item'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Item'
+        created_at:
+          type: string
+          format: date-time
+
+    Item:
+      type: object
+      properties:
+        id:
+          type: integer
+        hoard_id:
+          type: integer
+        name:
+          type: string
+          example: "Anel de Proteção +1"
+        type:
+          type: string
+          example: "magic_item"
+        category:
+          type: string
+          example: "rings"
+        value:
+          type: number
+          format: float
+          example: 1000
+        rank:
+          type: string
+          example: "minor"
+        created_at:
+          type: string
+          format: date-time
+
+    TreasureCreate:
+      type: object
+      required:
+        - level
+        - name
+      properties:
+        level:
+          type: integer
+        name:
+          type: string
+        total_value:
+          type: integer
+        hoards:
+          type: array
+          items:
+            type: object
+            properties:
+              value:
+                type: number
+              coins:
+                type: object
+              valuables:
+                type: array
+                items:
+                  type: object
+              items:
+                type: array
+                items:
+                  type: object
+
+    TreasureGenerateRequest:
+      type: object
+      required:
+        - level
+      properties:
+        level:
+          type: integer
+          minimum: 1
+          maximum: 20
+          example: 5
+        coin_type:
+          type: string
+          enum: ["standard", "double", "half", "none"]
+          default: "standard"
+        valuable_type:
+          type: string
+          enum: ["standard", "double", "half", "none"]
+          default: "standard"
+        item_type:
+          type: string
+          enum: ["standard", "double", "half", "none"]
+          default: "standard"
+        more_random_coins:
+          type: boolean
+          default: false
+        trade:
+          type: string
+          enum: ["none", "coins_for_misc"]
+          default: "none"
+        gems:
+          type: boolean
+          default: true
+        art_objects:
+          type: boolean
+          default: true
+        magic_items:
+          type: boolean
+          default: true
+        psionic_items:
+          type: boolean
+          default: false
+        chaositech_items:
+          type: boolean
+          default: false
+        magic_item_categories:
+          type: array
+          items:
+            type: string
+          example: ["armor", "weapons", "potions", "rings"]
+        ranks:
+          type: array
+          items:
+            type: string
+            enum: ["minor", "medium", "major"]
+          default: ["minor", "medium", "major"]
+        max_value:
+          type: integer
+          default: 0
+        combine_hoards:
+          type: boolean
+          default: false
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 10
+          default: 1
+
+    Campaign:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "A Maldição de Strahd"
+        description:
+          type: string
+          example: "Uma campanha de horror gótico em Barovia"
+        dm_id:
+          type: integer
+          example: 1
+        max_players:
+          type: integer
+          example: 6
+        current_session:
+          type: integer
+          example: 5
+        status:
+          type: string
+          enum: ["planning", "active", "paused", "completed"]
+          example: "active"
+        invite_code:
+          type: string
+          example: "ABCD-1234"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        players:
+          type: array
+          items:
+            $ref: '#/components/schemas/CampaignPlayer'
+        characters:
+          type: array
+          items:
+            $ref: '#/components/schemas/CampaignCharacter'
+        player_count:
+          type: integer
+          example: 4
+
+    CampaignSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+        player_count:
+          type: integer
+        max_players:
+          type: integer
+        current_session:
+          type: integer
+        dm_name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    CampaignPlayer:
+      type: object
+      properties:
+        id:
+          type: integer
+        campaign_id:
+          type: integer
+        user_id:
+          type: integer
+        user:
+          $ref: '#/components/schemas/User'
+        joined_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: ["active", "inactive", "removed"]
+
+    CampaignCharacter:
+      type: object
+      properties:
+        id:
+          type: integer
+        campaign_id:
+          type: integer
+        player_id:
+          type: integer
+        player:
+          $ref: '#/components/schemas/User'
+        pc_id:
+          type: integer
+        pc:
+          $ref: '#/components/schemas/PC'
+        status:
+          type: string
+          enum: ["active", "inactive", "dead", "retired"]
+        joined_at:
+          type: string
+          format: date-time
+        current_hp:
+          type: integer
+          nullable: true
+        temp_ac:
+          type: integer
+          nullable: true
+        campaign_notes:
+          type: string
+
+    CampaignCreate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: "Nova Campanha"
+        description:
+          type: string
+          example: "Uma emocionante aventura de fantasia"
+        max_players:
+          type: integer
+          minimum: 1
+          maximum: 10
+          default: 6
+
+    CampaignUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        max_players:
+          type: integer
+        current_session:
+          type: integer
+        status:
+          type: string
+          enum: ["planning", "active", "paused", "completed"]
+
+    JoinCampaignRequest:
+      type: object
+      required:
+        - invite_code
+      properties:
+        invite_code:
+          type: string
+          example: "ABCD-1234"
+          description: "Código de convite da campanha (formato: XXXX-XXXX)"
+
+    InviteCodeResponse:
+      type: object
+      properties:
+        invite_code:
+          type: string
+          example: "ABCD-1234"
+        message:
+          type: string
+          example: "Share this code with players to invite them to your campaign"
+
+    AddCharacterRequest:
+      type: object
+      required:
+        - pc_id
+      properties:
+        pc_id:
+          type: integer
+          example: 1
+          description: "ID do personagem (PC) a ser adicionado à campanha"
+
+    UpdateCharacterStatusRequest:
+      type: object
+      properties:
+        current_hp:
+          type: integer
+          nullable: true
+          example: 25
+        temp_ac:
+          type: integer
+          nullable: true
+          example: 18
+        status:
+          type: string
+          enum: ["active", "inactive", "dead", "retired"]
+          example: "active"
+        campaign_notes:
+          type: string
+          example: "Personagem foi ferido na última sessão"
+
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Erro interno do servidor"
+        code:
+          type: integer
+          example: 500
+
+tags:
+  - name: Health
+    description: Verificação de saúde da API
+  - name: Autenticação
+    description: Endpoints de login e registro
+  - name: Usuários
+    description: Gerenciamento de usuários
+  - name: NPCs
+    description: Criação e gerenciamento de NPCs
+  - name: Encontros
+    description: Criação e gerenciamento de encontros
+  - name: Tesouros
+    description: Criação e gerenciamento de tesouros e loot
+  - name: Campanhas
+    description: Sistema completo de campanhas de RPG

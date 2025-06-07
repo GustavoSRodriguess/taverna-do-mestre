@@ -419,9 +419,13 @@ def generate_coins(level, more_random=False):
     """Generate coins based on level"""
     base_amount = level * 50  # Base amount of coins
     
+    # Adiciona uma variação natural mesmo sem more_random
     if more_random:
         # More variance if "more random" is selected
         base_amount = int(base_amount * random.uniform(0.5, 2.0))
+    else:
+        # Adiciona uma pequena variação natural (±20%)
+        base_amount = int(base_amount * random.uniform(0.8, 1.2))
     
     # Distribute among coin types
     distribution = {}
@@ -438,9 +442,20 @@ def generate_coins(level, more_random=False):
     coins = {}
     for coin_type, ratio in distribution.items():
         amount = int(base_amount * ratio)
+        
+        # Adiciona uma pequena variação por tipo de moeda
         if more_random:
-            # Add some randomness
             amount = int(amount * random.uniform(0.8, 1.2))
+        else:
+            # Pequena variação mesmo no modo normal
+            amount = int(amount * random.uniform(0.9, 1.1))
+        
+        # Adiciona uma chance de variação mais dramática ocasionalmente
+        if random.random() < 0.1:  # 10% de chance
+            if more_random:
+                amount = int(amount * random.uniform(0.5, 1.5))
+            else:
+                amount = int(amount * random.uniform(0.7, 1.3))
         
         if amount > 0:
             coins[coin_type] = amount
@@ -868,13 +883,21 @@ def handle_generate_items(request_data):
     request_data.setdefault("combine_hoards", False)
     request_data.setdefault("quantity", 1)
     
-    # Process the provided magic_item_categories
-    if "magic_item_categories" in request_data and "*" in request_data["magic_item_categories"]:
+    # Process the provided magic_item_categories - CORREÇÃO AQUI
+    magic_item_categories = request_data.get("magic_item_categories")
+    
+    # Se magic_items está desabilitado, não processar categorias de itens mágicos
+    if not request_data.get("magic_items", True):
+        request_data["magic_item_categories"] = []
+    elif magic_item_categories and isinstance(magic_item_categories, list) and "*" in magic_item_categories:
         # If "*" is included, use all categories
         request_data["magic_item_categories"] = list(MAGIC_ITEMS_BY_TYPE.keys())
-    elif "magic_item_categories" not in request_data:
-        # If no categories specified, use all
-        request_data["magic_item_categories"] = list(MAGIC_ITEMS_BY_TYPE.keys())
+    elif not magic_item_categories or magic_item_categories is None:
+        # If no categories specified and magic_items is True, use all
+        if request_data.get("magic_items", True):
+            request_data["magic_item_categories"] = list(MAGIC_ITEMS_BY_TYPE.keys())
+        else:
+            request_data["magic_item_categories"] = []
     
     # Log final processed request
     print(f"Processing treasure request with: level={request_data['level']}, gems={request_data['gems']}, art_objects={request_data['art_objects']}, magic_items={request_data['magic_items']}")

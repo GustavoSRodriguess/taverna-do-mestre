@@ -30,6 +30,7 @@ export const LootGeneratorForm: React.FC<LootGeneratorFormProps> = ({ onGenerate
     const [includeArtObjects, setIncludeArtObjects] = useState(true);
     const [includeMagicItems, setIncludeMagicItems] = useState(true);
     const [itemRanks, setItemRanks] = useState(["minor", "medium", "major"]);
+    const [moreRandomCoins, setMoreRandomCoins] = useState(false); // NOVO ESTADO
 
     const coinTypeOptions = [
         { value: 'standard', label: 'Padrão' },
@@ -76,39 +77,41 @@ export const LootGeneratorForm: React.FC<LootGeneratorFormProps> = ({ onGenerate
         }
     };
 
-const handleGenerateLoot = () => {
+    const handleGenerateLoot = () => {
         console.log('Sending loot request:', {
-        level: level,
-        coin_type: coinType,
-        quantity: quantity,
-        gems: includeGems,
-        art_objects: includeArtObjects,  // Este campo estava faltando!
-        magic_items: includeMagicItems,   // Este campo estava faltando!
-        magic_item_categories: selectedCategories,  // Nome correto
-        ranks: itemRanks
-    });
-    onGenerateLoot({
-        // Mapeamento correto para o backend
-        level: level,
-        coin_type: coinType,
-        item_categories: selectedCategories,
-        quantity: parseInt(quantity),
-        gems: includeGems,
-        art_objects: includeArtObjects,
-        magic_items: includeMagicItems,
-        ranks: itemRanks,
+            level: level,
+            coin_type: coinType,
+            quantity: quantity,
+            gems: includeGems,
+            art_objects: includeArtObjects,
+            magic_items: includeMagicItems,
+            magic_item_categories: includeMagicItems ? selectedCategories : [], // CORREÇÃO: só enviar categorias se magic_items for true
+            ranks: itemRanks,
+            more_random_coins: moreRandomCoins // CORREÇÃO: usar o estado real
+        });
         
-        // Campos adicionais que podem ser necessários
-        valuable_type: "standard",
-        item_type: "standard", 
-        more_random_coins: false,
-        trade: "none",
-        psionic_items: false,
-        chaositech_items: false,
-        max_value: 0,
-        combine_hoards: false
-    });
-};
+        onGenerateLoot({
+            // Mapeamento correto para o backend
+            level: level,
+            coin_type: coinType,
+            item_categories: includeMagicItems ? selectedCategories : [], // CORREÇÃO AQUI TAMBÉM
+            quantity: parseInt(quantity),
+            gems: includeGems,
+            art_objects: includeArtObjects,
+            magic_items: includeMagicItems,
+            ranks: itemRanks,
+            
+            // Campos adicionais que podem ser necessários
+            valuable_type: "standard",
+            item_type: "standard", 
+            more_random_coins: moreRandomCoins, // CORREÇÃO: usar o estado real
+            trade: "none",
+            psionic_items: false,
+            chaositech_items: false,
+            max_value: 0,
+            combine_hoards: false
+        });
+    };
 
     return (
         <div className="text-left">
@@ -127,6 +130,22 @@ const handleGenerateLoot = () => {
                     onChange={setCoinType}
                     options={coinTypeOptions}
                 />
+
+                {/* NOVA OPÇÃO PARA MOEDAS ALEATÓRIAS */}
+                <div className="mb-4">
+                    <div className="flex items-center">
+                        <input
+                            type="checkbox"
+                            id="moreRandomCoins"
+                            checked={moreRandomCoins}
+                            onChange={() => setMoreRandomCoins(!moreRandomCoins)}
+                            className="mr-2 text-purple-600 focus:ring-purple-500"
+                        />
+                        <label htmlFor="moreRandomCoins" className="text-white">
+                            Moedas Aleatórias (mais variação na quantidade)
+                        </label>
+                    </div>
+                </div>
 
                 <NumberField
                     label="Quantidade de Tesouros"

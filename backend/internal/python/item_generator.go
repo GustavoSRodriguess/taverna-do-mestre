@@ -11,22 +11,32 @@ import (
 func (c *Client) GenerateTreasure(ctx context.Context, request models.TreasureRequest) (*models.Treasure, error) {
 	// Mapeamento correto para o formato esperado pelo Python
 	pythonRequest := map[string]interface{}{
-		"level":                 request.Level,
-		"coin_type":             request.CoinType,
-		"valuable_type":         request.ValuableType,
-		"item_type":             request.ItemType,
-		"more_random_coins":     request.MoreRandomCoins,
-		"trade":                 request.Trade,
-		"gems":                  request.Gems,
-		"art_objects":           request.ArtObjects,
-		"magic_items":           request.MagicItems,
-		"psionic_items":         request.PsionicItems,
-		"chaositech_items":      request.ChaositechItems,
-		"magic_item_categories": request.MagicItemCategories,
-		"ranks":                 request.Ranks,
-		"max_value":             request.MaxValue,
-		"combine_hoards":        request.CombineHoards,
-		"quantity":              request.Quantity,
+		"level":             request.Level,
+		"coin_type":         request.CoinType,
+		"valuable_type":     request.ValuableType,
+		"item_type":         request.ItemType,
+		"more_random_coins": request.MoreRandomCoins,
+		"trade":             request.Trade,
+		"gems":              request.Gems,
+		"art_objects":       request.ArtObjects,
+		"magic_items":       request.MagicItems,
+		"psionic_items":     request.PsionicItems,
+		"chaositech_items":  request.ChaositechItems,
+		"ranks":             request.Ranks,
+		"max_value":         request.MaxValue,
+		"combine_hoards":    request.CombineHoards,
+		"quantity":          request.Quantity,
+	}
+
+	// CORREÇÃO: Só adicionar magic_item_categories se magic_items for true
+	if request.MagicItems && len(request.MagicItemCategories) > 0 {
+		pythonRequest["magic_item_categories"] = request.MagicItemCategories
+	} else if request.MagicItems {
+		// Se magic_items é true mas não há categorias especificadas, usar todas
+		pythonRequest["magic_item_categories"] = []string{"armor", "weapons", "potions", "rings", "rods", "scrolls", "staves", "wands", "wondrous"}
+	} else {
+		// Se magic_items é false, enviar lista vazia
+		pythonRequest["magic_item_categories"] = []string{}
 	}
 
 	var response struct {
