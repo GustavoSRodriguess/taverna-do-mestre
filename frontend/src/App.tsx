@@ -8,6 +8,7 @@ import ProtectedRoute from './components/Login/ProtectedRoute';
 import ComponentDoc from './components/ComponentDoc';
 import UserProfile from './components/Profile/UserProfile';
 import IntegratedGenerator from './components/Creator/IntegratedGenerator';
+import { CampaignDetails, CampaignsList } from './components/Campaign';
 
 const App: React.FC = () => {
   return (
@@ -21,6 +22,10 @@ const App: React.FC = () => {
             <Route path="/profile" element={<UserProfile />} />
             <Route path="/generator" element={<IntegratedGenerator />} />
             <Route path="/doc" element={<ComponentDoc />} />
+
+            {/* Rotas de Campanhas */}
+            <Route path="/campaigns" element={<CampaignsList />} />
+            <Route path="/campaigns/:id" element={<CampaignDetails />} />
           </Route>
 
           <Route path="*" element={

@@ -82,14 +82,16 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
 // Função auxiliar para fazer requisições
 export const fetchFromAPI = async (endpoint: string, method: string = 'GET', data?: any) => {
     try {
+        console.log(`Fetching from API: ${API_BASE_URL}${endpoint} with method ${method}`, data);
         const headers: HeadersInit = {
             'Content-Type': 'application/json',
         };
         const token = localStorage.getItem('authToken');
         if (token) {
+            console.log(`Using token for authorization: ${token}`);
             headers['Authorization'] = `Bearer ${token}`;
         }
-        const options: RequestInit = { method, headers, credentials: 'include' };
+        const options: RequestInit = { method, headers };
         if (data) {
             options.body = JSON.stringify(data);
         }

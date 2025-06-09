@@ -16,13 +16,13 @@ export const Page: React.FC<PageType> = ({ children, theme = 'cosmic' }) => {
 
         for (let i = 0; i < 100; i++) {
             const star = document.createElement('div');
-            const size = Math.random() * 0.2 + 0.1; 
+            const size = Math.random() * 0.2 + 0.1;
             const x = Math.random() * 100;
             const y = Math.random() * 100;
             const duration = Math.random() * 3 + 2;
             const delay = Math.random() * 2;
 
-            star.className = 'absolute rounded-full bg-white bg-opacity-80';
+            star.className = 'absolute rounded-full bg-white/80';
             star.style.width = `${size}rem`;
             star.style.height = `${size}rem`;
             star.style.left = `${x}%`;

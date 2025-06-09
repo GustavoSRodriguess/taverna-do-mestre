@@ -61,6 +61,8 @@ CREATE TABLE pcs (
     level INTEGER NOT NULL DEFAULT 1,
     race VARCHAR(100),
     class VARCHAR(100),
+    background VARCHAR(100),
+    alignment VARCHAR(50),
     attributes JSONB,
     abilities JSONB,
     equipment JSONB,

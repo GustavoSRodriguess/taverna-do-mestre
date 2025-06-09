@@ -82,14 +82,15 @@ type UpdateCharacterStatusRequest struct {
 }
 
 type CampaignSummary struct {
-	ID             int       `json:"id"`
-	Name           string    `json:"name"`
-	Description    string    `json:"description"`
-	Status         string    `json:"status"`
-	PlayerCount    int       `json:"player_count"`
-	MaxPlayers     int       `json:"max_players"`
-	CurrentSession int       `json:"current_session"`
-	DMName         string    `json:"dm_name"`
-	InviteCode     string    `json:"invite_code,omitempty"`
-	CreatedAt      time.Time `json:"created_at"`
+	ID             int       `json:"id" db:"id"`
+	Name           string    `json:"name" db:"name"`
+	Description    string    `json:"description" db:"description"`
+	Status         string    `json:"status" db:"status"`
+	PlayerCount    int       `json:"player_count" db:"player_count"`
+	MaxPlayers     int       `json:"max_players" db:"max_players"`
+	CurrentSession int       `json:"current_session" db:"current_session"`
+	DMName         string    `json:"dm_name" db:"dm_name"`
+	InviteCode     string    `json:"invite_code,omitempty" db:"invite_code"`
+	CreatedAt      time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at" db:"updated_at"`
 }

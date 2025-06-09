@@ -10,13 +10,13 @@ interface buttonTypes {
 
 export const Button: React.FC<buttonTypes> = ({ buttonLabel, onClick, classname, type = 'button', disabled = false }) => {
   return (
-      <button
-        className={`bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 ${classname}`}
-        onClick={onClick}
-        type={type}
-        disabled={disabled}
-      >
-        {buttonLabel}
-      </button>
+    <button
+      className={`bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 flex items-center justify-center ${classname}`}
+      onClick={onClick}
+      type={type}
+      disabled={disabled}
+    >
+      {buttonLabel}
+    </button>
   )
 }

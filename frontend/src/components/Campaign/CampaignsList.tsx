@@ -165,7 +165,7 @@ const CampaignsList: React.FC = () => {
                                         <Button
                                             buttonLabel="Ver Detalhes"
                                             onClick={() => navigate(`/campaigns/${campaign.id}`)}
-                                            classname="w-full text-sm py-2"
+                                            classname="w-full text-sm py-2 text-center"
                                         />
                                     </div>
                                 </CardBorder>

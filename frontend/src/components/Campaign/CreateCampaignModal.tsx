@@ -35,6 +35,7 @@ const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
         try {
             setLoading(true);
             setError(null);
+            console.log('Submitting campaign data:', formData);
 
             await campaignService.createCampaign(formData);
 

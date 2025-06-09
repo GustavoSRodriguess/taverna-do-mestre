@@ -13,7 +13,7 @@ func (p *PostgresDB) GetCampaigns(ctx context.Context, userID int, limit, offset
 	query := `
 		SELECT 
 			c.id, c.name, c.description, c.status, c.max_players, 
-			c.current_session, c.created_at,
+			c.current_session, c.invite_code, c.created_at, c.updated_at,
 			u.username as dm_name,
 			COUNT(cp.user_id) as player_count
 		FROM campaigns c
@@ -23,7 +23,8 @@ func (p *PostgresDB) GetCampaigns(ctx context.Context, userID int, limit, offset
 			SELECT campaign_id FROM campaign_players 
 			WHERE user_id = $1 AND status = 'active'
 		)
-		GROUP BY c.id, u.username
+		GROUP BY c.id, u.username, c.name, c.description, c.status, c.max_players, 
+		         c.current_session, c.invite_code, c.created_at, c.updated_at
 		ORDER BY c.updated_at DESC
 		LIMIT $2 OFFSET $3
 	`

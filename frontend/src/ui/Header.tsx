@@ -47,6 +47,24 @@ const Header: React.FC<HeaderProps> = ({ logo, menuItems }) => {
                                 {item.label}
                             </Link>
                         ))}
+
+                        {/* Links específicos para usuários autenticados */}
+                        {isAuthenticated && (
+                            <>
+                                <Link
+                                    to="/campaigns"
+                                    className="text-white hover:text-indigo-300 transition-colors"
+                                >
+                                    Campanhas
+                                </Link>
+                                <Link
+                                    to="/generator"
+                                    className="text-white hover:text-indigo-300 transition-colors"
+                                >
+                                    Gerador
+                                </Link>
+                            </>
+                        )}
                     </nav>
 
                     {/* User actions */}
@@ -57,15 +75,15 @@ const Header: React.FC<HeaderProps> = ({ logo, menuItems }) => {
                                     onClick={() => setUserMenuOpen(!userMenuOpen)}
                                     className="flex items-center space-x-2 text-white hover:text-indigo-300"
                                 >
-                                    <span className="hidden sm:inline">{user?.name?.split(' ')[0]}</span>
+                                    <span className="hidden sm:inline">{user?.username?.split(' ')[0]}</span>
                                     <div className="h-8 w-8 rounded-full bg-indigo-600 flex items-center justify-center">
-                                        {user?.name?.[0] || 'U'}
+                                        {user?.username?.[0]?.toUpperCase() || 'U'}
                                     </div>
                                 </button>
 
                                 {/* User dropdown menu */}
                                 {userMenuOpen && (
-                                    <div className="absolute right-0 mt-55 w-48 py-2 bg-indigo-800 rounded-md shadow-xl z-10">
+                                    <div className="absolute right-0 mt-2 w-48 py-2 bg-indigo-800 rounded-md shadow-xl z-10 top-full">
                                         <Link
                                             to="/profile"
                                             className="block px-4 py-2 text-sm text-indigo-100 hover:bg-indigo-700"
@@ -74,18 +92,18 @@ const Header: React.FC<HeaderProps> = ({ logo, menuItems }) => {
                                             Meu Perfil
                                         </Link>
                                         <Link
-                                            to="/generator"
+                                            to="/campaigns"
                                             className="block px-4 py-2 text-sm text-indigo-100 hover:bg-indigo-700"
                                             onClick={() => setUserMenuOpen(false)}
                                         >
-                                            Criar Personagem
+                                            Minhas Campanhas
                                         </Link>
                                         <Link
                                             to="/generator"
                                             className="block px-4 py-2 text-sm text-indigo-100 hover:bg-indigo-700"
                                             onClick={() => setUserMenuOpen(false)}
                                         >
-                                            Gerar NPC
+                                            Criar Personagem
                                         </Link>
                                         <div className="border-t border-indigo-700 my-1"></div>
                                         <button
@@ -155,6 +173,20 @@ const Header: React.FC<HeaderProps> = ({ logo, menuItems }) => {
 
                             {isAuthenticated && (
                                 <>
+                                    <Link
+                                        to="/campaigns"
+                                        className="text-white hover:text-indigo-300"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                    >
+                                        Campanhas
+                                    </Link>
+                                    <Link
+                                        to="/generator"
+                                        className="text-white hover:text-indigo-300"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                    >
+                                        Gerador
+                                    </Link>
                                     <div className="border-t border-indigo-800 pt-4"></div>
                                     <Link
                                         to="/profile"
