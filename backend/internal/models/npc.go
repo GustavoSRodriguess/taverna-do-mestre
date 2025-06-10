@@ -20,22 +20,22 @@ type NPC struct {
 	CreatedAt   time.Time `json:"created_at" db:"created_at"`
 }
 
-type PC struct {
-	ID          int       `json:"id" db:"id"`
-	Name        string    `json:"name" db:"name"`
-	Description string    `json:"description" db:"description"`
-	Level       int       `json:"level" db:"level"`
-	Race        string    `json:"race" db:"race"`
-	Class       string    `json:"class" db:"class"`
-	Background  string    `json:"background" db:"background"`
-	Attributes  JSONB     `json:"attributes" db:"attributes"`
-	Abilities   JSONB     `json:"abilities" db:"abilities"`
-	Equipment   JSONB     `json:"equipment" db:"equipment"`
-	HP          int       `json:"hp" db:"hp"`
-	CA          int       `json:"ca" db:"ca"`
-	PlayerName  string    `json:"player_name" db:"player_name"`
-	CreatedAt   time.Time `json:"created_at" db:"created_at"`
-}
+// type PC struct {
+// 	ID          int       `json:"id" db:"id"`
+// 	Name        string    `json:"name" db:"name"`
+// 	Description string    `json:"description" db:"description"`
+// 	Level       int       `json:"level" db:"level"`
+// 	Race        string    `json:"race" db:"race"`
+// 	Class       string    `json:"class" db:"class"`
+// 	Background  string    `json:"background" db:"background"`
+// 	Attributes  JSONB     `json:"attributes" db:"attributes"`
+// 	Abilities   JSONB     `json:"abilities" db:"abilities"`
+// 	Equipment   JSONB     `json:"equipment" db:"equipment"`
+// 	HP          int       `json:"hp" db:"hp"`
+// 	CA          int       `json:"ca" db:"ca"`
+// 	PlayerName  string    `json:"player_name" db:"player_name"`
+// 	CreatedAt   time.Time `json:"created_at" db:"created_at"`
+// }
 
 type Race struct {
 	ID          int       `json:"id" db:"id"`

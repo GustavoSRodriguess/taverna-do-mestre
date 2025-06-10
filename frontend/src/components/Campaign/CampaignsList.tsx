@@ -1,7 +1,6 @@
-// frontend/src/components/Campaigns/CampaignsList.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Page, Section, Button, CardBorder, Badge, Modal, Alert } from '../../ui';
+import { Page, Section, Button, CardBorder, Badge, Alert } from '../../ui';
 import { campaignService, Campaign } from '../../services/campaignService';
 import CreateCampaignModal from './CreateCampaignModal';
 import JoinCampaignModal from './JoinCampaignModal';

@@ -1,4 +1,3 @@
-// frontend/src/components/Campaigns/JoinCampaignModal.tsx
 import React, { useState } from 'react';
 import { Modal, ModalConfirmFooter, Alert } from '../../ui';
 import { campaignService } from '../../services/campaignService';

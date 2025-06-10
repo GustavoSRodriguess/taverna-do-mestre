@@ -47,6 +47,10 @@ func (p *PostgresDB) Close() error {
 	return p.DB.Close()
 }
 
+// ========================================
+// NPC OPERATIONS
+// ========================================
+
 func (p *PostgresDB) GetNPCs(ctx context.Context, limit, offset int) ([]models.NPC, error) {
 	npcs := []models.NPC{}
 	query := `SELECT * FROM npcs ORDER BY id LIMIT $1 OFFSET $2`
@@ -74,15 +78,15 @@ func (p *PostgresDB) GetNPCByID(ctx context.Context, id int) (*models.NPC, error
 func (p *PostgresDB) CreateNPC(ctx context.Context, npc *models.NPC) error {
 	query := `
 		INSERT INTO npcs 
-		(name, description, level, race, class, attributes, abilities, equipment, hp, ca) 
+		(name, description, level, race, class, attributes, abilities, equipment, hp, ca, campaign_id) 
 		VALUES 
-		($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		RETURNING id, created_at
 	`
 
 	row := p.DB.QueryRowContext(ctx, query,
 		npc.Name, npc.Description, npc.Level, npc.Race, npc.Class,
-		npc.Attributes, npc.Abilities, npc.Equipment, npc.HP, npc.CA,
+		npc.Attributes, npc.Abilities, npc.Equipment, npc.HP, npc.CA, nil, // campaign_id pode ser nil
 	)
 
 	return row.Scan(&npc.ID, &npc.CreatedAt)
@@ -118,6 +122,10 @@ func (p *PostgresDB) DeleteNPC(ctx context.Context, id int) error {
 
 	return nil
 }
+
+// ========================================
+// ENCOUNTER OPERATIONS
+// ========================================
 
 func (p *PostgresDB) GetEncounters(ctx context.Context, limit, offset int) ([]models.Encounter, error) {
 	encounters := []models.Encounter{}
@@ -178,15 +186,15 @@ func (p *PostgresDB) CreateEncounter(ctx context.Context, encounter *models.Enco
 
 	query := `
 		INSERT INTO encounters 
-		(theme, difficulty, total_xp, player_level, player_count) 
+		(theme, difficulty, total_xp, player_level, player_count, campaign_id) 
 		VALUES 
-		($1, $2, $3, $4, $5)
+		($1, $2, $3, $4, $5, $6)
 		RETURNING id, created_at
 	`
 
 	row := tx.QueryRowContext(ctx, query,
 		encounter.Theme, encounter.Difficulty, encounter.TotalXP,
-		encounter.PlayerLevel, encounter.PlayerCount,
+		encounter.PlayerLevel, encounter.PlayerCount, nil, // campaign_id pode ser nil
 	)
 
 	err = row.Scan(&encounter.ID, &encounter.CreatedAt)
@@ -221,21 +229,19 @@ func (p *PostgresDB) createMonsterTx(ctx context.Context, tx *sqlx.Tx, monster *
 	return row.Scan(&monster.ID, &monster.CreatedAt)
 }
 
-func (p *PostgresDB) GetPCs(ctx context.Context, limit, offset int) ([]models.PC, error) {
-	pcs := []models.PC{}
-	query := `SELECT * FROM pcs ORDER BY id LIMIT $1 OFFSET $2`
+// ========================================
+// PC METHODS (LEGACY) - KEPT FOR CAMPAIGN INTEGRATION
+// ========================================
 
-	err := p.DB.SelectContext(ctx, &pcs, query, limit, offset)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch PCs: %w", err)
-	}
-
-	return pcs, nil
-}
-
+// GetPCByID - método mantido para compatibilidade com campanhas
 func (p *PostgresDB) GetPCByID(ctx context.Context, id int) (*models.PC, error) {
 	var pc models.PC
-	query := `SELECT * FROM pcs WHERE id = $1`
+	query := `
+		SELECT id, name, description, level, race, class, background, alignment,
+		       attributes, abilities, equipment, hp, ca, player_name, player_id, created_at
+		FROM pcs 
+		WHERE id = $1
+	`
 
 	err := p.DB.GetContext(ctx, &pc, query, id)
 	if err != nil {
@@ -243,52 +249,4 @@ func (p *PostgresDB) GetPCByID(ctx context.Context, id int) (*models.PC, error) 
 	}
 
 	return &pc, nil
-}
-
-func (p *PostgresDB) CreatePC(ctx context.Context, pc *models.PC) error {
-	query := `
-		INSERT INTO pcs 
-		(name, description, level, race, class, attributes, abilities, equipment, hp, ca, player_name) 
-		VALUES 
-		($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-		RETURNING id, created_at
-	`
-
-	row := p.DB.QueryRowContext(ctx, query,
-		pc.Name, pc.Description, pc.Level, pc.Race, pc.Class,
-		pc.Attributes, pc.Abilities, pc.Equipment, pc.HP, pc.CA, pc.PlayerName,
-	)
-
-	return row.Scan(&pc.ID, &pc.CreatedAt)
-}
-
-func (p *PostgresDB) UpdatePC(ctx context.Context, pc *models.PC) error {
-	query := `
-		UPDATE pcs SET
-		name = $1, description = $2, level = $3, race = $4, class = $5,
-		attributes = $6, abilities = $7, equipment = $8, hp = $9, ca = $10, player_name = $11
-		WHERE id = $12
-	`
-
-	_, err := p.DB.ExecContext(ctx, query,
-		pc.Name, pc.Description, pc.Level, pc.Race, pc.Class,
-		pc.Attributes, pc.Abilities, pc.Equipment, pc.HP, pc.CA, pc.PlayerName, pc.ID,
-	)
-
-	if err != nil {
-		return fmt.Errorf("failed to update PC with ID %d: %w", pc.ID, err)
-	}
-
-	return nil
-}
-
-func (p *PostgresDB) DeletePC(ctx context.Context, id int) error {
-	query := `DELETE FROM pcs WHERE id = $1`
-
-	_, err := p.DB.ExecContext(ctx, query, id)
-	if err != nil {
-		return fmt.Errorf("failed to delete PC with ID %d: %w", id, err)
-	}
-
-	return nil
 }

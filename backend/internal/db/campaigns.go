@@ -389,12 +389,13 @@ func (p *PostgresDB) GetCampaignCharacters(ctx context.Context, campaignID int) 
 func (p *PostgresDB) GetAvailablePCs(ctx context.Context, userID, campaignID int) ([]models.PC, error) {
 	var pcs []models.PC
 	query := `
-		SELECT pc.* 
+		SELECT pc.id, pc.name, pc.description, pc.level, pc.race, pc.class, pc.background, pc.alignment,
+		       pc.attributes, pc.abilities, pc.equipment, pc.hp, pc.ca, pc.player_name, pc.player_id, pc.created_at
 		FROM pcs pc
-		WHERE pc.id NOT IN (
+		WHERE pc.player_id = $1 AND pc.id NOT IN (
 			SELECT cc.pc_id 
 			FROM campaign_characters cc 
-			WHERE cc.campaign_id = $1 AND cc.status IN ('active', 'inactive')
+			WHERE cc.campaign_id = $2 AND cc.status IN ('active', 'inactive')
 		)
 		ORDER BY pc.name
 	`

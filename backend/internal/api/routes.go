@@ -60,7 +60,8 @@ func SetupRoutes(dbClient *db.PostgresDB, pythonClient *python.Client) *chi.Mux 
 	})
 
 	// Inicializa os handlers
-	nphandler := handlers.NewNPCHandler(dbClient, pythonClient)
+	npcHandler := handlers.NewNPCHandler(dbClient, pythonClient)
+	pcHandler := handlers.NewPCHandler(dbClient, pythonClient)
 	encounterHandler := handlers.NewEncounterHandler(dbClient, pythonClient)
 	itemHandler := handlers.NewItemHandler(dbClient, pythonClient)
 	userHandler := handlers.NewUserHandler(dbClient)
@@ -69,12 +70,32 @@ func SetupRoutes(dbClient *db.PostgresDB, pythonClient *python.Client) *chi.Mux 
 	// Rotas relacionadas a NPCs (protegidas)
 	router.Route("/api/npcs", func(r chi.Router) {
 		r.Use(customMiddleware.AuthMiddleware) // Aplicando middleware de autenticação
-		r.Get("/", nphandler.GetNPCs)
-		r.Post("/", nphandler.CreateNPC)
-		r.Get("/{id}", nphandler.GetNPCByID)
-		r.Put("/{id}", nphandler.UpdateNPC)
-		r.Delete("/{id}", nphandler.DeleteNPC)
-		r.Post("/generate", nphandler.GenerateRandomNPC)
+		r.Get("/", npcHandler.GetNPCs)
+		r.Post("/", npcHandler.CreateNPC)
+		r.Get("/{id}", npcHandler.GetNPCByID)
+		r.Put("/{id}", npcHandler.UpdateNPC)
+		r.Delete("/{id}", npcHandler.DeleteNPC)
+		r.Post("/generate", npcHandler.GenerateRandomNPC)
+	})
+
+	// ========================================
+	// ROTAS PARA PLAYER CHARACTERS (PCs)
+	// ========================================
+	router.Route("/api/pcs", func(r chi.Router) {
+		r.Use(customMiddleware.AuthMiddleware) // Aplicando middleware de autenticação
+
+		// CRUD básico de PCs
+		r.Get("/", pcHandler.GetPCs)          // Listar PCs do usuário
+		r.Post("/", pcHandler.CreatePC)       // Criar novo PC
+		r.Get("/{id}", pcHandler.GetPCByID)   // Obter PC específico
+		r.Put("/{id}", pcHandler.UpdatePC)    // Atualizar PC
+		r.Delete("/{id}", pcHandler.DeletePC) // Deletar PC
+
+		// Geração de PCs
+		r.Post("/generate", pcHandler.GenerateRandomPC) // Gerar PC via Python
+
+		// Relacionamento com campanhas
+		r.Get("/{id}/campaigns", pcHandler.GetPCCampaigns) // Listar campanhas do PC
 	})
 
 	// Rotas relacionadas a encontros (protegidas)

@@ -1,7 +1,6 @@
-// frontend/src/components/Campaigns/CampaignCharacters.tsx
 import React, { useState, useEffect } from 'react';
 import { Button, CardBorder, Badge, Modal, ModalConfirmFooter, Alert } from '../../ui';
-import { campaignService, CampaignCharacter, AddCharacterData, UpdateCharacterData } from '../../services/campaignService';
+import { campaignService, CampaignCharacter, UpdateCharacterData } from '../../services/campaignService';
 
 interface CampaignCharactersProps {
     campaignId: number;

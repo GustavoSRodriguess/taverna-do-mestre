@@ -1,4 +1,3 @@
-// frontend/src/components/Campaigns/CampaignSettings.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, CardBorder, Alert, Modal, ModalConfirmFooter } from '../../ui';

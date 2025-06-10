@@ -1,4 +1,3 @@
-// frontend/src/components/Campaigns/CampaignDetails.tsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Page, Section, Button, CardBorder, Badge, Alert, Tabs, Modal } from '../../ui';
