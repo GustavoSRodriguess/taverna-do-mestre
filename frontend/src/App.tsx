@@ -9,6 +9,9 @@ import ComponentDoc from './components/ComponentDoc';
 import UserProfile from './components/Profile/UserProfile';
 import IntegratedGenerator from './components/Creator/IntegratedGenerator';
 import { CampaignDetails, CampaignsList } from './components/Campaign';
+import PCList from './components/PC/PCList';
+import { PCEditor } from './components/PC';
+import PCCampaigns from './components/PC/PCCampagins';
 
 const App: React.FC = () => {
   return (
@@ -26,6 +29,12 @@ const App: React.FC = () => {
             {/* Rotas de Campanhas */}
             <Route path="/campaigns" element={<CampaignsList />} />
             <Route path="/campaigns/:id" element={<CampaignDetails />} />
+
+            {/* Rotas de Personagens */}
+            <Route path="/characters" element={<PCList />} />
+            <Route path="/pc-editor/:id" element={<PCEditor />} />
+            <Route path="/pc/:id/campaigns" element={<PCCampaigns />} />
+
           </Route>
 
           <Route path="*" element={

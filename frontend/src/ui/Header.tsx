@@ -63,6 +63,12 @@ const Header: React.FC<HeaderProps> = ({ logo, menuItems }) => {
                                 >
                                     Gerador
                                 </Link>
+                                <Link
+                                    to="/characters"
+                                    className="text-white hover:text-indigo-300 transition-colors"
+                                >
+                                    Meus Personagens
+                                </Link>
                             </>
                         )}
                     </nav>
