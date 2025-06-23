@@ -134,32 +134,58 @@ func SetupRoutes(dbClient *db.PostgresDB, pythonClient *python.Client) *chi.Mux 
 		r.Delete("/{id}/characters/{characterId}", campaignHandler.DeleteCampaignCharacter)
 	})
 
+	// ========================================
+	// ROTAS D&D EXPANDIDAS
+	// ========================================
 	router.Route("/api/dnd", func(r chi.Router) {
 		r.Use(customMiddleware.AuthMiddleware)
 
+		// Overview/Stats endpoint
+		r.Get("/", dndHandler.GetDnDStats)
+
+		// Races
 		r.Get("/races", dndHandler.GetRaces)
 		r.Get("/races/{index}", dndHandler.GetRaceByIndex)
 
+		// Subraces (novo!)
+		r.Get("/subraces", dndHandler.GetSubraces)
+
+		// Classes
 		r.Get("/classes", dndHandler.GetClasses)
 		r.Get("/classes/{index}", dndHandler.GetClassByIndex)
 
+		// Spells
 		r.Get("/spells", dndHandler.GetSpells)
 		r.Get("/spells/{index}", dndHandler.GetSpellByIndex)
 
+		// Equipment
 		r.Get("/equipment", dndHandler.GetEquipment)
 		r.Get("/equipment/{index}", dndHandler.GetEquipmentByIndex)
 
+		// Magic Items (novo!)
+		r.Get("/magic-items", dndHandler.GetMagicItems)
+
+		// Monsters
 		r.Get("/monsters", dndHandler.GetMonsters)
 		r.Get("/monsters/{index}", dndHandler.GetMonsterByIndex)
 
+		// Backgrounds
 		r.Get("/backgrounds", dndHandler.GetBackgrounds)
 		r.Get("/backgrounds/{index}", dndHandler.GetBackgroundByIndex)
 
+		// Skills
 		r.Get("/skills", dndHandler.GetSkills)
 		r.Get("/skills/{index}", dndHandler.GetSkillByIndex)
 
+		// Features
 		r.Get("/features", dndHandler.GetFeatures)
 		r.Get("/features/{index}", dndHandler.GetFeatureByIndex)
+
+		// Languages (novo!)
+		r.Get("/languages", dndHandler.GetLanguages)
+
+		// Conditions (novo!)
+		r.Get("/conditions", dndHandler.GetConditions)
 	})
 
 	return router

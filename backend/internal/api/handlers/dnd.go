@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"rpg-saas-backend/internal/db"
+	"rpg-saas-backend/internal/models"
 )
 
 type DnDHandler struct {
@@ -34,7 +35,7 @@ func (h *DnDHandler) GetRaces(w http.ResponseWriter, r *http.Request) {
 		offset = 0
 	}
 
-	var races interface{}
+	var races []models.DnDRace
 	var err error
 
 	if search != "" {
@@ -49,10 +50,11 @@ func (h *DnDHandler) GetRaces(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"results": races,
-		"limit":   limit,
-		"offset":  offset,
+	json.NewEncoder(w).Encode(models.DnDListResponse{
+		Results: races,
+		Limit:   limit,
+		Offset:  offset,
+		Count:   len(races),
 	})
 }
 
@@ -89,7 +91,7 @@ func (h *DnDHandler) GetClasses(w http.ResponseWriter, r *http.Request) {
 		offset = 0
 	}
 
-	var classes interface{}
+	var classes []models.DnDClass
 	var err error
 
 	if search != "" {
@@ -104,10 +106,11 @@ func (h *DnDHandler) GetClasses(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"results": classes,
-		"limit":   limit,
-		"offset":  offset,
+	json.NewEncoder(w).Encode(models.DnDListResponse{
+		Results: classes,
+		Limit:   limit,
+		Offset:  offset,
+		Count:   len(classes),
 	})
 }
 
@@ -154,7 +157,7 @@ func (h *DnDHandler) GetSpells(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	var spells interface{}
+	var spells []models.DnDSpell
 	var err error
 
 	if search != "" {
@@ -169,10 +172,11 @@ func (h *DnDHandler) GetSpells(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"results": spells,
-		"limit":   limit,
-		"offset":  offset,
+	json.NewEncoder(w).Encode(models.DnDListResponse{
+		Results: spells,
+		Limit:   limit,
+		Offset:  offset,
+		Count:   len(spells),
 	})
 }
 
@@ -210,7 +214,7 @@ func (h *DnDHandler) GetEquipment(w http.ResponseWriter, r *http.Request) {
 		offset = 0
 	}
 
-	var equipment interface{}
+	var equipment []models.DnDEquipment
 	var err error
 
 	if search != "" {
@@ -225,10 +229,11 @@ func (h *DnDHandler) GetEquipment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"results": equipment,
-		"limit":   limit,
-		"offset":  offset,
+	json.NewEncoder(w).Encode(models.DnDListResponse{
+		Results: equipment,
+		Limit:   limit,
+		Offset:  offset,
+		Count:   len(equipment),
 	})
 }
 
@@ -274,7 +279,7 @@ func (h *DnDHandler) GetMonsters(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	var monsters interface{}
+	var monsters []models.DnDMonster
 	var err error
 
 	if search != "" {
@@ -289,10 +294,11 @@ func (h *DnDHandler) GetMonsters(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"results": monsters,
-		"limit":   limit,
-		"offset":  offset,
+	json.NewEncoder(w).Encode(models.DnDListResponse{
+		Results: monsters,
+		Limit:   limit,
+		Offset:  offset,
+		Count:   len(monsters),
 	})
 }
 
@@ -329,7 +335,7 @@ func (h *DnDHandler) GetBackgrounds(w http.ResponseWriter, r *http.Request) {
 		offset = 0
 	}
 
-	var backgrounds interface{}
+	var backgrounds []models.DnDBackground
 	var err error
 
 	if search != "" {
@@ -344,10 +350,11 @@ func (h *DnDHandler) GetBackgrounds(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"results": backgrounds,
-		"limit":   limit,
-		"offset":  offset,
+	json.NewEncoder(w).Encode(models.DnDListResponse{
+		Results: backgrounds,
+		Limit:   limit,
+		Offset:  offset,
+		Count:   len(backgrounds),
 	})
 }
 
@@ -390,10 +397,11 @@ func (h *DnDHandler) GetSkills(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"results": skills,
-		"limit":   limit,
-		"offset":  offset,
+	json.NewEncoder(w).Encode(models.DnDListResponse{
+		Results: skills,
+		Limit:   limit,
+		Offset:  offset,
+		Count:   len(skills),
 	})
 }
 
@@ -445,10 +453,11 @@ func (h *DnDHandler) GetFeatures(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"results": features,
-		"limit":   limit,
-		"offset":  offset,
+	json.NewEncoder(w).Encode(models.DnDListResponse{
+		Results: features,
+		Limit:   limit,
+		Offset:  offset,
+		Count:   len(features),
 	})
 }
 
@@ -467,4 +476,151 @@ func (h *DnDHandler) GetFeatureByIndex(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(feature)
+}
+
+// ========================================
+// NOVAS ROTAS PARA ENTIDADES ADICIONAIS
+// ========================================
+
+// LANGUAGES HANDLERS
+func (h *DnDHandler) GetLanguages(w http.ResponseWriter, r *http.Request) {
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
+
+	if limit <= 0 {
+		limit = 50
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	languages, err := h.DB.GetDnDLanguages(r.Context(), limit, offset)
+	if err != nil {
+		http.Error(w, "Failed to fetch languages: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(models.DnDListResponse{
+		Results: languages,
+		Limit:   limit,
+		Offset:  offset,
+		Count:   len(languages),
+	})
+}
+
+// CONDITIONS HANDLERS
+func (h *DnDHandler) GetConditions(w http.ResponseWriter, r *http.Request) {
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
+
+	if limit <= 0 {
+		limit = 50
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	conditions, err := h.DB.GetDnDConditions(r.Context(), limit, offset)
+	if err != nil {
+		http.Error(w, "Failed to fetch conditions: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(models.DnDListResponse{
+		Results: conditions,
+		Limit:   limit,
+		Offset:  offset,
+		Count:   len(conditions),
+	})
+}
+
+// SUBRACES HANDLERS
+func (h *DnDHandler) GetSubraces(w http.ResponseWriter, r *http.Request) {
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
+
+	if limit <= 0 {
+		limit = 50
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	subraces, err := h.DB.GetDnDSubraces(r.Context(), limit, offset)
+	if err != nil {
+		http.Error(w, "Failed to fetch subraces: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(models.DnDListResponse{
+		Results: subraces,
+		Limit:   limit,
+		Offset:  offset,
+		Count:   len(subraces),
+	})
+}
+
+// MAGIC ITEMS HANDLERS
+func (h *DnDHandler) GetMagicItems(w http.ResponseWriter, r *http.Request) {
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
+	rarity := r.URL.Query().Get("rarity")
+
+	if limit <= 0 {
+		limit = 50
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	magicItems, err := h.DB.GetDnDMagicItems(r.Context(), limit, offset, rarity)
+	if err != nil {
+		http.Error(w, "Failed to fetch magic items: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(models.DnDListResponse{
+		Results: magicItems,
+		Limit:   limit,
+		Offset:  offset,
+		Count:   len(magicItems),
+	})
+}
+
+// ========================================
+// ENDPOINT DE ESTATÍSTICAS/OVERVIEW
+// ========================================
+
+func (h *DnDHandler) GetDnDStats(w http.ResponseWriter, r *http.Request) {
+	stats := map[string]any{
+		"message": "D&D 5e data is available",
+		"endpoints": map[string]string{
+			"races":       "/api/dnd/races",
+			"classes":     "/api/dnd/classes",
+			"spells":      "/api/dnd/spells",
+			"equipment":   "/api/dnd/equipment",
+			"monsters":    "/api/dnd/monsters",
+			"backgrounds": "/api/dnd/backgrounds",
+			"skills":      "/api/dnd/skills",
+			"features":    "/api/dnd/features",
+			"languages":   "/api/dnd/languages",
+			"conditions":  "/api/dnd/conditions",
+			"subraces":    "/api/dnd/subraces",
+			"magic_items": "/api/dnd/magic-items",
+		},
+		"filters": map[string]any{
+			"spells":      []string{"level", "school", "class"},
+			"monsters":    []string{"challenge_rating", "type"},
+			"equipment":   []string{"category"},
+			"features":    []string{"class", "level"},
+			"magic_items": []string{"rarity"},
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(stats)
 }
