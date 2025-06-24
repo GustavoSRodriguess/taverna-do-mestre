@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CharacterGeneratorForm, CharacterSheet } from './CharCreation';
+// import { CharacterGeneratorForm, CharacterSheet } from './CharCreation';
 import { NPCGeneratorForm, NPCSheet } from './NPCCreation';
 import { EncounterGeneratorForm, EncounterSheet } from './EncounterCreation';
 import { LootGeneratorForm, LootSheet } from './LootCreation';
@@ -8,12 +8,12 @@ import { Button, CardBorder, Page, Section } from '../../ui';
 import CreatorTabs from './CreatorTabs';
 
 const IntegratedGenerator: React.FC = () => {
-    const [activeTab, setActiveTab] = useState('character');
+    const [activeTab, setActiveTab] = useState('npc');
 
     // Character state
-    const [character, setCharacter] = useState<any>(null);
-    const [characterLoading, setCharacterLoading] = useState(false);
-    const [characterError, setCharacterError] = useState<string | null>(null);
+    // const [character, setCharacter] = useState<any>(null);
+    // const [characterLoading, setCharacterLoading] = useState(false);
+    // const [characterError, setCharacterError] = useState<string | null>(null);
 
     // NPC state
     const [npc, setNPC] = useState<any>(null);
@@ -30,20 +30,20 @@ const IntegratedGenerator: React.FC = () => {
     const [lootLoading, setLootLoading] = useState(false);
     const [lootError, setLootError] = useState<string | null>(null);
 
-    const handleGenerateCharacter = async (formData: any) => {
-        setCharacterLoading(true);
-        setCharacterError(null);
+    // const handleGenerateCharacter = async (formData: any) => {
+    //     setCharacterLoading(true);
+    //     setCharacterError(null);
 
-        try {
-            const characterData = await apiService.generateCharacter(formData);
-            setCharacter(characterData);
-        } catch (err) {
-            setCharacterError("Erro ao gerar personagem. Por favor, tente novamente.");
-            console.error(err);
-        } finally {
-            setCharacterLoading(false);
-        }
-    };
+    //     try {
+    //         const characterData = await apiService.generateCharacter(formData);
+    //         setCharacter(characterData);
+    //     } catch (err) {
+    //         setCharacterError("Erro ao gerar personagem. Por favor, tente novamente.");
+    //         console.error(err);
+    //     } finally {
+    //         setCharacterLoading(false);
+    //     }
+    // };
 
     const handleGenerateNPC = async (formData: any) => {
         setNPCLoading(true);
@@ -92,15 +92,15 @@ const IntegratedGenerator: React.FC = () => {
 
     const handleRandomGenerate = () => {
         switch (activeTab) {
-            case 'character':
-                handleGenerateCharacter({
-                    nivel: Math.floor(Math.random() * 10) + 1,
-                    raca: ["Humano", "Elfo", "Anão", "Halfling"][Math.floor(Math.random() * 4)],
-                    classe: ["Guerreiro", "Mago", "Ladino", "Clérigo"][Math.floor(Math.random() * 4)],
-                    antecedente: ["Nobre", "Eremita", "Soldado", "Criminoso"][Math.floor(Math.random() * 4)],
-                    metodoAtributos: "rolagem"
-                });
-                break;
+            // case 'character':
+            //     handleGenerateCharacter({
+            //         nivel: Math.floor(Math.random() * 10) + 1,
+            //         raca: ["Humano", "Elfo", "Anão", "Halfling"][Math.floor(Math.random() * 4)],
+            //         classe: ["Guerreiro", "Mago", "Ladino", "Clérigo"][Math.floor(Math.random() * 4)],
+            //         antecedente: ["Nobre", "Eremita", "Soldado", "Criminoso"][Math.floor(Math.random() * 4)],
+            //         metodoAtributos: "rolagem"
+            //     });
+            //     break;
             case 'npc':
                 handleGenerateNPC({
                     nivel: Math.floor(Math.random() * 10) + 1,
@@ -124,12 +124,12 @@ const IntegratedGenerator: React.FC = () => {
                     art_objects: Math.random() > 0.4, // 60% chance de incluir objetos de arte
                     magic_items: Math.random() > 0.2, // 80% chance de incluir itens mágicos
                     ranks: ["minor", "medium", "major"],
-                    
+
                     // Campos adicionais
                     valuable_type: "standard",
                     item_type: "standard",
                     more_random_coins: false,
-                    trade: "none", 
+                    trade: "none",
                     psionic_items: false,
                     chaositech_items: false,
                     max_value: 0,
@@ -143,8 +143,8 @@ const IntegratedGenerator: React.FC = () => {
 
     const renderTitle = () => {
         switch (activeTab) {
-            case 'character':
-                return "Criação de Personagem";
+            // case 'character':
+            //     return "Criação de Personagem";
             case 'npc':
                 return "Geração de NPC";
             case 'encounter':
@@ -158,28 +158,28 @@ const IntegratedGenerator: React.FC = () => {
 
     const renderForm = () => {
         switch (activeTab) {
-            case 'character':
-                return (
-                    <div>
-                        <div className="flex justify-between mb-4">
-                            <h1 className='bold text-xl'>Gerador de Personagem</h1>
-                            <Button buttonLabel="Aleatório" onClick={handleRandomGenerate} classname="bg-purple-600" />
-                        </div>
-                        <CharacterGeneratorForm onGenerateCharacter={handleGenerateCharacter} />
+            // case 'character':
+            //     return (
+            //         <div>
+            //             <div className="flex justify-between mb-4">
+            //                 <h1 className='bold text-xl'>Gerador de Personagem</h1>
+            //                 <Button buttonLabel="Aleatório" onClick={handleRandomGenerate} classname="bg-purple-600" />
+            //             </div>
+            //             <CharacterGeneratorForm onGenerateCharacter={handleGenerateCharacter} />
 
-                        {characterLoading && (
-                            <div className="mt-4 text-center text-indigo-300">
-                                <p>Gerando personagem...</p>
-                            </div>
-                        )}
+            //             {characterLoading && (
+            //                 <div className="mt-4 text-center text-indigo-300">
+            //                     <p>Gerando personagem...</p>
+            //                 </div>
+            //             )}
 
-                        {characterError && (
-                            <div className="mt-4 text-center text-red-400">
-                                <p>{characterError}</p>
-                            </div>
-                        )}
-                    </div>
-                );
+            //             {characterError && (
+            //                 <div className="mt-4 text-center text-red-400">
+            //                     <p>{characterError}</p>
+            //                 </div>
+            //             )}
+            //         </div>
+            //     );
             case 'npc':
                 return (
                     <div>
@@ -253,9 +253,9 @@ const IntegratedGenerator: React.FC = () => {
 
     const renderSheet = () => {
         switch (activeTab) {
-            case 'character':
-                console.log(character);
-                return <CharacterSheet character={character} />;
+            // case 'character':
+            //     console.log(character);
+            //     return <CharacterSheet character={character} />;
             case 'npc':
                 return <NPCSheet npc={npc} />;
             case 'encounter':

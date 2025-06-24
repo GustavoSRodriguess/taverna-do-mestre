@@ -60,6 +60,7 @@ export interface PC {
     ca: number;
     attacks: PCAttack[];
     spells: PCSpells;
+    abilities: { [key: string]: any };
     equipment: PCEquipmentItem[];
     proficiency_bonus: number;
     inspiration: boolean;
@@ -83,6 +84,7 @@ export interface CreatePCData {
     alignment?: string;
     attributes: PCAttributesType;
     skills?: { [key: string]: PCSkill };
+    abilities?: { [key: string]: any };
     hp: number;
     current_hp?: number;
     ca: number;
@@ -162,6 +164,7 @@ class PCService {
             ...pcData,
             skills: pcData.skills || {},
             attacks: pcData.attacks || [],
+            abilities: pcData.abilities || {}, // GARANTIR QUE ABILITIES EXISTE
             spells: pcData.spells || {
                 spell_slots: {},
                 known_spells: []
@@ -176,6 +179,8 @@ class PCService {
             features: pcData.features || []
         };
 
+        console.log('Enviando payload para criar PC:', payload); // DEBUG
+
         return fetchFromAPI('/pcs', 'POST', payload);
     }
 
@@ -185,7 +190,15 @@ class PCService {
             pcData.proficiency_bonus = this.calculateProficiencyBonus(pcData.level);
         }
 
-        return fetchFromAPI(`/pcs/${id}`, 'PUT', pcData);
+        // Garantir que abilities existe se estiver atualizando
+        const payload = {
+            ...pcData,
+            abilities: pcData.abilities || {} // GARANTIR QUE ABILITIES EXISTE
+        };
+
+        console.log('Enviando payload para atualizar PC:', payload); // DEBUG
+
+        return fetchFromAPI(`/pcs/${id}`, 'PUT', payload);
     }
 
     async deletePC(id: number): Promise<void> {
@@ -322,6 +335,7 @@ class PCService {
             class: className || '',
             level,
             attributes,
+            abilities: {}, // CAMPO ABILITIES ADICIONADO AQUI TAMBÉM
             hp: Math.max(hp, 1),
             ca: 10 + this.calculateModifier(attributes.dexterity),
             proficiency_bonus: this.calculateProficiencyBonus(level)

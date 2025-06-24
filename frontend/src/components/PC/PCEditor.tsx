@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Page, Section, Button, Tabs, Alert, Loading } from '../../ui';
-import { pcService, PC, CreatePCData, PCAttributesType } from '../../services/pcService';
+import { pcService, PCAttributesType } from '../../services/pcService';
 import { dndService } from '../../services/dndService';
 import PCBasicInfo from './PCBasicInfo';
 import PCAttributes from './PCAttributes';
@@ -29,6 +29,7 @@ export interface PCData {
         wisdom: number;
         charisma: number;
     };
+    abilities: { [key: string]: any }; // NOVO CAMPO ADICIONADO
     skills: { [key: string]: { proficient: boolean; expertise: boolean; bonus: number } };
     hp: number;
     current_hp?: number;
@@ -115,10 +116,8 @@ const PCEditor: React.FC = () => {
             setLoading(true);
             const pc = await pcService.getPC(parseInt(id!));
 
-            // Converter PC para PCData garantindo todos os campos obrigatórios
             const pcData: PCData = {
                 ...pc,
-                // Garantir que todos os campos obrigatórios existam com valores padrão
                 name: pc.name || '',
                 race: pc.race || '',
                 class: pc.class || '',
@@ -133,6 +132,7 @@ const PCEditor: React.FC = () => {
                     wisdom: 10,
                     charisma: 10
                 },
+                abilities: pc.abilities || {}, // GARANTIR QUE ABILITIES EXISTE
                 hp: pc.hp || 1,
                 current_hp: pc.current_hp ?? pc.hp ?? 1,
                 ca: pc.ca || 10,
@@ -173,6 +173,7 @@ const PCEditor: React.FC = () => {
             background: '',
             alignment: '',
             attributes: defaultPC.attributes,
+            abilities: {}, // NOVO CAMPO INICIALIZADO
             hp: defaultPC.hp,
             current_hp: defaultPC.hp,
             ca: defaultPC.ca,

@@ -1,8 +1,6 @@
 package models
 
 import (
-	"database/sql/driver"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -14,32 +12,32 @@ import (
 // ========================================
 
 // JSONBFlexible pode ser tanto array quanto object
-type JSONBFlexible json.RawMessage
+// type JSONBFlexible json.RawMessage
 
-func (j JSONBFlexible) Value() (driver.Value, error) {
-	if j == nil {
-		return nil, nil
-	}
-	return string(j), nil
-}
+// func (j JSONBFlexible) Value() (driver.Value, error) {
+// 	if j == nil {
+// 		return nil, nil
+// 	}
+// 	return string(j), nil
+// }
 
-func (j *JSONBFlexible) Scan(value interface{}) error {
-	if value == nil {
-		*j = nil
-		return nil
-	}
+// func (j *JSONBFlexible) Scan(value interface{}) error {
+// 	if value == nil {
+// 		*j = nil
+// 		return nil
+// 	}
 
-	switch v := value.(type) {
-	case []byte:
-		*j = JSONBFlexible(v)
-		return nil
-	case string:
-		*j = JSONBFlexible(v)
-		return nil
-	default:
-		return fmt.Errorf("cannot scan %T into JSONBFlexible", value)
-	}
-}
+// 	switch v := value.(type) {
+// 	case []byte:
+// 		*j = JSONBFlexible(v)
+// 		return nil
+// 	case string:
+// 		*j = JSONBFlexible(v)
+// 		return nil
+// 	default:
+// 		return fmt.Errorf("cannot scan %T into JSONBFlexible", value)
+// 	}
+// }
 
 // ========================================
 // STRUCTS BASEADAS NO SCHEMA SQL REAL

@@ -13,11 +13,12 @@ interface GeneratorTabsProps {
 
 export const CreatorTabs: React.FC<GeneratorTabsProps> = ({ activeTab, onTabChange }) => {
     const tabs: Tab[] = [
-        {
-            id: 'character',
-            label: 'Personagem',
-            icon: '👤'
-        },
+        // {
+        // por hora vou deixar sem, vai ser so na mao mesmo
+        //     id: 'character',
+        //     label: 'Personagem',
+        //     icon: '👤'
+        // },
         {
             id: 'npc',
             label: 'NPC',

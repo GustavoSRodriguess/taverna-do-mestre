@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"rpg-saas-backend/internal/models"
-
-	"github.com/lib/pq"
 )
 
 // GetPCsByPlayer retorna todos os PCs de um jogador específico
@@ -15,10 +13,7 @@ func (p *PostgresDB) GetPCsByPlayer(ctx context.Context, playerID int, limit, of
 	pcs := []models.PC{}
 	query := `
 		SELECT id, name, description, level, race, class, background, alignment, 
-		       attributes, abilities, equipment, hp, current_hp, ca, 
-		       proficiency_bonus, inspiration, skills, attacks, spells,
-		       personality_traits, ideals, bonds, flaws, features,
-		       player_name, player_id, created_at
+		       attributes, abilities, equipment, hp, ca, player_name, player_id, created_at
 		FROM pcs 
 		WHERE player_id = $1 
 		ORDER BY created_at DESC 
@@ -38,10 +33,7 @@ func (p *PostgresDB) GetPCByIDAndPlayer(ctx context.Context, id, playerID int) (
 	var pc models.PC
 	query := `
 		SELECT id, name, description, level, race, class, background, alignment,
-		       attributes, abilities, equipment, hp, current_hp, ca,
-		       proficiency_bonus, inspiration, skills, attacks, spells,
-		       personality_traits, ideals, bonds, flaws, features,
-		       player_name, player_id, created_at
+		       attributes, abilities, equipment, hp, ca, player_name, player_id, created_at
 		FROM pcs 
 		WHERE id = $1 AND player_id = $2
 	`
@@ -58,35 +50,18 @@ func (p *PostgresDB) GetPCByIDAndPlayer(ctx context.Context, id, playerID int) (
 func (p *PostgresDB) CreatePC(ctx context.Context, pc *models.PC) error {
 	query := `
 		INSERT INTO pcs 
-		(name, description, level, race, class, background, alignment, 
-		 attributes, abilities, equipment, hp, current_hp, ca,
-		 proficiency_bonus, inspiration, skills, attacks, spells,
-		 personality_traits, ideals, bonds, flaws, features,
-		 player_name, player_id, created_at) 
+		(name, description, level, race, class, background, alignment, attributes, abilities, equipment, hp, ca, player_name, player_id, created_at) 
 		VALUES 
-		($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 
-		 $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
+		($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 		RETURNING id
 	`
 
 	now := time.Now()
 	pc.CreatedAt = now
 
-	// Definir valores padrão se não fornecidos
-	if pc.ProficiencyBonus == 0 {
-		pc.ProficiencyBonus = pc.GetProficiencyBonus()
-	}
-
-	if pc.CurrentHP == nil {
-		pc.CurrentHP = &pc.HP
-	}
-
 	row := p.DB.QueryRowContext(ctx, query,
 		pc.Name, pc.Description, pc.Level, pc.Race, pc.Class, pc.Background, pc.Alignment,
-		pc.Attributes, pc.Abilities, pc.Equipment, pc.HP, pc.CurrentHP, pc.CA,
-		pc.ProficiencyBonus, pc.Inspiration, pc.Skills, pc.Attacks, pc.Spells,
-		pc.PersonalityTraits, pc.Ideals, pc.Bonds, pc.Flaws, pq.Array(pc.Features),
-		pc.PlayerName, pc.PlayerID, pc.CreatedAt,
+		pc.Attributes, pc.Abilities, pc.Equipment, pc.HP, pc.CA, pc.PlayerName, pc.PlayerID, pc.CreatedAt,
 	)
 
 	return row.Scan(&pc.ID)
@@ -96,26 +71,14 @@ func (p *PostgresDB) CreatePC(ctx context.Context, pc *models.PC) error {
 func (p *PostgresDB) UpdatePC(ctx context.Context, pc *models.PC) error {
 	query := `
 		UPDATE pcs SET
-		name = $1, description = $2, level = $3, race = $4, class = $5, 
-		background = $6, alignment = $7, attributes = $8, abilities = $9, 
-		equipment = $10, hp = $11, current_hp = $12, ca = $13,
-		proficiency_bonus = $14, inspiration = $15, skills = $16, 
-		attacks = $17, spells = $18, personality_traits = $19, 
-		ideals = $20, bonds = $21, flaws = $22, features = $23, player_name = $24
-		WHERE id = $25 AND player_id = $26
+		name = $1, description = $2, level = $3, race = $4, class = $5, background = $6, alignment = $7,
+		attributes = $8, abilities = $9, equipment = $10, hp = $11, ca = $12, player_name = $13
+		WHERE id = $14 AND player_id = $15
 	`
-
-	// Atualizar bônus de proficiência baseado no nível
-	if pc.ProficiencyBonus == 0 {
-		pc.ProficiencyBonus = pc.GetProficiencyBonus()
-	}
 
 	result, err := p.DB.ExecContext(ctx, query,
 		pc.Name, pc.Description, pc.Level, pc.Race, pc.Class, pc.Background, pc.Alignment,
-		pc.Attributes, pc.Abilities, pc.Equipment, pc.HP, pc.CurrentHP, pc.CA,
-		pc.ProficiencyBonus, pc.Inspiration, pc.Skills, pc.Attacks, pc.Spells,
-		pc.PersonalityTraits, pc.Ideals, pc.Bonds, pc.Flaws, pq.Array(pc.Features),
-		pc.PlayerName, pc.ID, pc.PlayerID,
+		pc.Attributes, pc.Abilities, pc.Equipment, pc.HP, pc.CA, pc.PlayerName, pc.ID, pc.PlayerID,
 	)
 
 	if err != nil {
@@ -218,25 +181,4 @@ func (p *PostgresDB) GetPCCampaigns(ctx context.Context, pcID, playerID int) ([]
 	}
 
 	return campaigns, nil
-}
-
-// GetPCByID - método mantido para compatibilidade com campanhas
-func (p *PostgresDB) GetPCByID(ctx context.Context, id int) (*models.PC, error) {
-	var pc models.PC
-	query := `
-		SELECT id, name, description, level, race, class, background, alignment,
-		       attributes, abilities, equipment, hp, current_hp, ca,
-		       proficiency_bonus, inspiration, skills, attacks, spells,
-		       personality_traits, ideals, bonds, flaws, features,
-		       player_name, player_id, created_at
-		FROM pcs 
-		WHERE id = $1
-	`
-
-	err := p.DB.GetContext(ctx, &pc, query, id)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch PC with ID %d: %w", id, err)
-	}
-
-	return &pc, nil
 }

@@ -1,31 +1,8 @@
 package models
 
 import (
-	"database/sql/driver"
-	"encoding/json"
-	"errors"
-	"fmt"
 	"time"
 )
-
-type JSONB map[string]interface{}
-
-func (j JSONB) Value() (driver.Value, error) {
-	valueString, err := json.Marshal(j)
-	return string(valueString), err
-}
-
-func (j *JSONB) Scan(value interface{}) error {
-	bytes, ok := value.([]byte)
-	if !ok {
-		return errors.New(fmt.Sprint("Failed to unmarshal JSONB value:", value))
-	}
-
-	result := JSONB{}
-	err := json.Unmarshal(bytes, &result)
-	*j = result
-	return err
-}
 
 type Treasure struct {
 	ID         int       `json:"id" db:"id"`

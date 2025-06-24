@@ -75,7 +75,7 @@ func SetupRoutes(dbClient *db.PostgresDB, pythonClient *python.Client) *chi.Mux 
 		r.Put("/{id}", pcHandler.UpdatePC)
 		r.Delete("/{id}", pcHandler.DeletePC)
 
-		r.Post("/generate", pcHandler.GenerateRandomPC)
+		// r.Post("/generate", pcHandler.GenerateRandomPC)
 
 		r.Get("/{id}/campaigns", pcHandler.GetPCCampaigns)
 	})

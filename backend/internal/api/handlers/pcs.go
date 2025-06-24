@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -83,7 +84,6 @@ func (h *PCHandler) GetPCByID(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(pc)
 }
 
-// CreatePC cria um novo PC para o usuário logado
 func (h *PCHandler) CreatePC(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(middleware.UserIDKey).(int)
 	if !ok {
@@ -93,9 +93,13 @@ func (h *PCHandler) CreatePC(w http.ResponseWriter, r *http.Request) {
 
 	var pc models.PC
 	if err := json.NewDecoder(r.Body).Decode(&pc); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		fmt.Printf("Erro ao decodificar JSON: %v", err)
+		http.Error(w, "Invalid request body: "+err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	// fmt do JSON recebido para debug
+	fmt.Printf("JSON recebido para criação: %+v", pc)
 
 	// Validações básicas
 	if pc.Name == "" {
@@ -118,23 +122,58 @@ func (h *PCHandler) CreatePC(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Definir valores padrão
+	// Definir valores padrão se não fornecidos
 	if pc.HP <= 0 {
-		pc.HP = 10 + pc.Level*5 // Valor padrão baseado no nível
+		pc.HP = 10 + pc.Level*5
 	}
 
 	if pc.CA <= 0 {
-		pc.CA = 10 // AC base
+		pc.CA = 10
 	}
 
-	// Associar ao usuário logado
+	// Garantir que campos JSONBFlexible existam com valores padrão válidos
+	if pc.Abilities == nil || len(pc.Abilities) == 0 {
+		pc.Abilities = models.JSONBFlexible(`{}`)
+	}
+
+	if pc.Attributes == nil || len(pc.Attributes) == 0 {
+		pc.Attributes = models.JSONBFlexible(`{
+			"strength": 10,
+			"dexterity": 10,
+			"constitution": 10,
+			"intelligence": 10,
+			"wisdom": 10,
+			"charisma": 10
+		}`)
+	}
+
+	if pc.Skills == nil || len(pc.Skills) == 0 {
+		pc.Skills = models.JSONBFlexible(`{}`)
+	}
+
+	if pc.Attacks == nil || len(pc.Attacks) == 0 {
+		pc.Attacks = models.JSONBFlexible(`[]`)
+	}
+
+	if pc.Spells == nil || len(pc.Spells) == 0 {
+		pc.Spells = models.JSONBFlexible(`{"spell_slots": {}, "known_spells": []}`)
+	}
+
+	if pc.Equipment == nil || len(pc.Equipment) == 0 {
+		pc.Equipment = models.JSONBFlexible(`[]`)
+	}
+
+	// Associar ao usuário fmtado
 	pc.PlayerID = userID
 
 	err := h.DB.CreatePC(r.Context(), &pc)
 	if err != nil {
+		fmt.Printf("Erro ao criar PC no banco: %v", err)
 		http.Error(w, "Failed to create PC: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	fmt.Printf("PC criado com sucesso: ID=%d", pc.ID)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -158,9 +197,13 @@ func (h *PCHandler) UpdatePC(w http.ResponseWriter, r *http.Request) {
 
 	var pc models.PC
 	if err := json.NewDecoder(r.Body).Decode(&pc); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		fmt.Printf("Erro ao decodificar JSON para update: %v", err)
+		http.Error(w, "Invalid request body: "+err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	// fmt do JSON recebido para debug
+	fmt.Printf("JSON recebido para atualização: %+v", pc)
 
 	// Validações básicas
 	if pc.Name == "" {
@@ -173,15 +216,39 @@ func (h *PCHandler) UpdatePC(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Garantir que campos JSONBFlexible existam com valores padrão válidos
+	if pc.Abilities == nil || len(pc.Abilities) == 0 {
+		pc.Abilities = models.JSONBFlexible(`{}`)
+	}
+
+	if pc.Skills == nil || len(pc.Skills) == 0 {
+		pc.Skills = models.JSONBFlexible(`{}`)
+	}
+
+	if pc.Attacks == nil || len(pc.Attacks) == 0 {
+		pc.Attacks = models.JSONBFlexible(`[]`)
+	}
+
+	if pc.Spells == nil || len(pc.Spells) == 0 {
+		pc.Spells = models.JSONBFlexible(`{"spell_slots": {}, "known_spells": []}`)
+	}
+
+	if pc.Equipment == nil || len(pc.Equipment) == 0 {
+		pc.Equipment = models.JSONBFlexible(`[]`)
+	}
+
 	// Definir IDs
 	pc.ID = id
 	pc.PlayerID = userID
 
 	err = h.DB.UpdatePC(r.Context(), &pc)
 	if err != nil {
+		fmt.Printf("Erro ao atualizar PC no banco: %v", err)
 		http.Error(w, "Failed to update PC: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	fmt.Printf("PC atualizado com sucesso: ID=%d", pc.ID)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(pc)
@@ -247,87 +314,87 @@ func (h *PCHandler) GetPCCampaigns(w http.ResponseWriter, r *http.Request) {
 }
 
 // GenerateRandomPC gera um PC usando o serviço Python
-func (h *PCHandler) GenerateRandomPC(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(middleware.UserIDKey).(int)
-	if !ok {
-		http.Error(w, "User ID not found in context", http.StatusInternalServerError)
-		return
-	}
+// func (h *PCHandler) GenerateRandomPC(w http.ResponseWriter, r *http.Request) {
+// 	userID, ok := r.Context().Value(middleware.UserIDKey).(int)
+// 	if !ok {
+// 		http.Error(w, "User ID not found in context", http.StatusInternalServerError)
+// 		return
+// 	}
 
-	var request struct {
-		Level            int    `json:"level"`
-		AttributesMethod string `json:"attributes_method,omitempty"`
-		Manual           bool   `json:"manual"`
-		Race             string `json:"race,omitempty"`
-		Class            string `json:"class,omitempty"`
-		Background       string `json:"background,omitempty"`
-		PlayerName       string `json:"player_name,omitempty"`
-	}
+// 	var request struct {
+// 		Level            int    `json:"level"`
+// 		AttributesMethod string `json:"attributes_method,omitempty"`
+// 		Manual           bool   `json:"manual"`
+// 		Race             string `json:"race,omitempty"`
+// 		Class            string `json:"class,omitempty"`
+// 		Background       string `json:"background,omitempty"`
+// 		PlayerName       string `json:"player_name,omitempty"`
+// 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		http.Error(w, "Invalid request body: "+err.Error(), http.StatusBadRequest)
-		return
-	}
+// 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+// 		http.Error(w, "Invalid request body: "+err.Error(), http.StatusBadRequest)
+// 		return
+// 	}
 
-	if request.Level < 1 || request.Level > 20 {
-		http.Error(w, "Level must be between 1 and 20", http.StatusBadRequest)
-		return
-	}
+// 	if request.Level < 1 || request.Level > 20 {
+// 		http.Error(w, "Level must be between 1 and 20", http.StatusBadRequest)
+// 		return
+// 	}
 
-	// Default attributes_method se não for manual e não foi fornecido
-	if !request.Manual && request.AttributesMethod == "" {
-		request.AttributesMethod = "rolagem"
-	}
+// 	// Default attributes_method se não for manual e não foi fornecido
+// 	if !request.Manual && request.AttributesMethod == "" {
+// 		request.AttributesMethod = "rolagem"
+// 	}
 
-	// Validar attributes_method
-	if !request.Manual || request.AttributesMethod != "" {
-		if request.AttributesMethod != "rolagem" && request.AttributesMethod != "array" && request.AttributesMethod != "compra" {
-			http.Error(w, "Invalid attributes_method. Must be 'rolagem', 'array', or 'compra'", http.StatusBadRequest)
-			return
-		}
-	}
+// 	// Validar attributes_method
+// 	if !request.Manual || request.AttributesMethod != "" {
+// 		if request.AttributesMethod != "rolagem" && request.AttributesMethod != "array" && request.AttributesMethod != "compra" {
+// 			http.Error(w, "Invalid attributes_method. Must be 'rolagem', 'array', or 'compra'", http.StatusBadRequest)
+// 			return
+// 		}
+// 	}
 
-	// Gerar NPC via Python (que será convertido para PC)
-	npc, err := h.Python.GenerateNPC(r.Context(), request.Level, request.AttributesMethod, request.Manual, request.Race, request.Class, request.Background)
-	if err != nil {
-		http.Error(w, "Failed to generate PC: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
+// 	// Gerar NPC via Python (que será convertido para PC)
+// 	npc, err := h.Python.GenerateNPC(r.Context(), request.Level, request.AttributesMethod, request.Manual, request.Race, request.Class, request.Background)
+// 	if err != nil {
+// 		http.Error(w, "Failed to generate PC: "+err.Error(), http.StatusInternalServerError)
+// 		return
+// 	}
 
-	// Converter NPC para PC
-	pc := &models.PC{
-		Name:        npc.Name,
-		Description: npc.Description,
-		Level:       npc.Level,
-		Race:        npc.Race,
-		Class:       npc.Class,
-		Background:  npc.Background,
-		Attributes:  npc.Attributes,
-		Abilities:   npc.Abilities,
-		Equipment:   npc.Equipment,
-		HP:          npc.HP,
-		CA:          npc.CA,
-		PlayerID:    userID,
-		PlayerName:  request.PlayerName,
-	}
+// 	// Converter NPC para PC
+// 	pc := &models.PC{
+// 		Name:        npc.Name,
+// 		Description: npc.Description,
+// 		Level:       npc.Level,
+// 		Race:        npc.Race,
+// 		Class:       npc.Class,
+// 		Background:  npc.Background,
+// 		Attributes:  npc.Attributes,
+// 		Abilities:   npc.Abilities,
+// 		Equipment:   npc.Equipment,
+// 		HP:          npc.HP,
+// 		CA:          npc.CA,
+// 		PlayerID:    userID,
+// 		PlayerName:  request.PlayerName,
+// 	}
 
-	// Se o player_name não foi fornecido, usar um padrão
-	if pc.PlayerName == "" {
-		user, err := h.DB.GetUserByID(r.Context(), userID)
-		if err == nil {
-			pc.PlayerName = user.Username
-		} else {
-			pc.PlayerName = "Unknown Player"
-		}
-	}
+// 	// Se o player_name não foi fornecido, usar um padrão
+// 	if pc.PlayerName == "" {
+// 		user, err := h.DB.GetUserByID(r.Context(), userID)
+// 		if err == nil {
+// 			pc.PlayerName = user.Username
+// 		} else {
+// 			pc.PlayerName = "Unknown Player"
+// 		}
+// 	}
 
-	err = h.DB.CreatePC(r.Context(), pc)
-	if err != nil {
-		http.Error(w, "Failed to save generated PC: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
+// 	err = h.DB.CreatePC(r.Context(), pc)
+// 	if err != nil {
+// 		http.Error(w, "Failed to save generated PC: "+err.Error(), http.StatusInternalServerError)
+// 		return
+// 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(pc)
-}
+// 	w.Header().Set("Content-Type", "application/json")
+// 	w.WriteHeader(http.StatusCreated)
+// 	json.NewEncoder(w).Encode(pc)
+// }
