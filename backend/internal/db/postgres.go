@@ -234,19 +234,19 @@ func (p *PostgresDB) createMonsterTx(ctx context.Context, tx *sqlx.Tx, monster *
 // ========================================
 
 // GetPCByID - método mantido para compatibilidade com campanhas
-func (p *PostgresDB) GetPCByID(ctx context.Context, id int) (*models.PC, error) {
-	var pc models.PC
-	query := `
-		SELECT id, name, description, level, race, class, background, alignment,
-		       attributes, abilities, equipment, hp, ca, player_name, player_id, created_at
-		FROM pcs 
-		WHERE id = $1
-	`
+// func (p *PostgresDB) GetPCByID(ctx context.Context, id int) (*models.PC, error) {
+// 	var pc models.PC
+// 	query := `
+// 		SELECT id, name, description, level, race, class, background, alignment,
+// 		       attributes, abilities, equipment, hp, ca, player_name, player_id, created_at
+// 		FROM pcs
+// 		WHERE id = $1
+// 	`
 
-	err := p.DB.GetContext(ctx, &pc, query, id)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch PC with ID %d: %w", id, err)
-	}
+// 	err := p.DB.GetContext(ctx, &pc, query, id)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("failed to fetch PC with ID %d: %w", id, err)
+// 	}
 
-	return &pc, nil
-}
+// 	return &pc, nil
+// }

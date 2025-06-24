@@ -8,6 +8,8 @@ interface PCBasicInfoProps {
     races: any[];
     classes: any[];
     backgrounds: any[];
+    onRaceChange?: (raceIndex: string) => void;
+    onClassChange?: (classIndex: string) => void;
 }
 
 const alignments = [
@@ -21,8 +23,33 @@ const PCBasicInfo: React.FC<PCBasicInfoProps> = ({
     updatePCData,
     races,
     classes,
-    backgrounds
+    backgrounds,
+    onRaceChange,
+    onClassChange
 }) => {
+
+    const handleRaceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const selectedRace = races.find(r => r.name === e.target.value);
+        if (selectedRace && onRaceChange) {
+            onRaceChange(selectedRace.api_index);
+        } else {
+            updatePCData({ race: e.target.value });
+        }
+    };
+
+    const handleClassChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const selectedClass = classes.find(c => c.name === e.target.value);
+        if (selectedClass && onClassChange) {
+            onClassChange(selectedClass.api_index);
+        } else {
+            updatePCData({ class: e.target.value });
+        }
+    };
+
+    const handleBackgroundChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        updatePCData({ background: e.target.value });
+    };
+
     return (
         <div className="grid md:grid-cols-2 gap-6">
             {/* Informações Básicas */}
@@ -67,17 +94,22 @@ const PCBasicInfo: React.FC<PCBasicInfoProps> = ({
                             </label>
                             <select
                                 value={pcData.race}
-                                onChange={(e) => updatePCData({ race: e.target.value })}
+                                onChange={handleRaceChange}
                                 className="w-full px-3 py-2 border border-indigo-700 rounded-md 
                                  bg-indigo-900/50 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                             >
                                 <option value="">Selecione uma raça</option>
                                 {races.map((race) => (
-                                    <option key={race.index} value={race.name}>
+                                    <option key={race.api_index} value={race.name}>
                                         {race.name}
                                     </option>
                                 ))}
                             </select>
+                            {races.length === 0 && (
+                                <div className="text-xs text-yellow-400 mt-1">
+                                    Carregando raças...
+                                </div>
+                            )}
                         </div>
 
                         <div>
@@ -86,17 +118,22 @@ const PCBasicInfo: React.FC<PCBasicInfoProps> = ({
                             </label>
                             <select
                                 value={pcData.class}
-                                onChange={(e) => updatePCData({ class: e.target.value })}
+                                onChange={handleClassChange}
                                 className="w-full px-3 py-2 border border-indigo-700 rounded-md 
                                  bg-indigo-900/50 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                             >
                                 <option value="">Selecione uma classe</option>
                                 {classes.map((cls) => (
-                                    <option key={cls.index} value={cls.name}>
+                                    <option key={cls.api_index} value={cls.name}>
                                         {cls.name}
                                     </option>
                                 ))}
                             </select>
+                            {classes.length === 0 && (
+                                <div className="text-xs text-yellow-400 mt-1">
+                                    Carregando classes...
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -148,17 +185,22 @@ const PCBasicInfo: React.FC<PCBasicInfoProps> = ({
                         </label>
                         <select
                             value={pcData.background}
-                            onChange={(e) => updatePCData({ background: e.target.value })}
+                            onChange={handleBackgroundChange}
                             className="w-full px-3 py-2 border border-indigo-700 rounded-md 
                              bg-indigo-900/50 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                         >
                             <option value="">Selecione um antecedente</option>
                             {backgrounds.map((bg) => (
-                                <option key={bg.index} value={bg.name}>
+                                <option key={bg.api_index} value={bg.name}>
                                     {bg.name}
                                 </option>
                             ))}
                         </select>
+                        {backgrounds.length === 0 && (
+                            <div className="text-xs text-yellow-400 mt-1">
+                                Carregando antecedentes...
+                            </div>
+                        )}
                     </div>
 
                     <div>
@@ -209,13 +251,39 @@ const PCBasicInfo: React.FC<PCBasicInfoProps> = ({
                             }
                         </p>
                         <p>
-                            Nível {pcData.level} • {pcData.background || 'Antecedente não definido'}
+                            Nível {pcData.level} • Proficiência +{pcData.proficiency_bonus}
+                        </p>
+                        <p>
+                            {pcData.background || 'Antecedente não definido'}
                         </p>
                         {pcData.alignment && (
                             <p>Alinhamento: {pcData.alignment}</p>
                         )}
+                        {pcData.inspiration && (
+                            <p className="text-yellow-400">✨ Inspirado</p>
+                        )}
                     </div>
                 </div>
+
+                {/* Informações da API D&D */}
+                {(pcData.race || pcData.class || pcData.background) && (
+                    <div className="mt-4 p-3 bg-purple-900/20 rounded border border-purple-800">
+                        <h5 className="text-sm font-bold text-purple-300 mb-2">
+                            📚 Dados do D&D 5e API
+                        </h5>
+                        <div className="text-xs text-purple-200 space-y-1">
+                            {pcData.race && (
+                                <p>🧝 Modificadores raciais aplicados automaticamente</p>
+                            )}
+                            {pcData.class && (
+                                <p>⚔️ Dado de vida e HP calculados pela classe</p>
+                            )}
+                            {pcData.background && (
+                                <p>📜 Proficiências do antecedente disponíveis</p>
+                            )}
+                        </div>
+                    </div>
+                )}
             </CardBorder>
         </div>
     );
