@@ -33,6 +33,8 @@ const PCAttributes: React.FC<PCAttributesProps> = ({ pcData, updatePCData }) => 
     };
 
     const updateAttribute = (attr: keyof PCData['attributes'], value: number) => {
+        value >= 20 ? value = 30 : value
+        alert(value)
         const newAttributes = { ...pcData.attributes, [attr]: value };
         updatePCData({ attributes: newAttributes });
     };
@@ -157,7 +159,7 @@ const PCAttributes: React.FC<PCAttributesProps> = ({ pcData, updatePCData }) => 
                                             className="w-full bg-transparent text-white text-center text-xl font-bold
                                              border-none focus:outline-none focus:ring-2 focus:ring-purple-400 rounded"
                                             min={1}
-                                            max={30}
+                                            max={20}
                                         />
                                         <div className="text-purple-200 text-sm font-bold">
                                             {formatModifier(modifier)}
