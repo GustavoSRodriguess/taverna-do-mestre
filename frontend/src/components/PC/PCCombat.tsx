@@ -138,6 +138,7 @@ const PCCombat: React.FC<PCCombatProps> = ({ pcData, updatePCData }) => {
                             })()}
                         </div>
 
+                        {pcData.current_hp == 0 && <div> futuramente um death counter </div>}
                         <div
                             className={`text-xs text-blue-300 mt-1 text-center transition-all duration-500 ease-out ${(pcData.current_hp || pcData.hp) > pcData.hp
                                 ? 'opacity-100 transform translate-y-0'

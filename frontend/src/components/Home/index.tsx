@@ -13,10 +13,7 @@ const HomePage: React.FC = () => {
     return (
         <Page>
             <Section title="Crie Campanhas de RPG Incríveis" className="py-20">
-                <Button
-                    buttonLabel={isAuthenticated ? "Ir para Campanhas" : "Comece Agora"}
-                    onClick={() => navigate(isAuthenticated ? '/campaigns' : '/login')}
-                />
+                <p></p>
             </Section>
 
             <Section title="O Que Você Pode Fazer?" className="bg-gray-900">
