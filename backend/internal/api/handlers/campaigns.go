@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -355,6 +356,9 @@ func (h *CampaignHandler) RegenerateInviteCode(w http.ResponseWriter, r *http.Re
 // ========================================
 
 // GetAvailableCharacters lista PCs do jogador que podem ser adicionados à campanha
+// Substitua o método GetAvailableCharacters no arquivo backend/internal/api/handlers/campaigns.go
+
+// GetAvailableCharacters lista PCs do jogador que podem ser adicionados à campanha
 func (h *CampaignHandler) GetAvailableCharacters(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(middleware.UserIDKey).(int)
 	if !ok {
@@ -369,18 +373,20 @@ func (h *CampaignHandler) GetAvailableCharacters(w http.ResponseWriter, r *http.
 		return
 	}
 
-	// Verificar se o usuário está na campanha
-	inCampaign, err := h.DB.IsPlayerInCampaign(r.Context(), campaignID, userID)
+	// Verificar se o usuário tem acesso à campanha (é player OU é DM)
+	hasAccess, err := h.DB.HasCampaignAccess(r.Context(), campaignID, userID)
 	if err != nil {
 		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
 	}
-	if !inCampaign {
+	if !hasAccess {
 		http.Error(w, "Access denied - not in campaign", http.StatusForbidden)
 		return
 	}
 
 	// Buscar PCs do usuário que NÃO estão na campanha
+	// Use log package to ensure output goes to stderr, which Docker captures
+	log.Printf("Fetching available characters for user: %d in campaign: %d", userID, campaignID)
 	pcs, err := h.DB.GetAvailablePCs(r.Context(), userID, campaignID)
 	if err != nil {
 		http.Error(w, "Failed to fetch available characters: "+err.Error(), http.StatusInternalServerError)
@@ -388,7 +394,7 @@ func (h *CampaignHandler) GetAvailableCharacters(w http.ResponseWriter, r *http.
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"available_characters": pcs,
 		"count":                len(pcs),
 	})

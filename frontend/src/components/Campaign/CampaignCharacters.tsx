@@ -33,13 +33,27 @@ const CampaignCharacters: React.FC<CampaignCharactersProps> = ({
 
     const loadAvailablePCs = async () => {
         try {
+            console.log('Carregando PCs disponíveis para campanha:', campaignId);
+
             const response = await campaignService.getAvailableCharacters(campaignId);
+
+            console.log('Resposta da API:', response);
+            console.log('PCs disponíveis:', response.available_characters);
+
             setAvailablePCs(response.available_characters || []);
-        } catch (err) {
-            console.error('Erro ao carregar PCs disponíveis:', err);
+
+            if (!response.available_characters || response.available_characters.length === 0) {
+                console.log('Nenhum PC disponível encontrado');
+            } else {
+                console.log(`${response.available_characters.length} PCs disponíveis encontrados`);
+            }
+        } catch (err: any) {
+            console.error('Erro detalhado ao carregar PCs disponíveis:', err);
+            console.error('Status:', err.status);
+            console.error('Message:', err.message);
+            setError(err.message || 'Erro ao carregar personagens disponíveis');
         }
     };
-
     useEffect(() => {
         if (showAddModal) {
             loadAvailablePCs();
@@ -55,6 +69,8 @@ const CampaignCharacters: React.FC<CampaignCharactersProps> = ({
         try {
             setLoading(true);
             setError(null);
+
+            console.log('Adicionando personagem com ID:', selectedPCId, 'à campanha:', campaignId);
 
             await campaignService.addCharacterToCampaign(campaignId, { pc_id: selectedPCId });
 

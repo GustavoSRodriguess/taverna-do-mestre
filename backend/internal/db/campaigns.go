@@ -386,23 +386,30 @@ func (p *PostgresDB) GetCampaignCharacters(ctx context.Context, campaignID int) 
 	return characters, nil
 }
 
+// GetAvailablePCs retorna PCs do usuário que NÃO estão na campanha especificada
 func (p *PostgresDB) GetAvailablePCs(ctx context.Context, userID, campaignID int) ([]models.PC, error) {
 	var pcs []models.PC
+	fmt.Println("Fetching available PCs for user:", userID, "in campaign:", campaignID)
 	query := `
-		SELECT pc.id, pc.name, pc.description, pc.level, pc.race, pc.class, pc.background, pc.alignment,
-		       pc.attributes, pc.abilities, pc.equipment, pc.hp, pc.ca, pc.player_name, pc.player_id, pc.created_at
+		SELECT 
+			pc.id, pc.name, pc.description, pc.level, pc.race, pc.class, 
+			pc.background, pc.alignment, pc.attributes, pc.abilities, 
+			pc.equipment, pc.hp, pc.ca, pc.player_name, pc.player_id, 
+			pc.created_at
 		FROM pcs pc
-		WHERE pc.player_id = $1 AND pc.id NOT IN (
-			SELECT cc.pc_id 
+		WHERE pc.player_id = $1 
+		AND pc.id NOT IN (
+			SELECT COALESCE(cc.pc_id, 0)
 			FROM campaign_characters cc 
-			WHERE cc.campaign_id = $2 AND cc.status IN ('active', 'inactive')
+			WHERE cc.campaign_id = $2 
+			AND cc.status IN ('active', 'inactive')
 		)
 		ORDER BY pc.name
 	`
 
-	err := p.DB.SelectContext(ctx, &pcs, query, campaignID)
+	err := p.DB.SelectContext(ctx, &pcs, query, userID, campaignID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch available PCs: %w", err)
+		return nil, fmt.Errorf("failed to fetch available PCs for user %d in campaign %d: %w", userID, campaignID, err)
 	}
 
 	return pcs, nil
@@ -510,4 +517,23 @@ func (p *PostgresDB) DeleteCampaignCharacter(ctx context.Context, id, campaignID
 	}
 
 	return nil
+}
+
+// HasCampaignAccess verifica se o usuário tem acesso à campanha (é player ou DM)
+func (p *PostgresDB) HasCampaignAccess(ctx context.Context, campaignID, userID int) (bool, error) {
+	var exists bool
+	query := `
+		SELECT EXISTS(
+			SELECT 1 FROM campaigns WHERE id = $1 AND dm_id = $2
+			UNION
+			SELECT 1 FROM campaign_players 
+			WHERE campaign_id = $1 AND user_id = $2 AND status = 'active'
+		)
+	`
+	err := p.DB.GetContext(ctx, &exists, query, campaignID, userID)
+	if err != nil {
+		return false, fmt.Errorf("failed to check campaign access: %w", err)
+	}
+
+	return exists, nil
 }

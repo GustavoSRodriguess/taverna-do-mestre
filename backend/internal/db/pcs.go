@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"rpg-saas-backend/internal/models"
@@ -11,6 +12,7 @@ import (
 // GetPCsByPlayer retorna todos os PCs de um jogador específico
 func (p *PostgresDB) GetPCsByPlayer(ctx context.Context, playerID int, limit, offset int) ([]models.PC, error) {
 	pcs := []models.PC{}
+	log.Printf("Fetching PCs for player ID: %d with limit: %d and offset: %d", playerID, limit, offset)
 	query := `
 		SELECT id, name, description, level, race, class, background, alignment, 
 		       attributes, abilities, equipment, hp, ca, player_name, player_id, created_at
