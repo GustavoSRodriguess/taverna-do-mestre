@@ -1,0 +1,146 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title Sistema Context - Taverna do Mestre
+
+Person(player, "Jogador", "Usuário que cria personagens e participa de campanhas de RPG")
+Person(dm, "Mestre (DM)", "Usuário que cria e gerencia campanhas, NPCs e encontros")
+
+System(taverna, "Taverna do Mestre", "Plataforma SaaS para gerenciamento de campanhas de RPG D&D 5e")
+
+System_Ext(dnd_api, "D&D 5e API", "API externa com dados oficiais do D&D 5e (raças, classes, magias, monstros, etc.)")
+
+Rel(player, taverna, "Cria PCs, participa de campanhas", "HTTPS")
+Rel(dm, taverna, "Gerencia campanhas, gera NPCs, encontros e tesouros", "HTTPS")
+Rel(taverna, dnd_api, "Importa dados do D&D 5e", "HTTPS/REST")
+
+@enduml
+
+' ============================================
+' CONTAINER DIAGRAM
+' ============================================
+
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Container Diagram - Taverna do Mestre
+
+Person(player, "Jogador", "Usuário que cria personagens e participa de campanhas")
+Person(dm, "Mestre (DM)", "Usuário que gerencia campanhas")
+
+System_Boundary(taverna, "Taverna do Mestre") {
+    Container(web_app, "Web Application", "React/TypeScript", "Interface do usuário para gerenciar campanhas, personagens e sessões")
+    
+    Container(api_backend, "Backend API", "Go/Chi Router", "API REST para autenticação, campanhas, personagens e dados do D&D")
+    
+    Container(ai_service, "AI Service", "Python/Flask", "Serviço de geração procedural de NPCs, encontros, tesouros e mapas")
+    
+    ContainerDb(database, "Database", "PostgreSQL", "Armazena dados de usuários, campanhas, personagens e dados importados do D&D 5e")
+}
+
+System_Ext(dnd_api, "D&D 5e API", "API oficial do D&D 5e")
+
+Rel(player, web_app, "Usa", "HTTPS")
+Rel(dm, web_app, "Usa", "HTTPS")
+
+Rel(web_app, api_backend, "Faz chamadas para", "REST/JSON HTTPS")
+Rel(api_backend, ai_service, "Solicita gerações", "REST/JSON HTTP")
+Rel(api_backend, database, "Lê e escreve", "TCP/SQL")
+Rel(api_backend, dnd_api, "Importa dados", "HTTPS/REST")
+
+@enduml
+
+' ============================================
+' COMPONENT DIAGRAM - BACKEND API
+' ============================================
+
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Component Diagram - Backend API
+
+Container(web_app, "Web Application", "React", "Interface do usuário")
+Container(ai_service, "AI Service", "Python/Flask", "Serviço de geração procedural")
+ContainerDb(database, "Database", "PostgreSQL", "Banco de dados principal")
+System_Ext(dnd_api, "D&D 5e API", "API externa do D&D")
+
+Container_Boundary(api_backend, "Backend API") {
+    Component(auth_middleware, "Auth Middleware", "Go", "Middleware JWT para autenticação e autorização")
+    Component(user_handler, "User Handler", "Go", "Gerencia registro, login e dados de usuários")
+    
+    Component(campaign_handler, "Campaign Handler", "Go", "CRUD de campanhas, códigos de convite, gerenciamento de jogadores")
+    Component(pc_handler, "PC Handler", "Go", "CRUD de personagens jogáveis (Player Characters)")
+    Component(npc_handler, "NPC Handler", "Go", "CRUD de NPCs e integração com geração de IA")
+    
+    Component(encounter_handler, "Encounter Handler", "Go", "CRUD de encontros e geração via IA")
+    Component(treasure_handler, "Treasure Handler", "Go", "CRUD de tesouros e geração via IA")
+    Component(dnd_handler, "D&D Data Handler", "Go", "API para dados importados do D&D 5e")
+    
+    Component(router, "Chi Router", "Go", "Roteamento HTTP e middleware")
+    Component(db_layer, "Database Layer", "Go/sqlx", "Camada de acesso aos dados")
+    Component(python_client, "Python Client", "Go", "Cliente HTTP para comunicação com AI Service")
+}
+
+Rel(web_app, router, "REST calls", "HTTPS/JSON")
+Rel(router, auth_middleware, "Autentica requests")
+
+Rel(router, user_handler, "Rotas /users")
+Rel(router, campaign_handler, "Rotas /campaigns") 
+Rel(router, pc_handler, "Rotas /pcs")
+Rel(router, npc_handler, "Rotas /npcs")
+Rel(router, encounter_handler, "Rotas /encounters")
+Rel(router, treasure_handler, "Rotas /treasures")
+Rel(router, dnd_handler, "Rotas /dnd")
+
+Rel(campaign_handler, db_layer, "Acessa dados")
+Rel(pc_handler, db_layer, "Acessa dados")
+Rel(user_handler, db_layer, "Acessa dados")
+
+Rel(npc_handler, python_client, "Gera NPCs")
+Rel(encounter_handler, python_client, "Gera encontros")
+Rel(treasure_handler, python_client, "Gera tesouros")
+
+Rel(python_client, ai_service, "HTTP calls", "JSON")
+Rel(db_layer, database, "SQL queries", "TCP")
+Rel(dnd_handler, dnd_api, "Importa dados", "HTTPS")
+
+@enduml
+
+' ============================================
+' COMPONENT DIAGRAM - AI SERVICE
+' ============================================
+
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Component Diagram - AI Service (Python)
+
+Container(api_backend, "Backend API", "Go", "API principal do sistema")
+System_Ext(openai_api, "OpenAI API", "API externa para geração de descrições")
+System_Ext(dnd_api_external, "D&D 5e API", "API externa para dados de monstros")
+
+Container_Boundary(ai_service, "AI Service") {
+    Component(flask_app, "Flask App", "Python", "Aplicação principal Flask")
+    Component(npc_generator, "NPC Generator", "Python", "Gera NPCs com atributos, equipamentos e magias")
+    Component(encounter_generator, "Encounter Generator", "Python", "Gera encontros balanceados baseados em XP")
+    Component(loot_generator, "Loot Generator", "Python", "Gera tesouros com moedas, gemas e itens mágicos")
+    Component(map_generator, "Map Generator", "Python", "Gera mapas procedurais usando noise")
+    Component(dnd_api_client, "D&D API Client", "Python", "Cliente para buscar dados da API do D&D")
+    Component(description_service, "Description Service", "Python", "Gera descrições usando OpenAI")
+}
+
+Rel(api_backend, flask_app, "HTTP requests", "JSON")
+
+Rel(flask_app, npc_generator, "/generate-npc")
+Rel(flask_app, encounter_generator, "/generate-encounter") 
+Rel(flask_app, loot_generator, "/generate-loot")
+Rel(flask_app, map_generator, "/generate-map")
+
+Rel(npc_generator, dnd_api_client, "Busca classes/raças")
+Rel(encounter_generator, dnd_api_client, "Busca monstros")
+Rel(npc_generator, description_service, "Gera descrições")
+
+Rel(dnd_api_client, dnd_api_external, "HTTP calls", "JSON")
+Rel(description_service, openai_api, "Gera texto", "HTTPS")
+
+@enduml
