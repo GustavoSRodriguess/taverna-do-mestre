@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -45,18 +46,34 @@ func (h *PCHandler) GetPCs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pcs, err := h.DB.GetPCsByPlayer(r.Context(), userID, limit, offset)
+	log.Printf("Valor de pcs: %+v\n", pcs)
+	log.Printf("Fetching PCs for user ID: %d with limit: %d and offset: %d", userID, limit, offset)
 	if err != nil {
 		http.Error(w, "Failed to fetch PCs: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	// ADICIONE ESTES LOGS PARA DEBUG:
+	log.Printf("Total PCs found: %d\n", len(pcs))
+	for i, pc := range pcs {
+		log.Printf("PC %d: ID=%d, Name=%s, Race=%s\n", i, pc.ID, pc.Name, pc.Race)
+		fmt.Printf("PC %d Attributes: %v\n", i, pc.Attributes.Data)
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	err = json.NewEncoder(w).Encode(map[string]interface{}{
 		"pcs":    pcs,
 		"limit":  limit,
 		"offset": offset,
 		"count":  len(pcs),
 	})
+
+	// ADICIONE ESTE LOG TAMBÉM:
+	if err != nil {
+		log.Printf("Erro na serialização JSON: %v\n", err)
+		http.Error(w, "JSON encoding error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 // GetPCByID retorna um PC específico se pertence ao usuário
@@ -132,35 +149,38 @@ func (h *PCHandler) CreatePC(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Garantir que campos JSONBFlexible existam com valores padrão válidos
-	if pc.Abilities == nil || len(pc.Abilities) == 0 {
-		pc.Abilities = models.JSONBFlexible(`{}`)
+	if pc.Abilities.Data == nil {
+		pc.Abilities = models.JSONBFlexible{Data: map[string]interface{}{}}
 	}
 
-	if pc.Attributes == nil || len(pc.Attributes) == 0 {
-		pc.Attributes = models.JSONBFlexible(`{
-			"strength": 10,
-			"dexterity": 10,
+	if pc.Attributes.Data == nil {
+		pc.Attributes = models.JSONBFlexible{Data: map[string]interface{}{
+			"strength":     10,
+			"dexterity":    10,
 			"constitution": 10,
 			"intelligence": 10,
-			"wisdom": 10,
-			"charisma": 10
-		}`)
+			"wisdom":       10,
+			"charisma":     10,
+		}}
 	}
 
-	if pc.Skills == nil || len(pc.Skills) == 0 {
-		pc.Skills = models.JSONBFlexible(`{}`)
+	if pc.Skills.Data == nil {
+		pc.Skills = models.JSONBFlexible{Data: map[string]interface{}{}}
 	}
 
-	if pc.Attacks == nil || len(pc.Attacks) == 0 {
-		pc.Attacks = models.JSONBFlexible(`[]`)
+	if pc.Attacks.Data == nil {
+		pc.Attacks = models.JSONBFlexible{Data: []interface{}{}}
 	}
 
-	if pc.Spells == nil || len(pc.Spells) == 0 {
-		pc.Spells = models.JSONBFlexible(`{"spell_slots": {}, "known_spells": []}`)
+	if pc.Spells.Data == nil {
+		pc.Spells = models.JSONBFlexible{Data: map[string]interface{}{
+			"spell_slots":  map[string]interface{}{},
+			"known_spells": []interface{}{},
+		}}
 	}
 
-	if pc.Equipment == nil || len(pc.Equipment) == 0 {
-		pc.Equipment = models.JSONBFlexible(`[]`)
+	if pc.Equipment.Data == nil {
+		pc.Equipment = models.JSONBFlexible{Data: []interface{}{}}
 	}
 
 	// Associar ao usuário fmtado
@@ -217,24 +237,27 @@ func (h *PCHandler) UpdatePC(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Garantir que campos JSONBFlexible existam com valores padrão válidos
-	if pc.Abilities == nil || len(pc.Abilities) == 0 {
-		pc.Abilities = models.JSONBFlexible(`{}`)
+	if pc.Abilities.Data == nil {
+		pc.Abilities = models.JSONBFlexible{Data: map[string]interface{}{}}
 	}
 
-	if pc.Skills == nil || len(pc.Skills) == 0 {
-		pc.Skills = models.JSONBFlexible(`{}`)
+	if pc.Skills.Data == nil {
+		pc.Skills = models.JSONBFlexible{Data: map[string]interface{}{}}
 	}
 
-	if pc.Attacks == nil || len(pc.Attacks) == 0 {
-		pc.Attacks = models.JSONBFlexible(`[]`)
+	if pc.Attacks.Data == nil {
+		pc.Attacks = models.JSONBFlexible{Data: []interface{}{}}
 	}
 
-	if pc.Spells == nil || len(pc.Spells) == 0 {
-		pc.Spells = models.JSONBFlexible(`{"spell_slots": {}, "known_spells": []}`)
+	if pc.Spells.Data == nil {
+		pc.Spells = models.JSONBFlexible{Data: map[string]interface{}{
+			"spell_slots":  map[string]interface{}{},
+			"known_spells": []interface{}{},
+		}}
 	}
 
-	if pc.Equipment == nil || len(pc.Equipment) == 0 {
-		pc.Equipment = models.JSONBFlexible(`[]`)
+	if pc.Equipment.Data == nil {
+		pc.Equipment = models.JSONBFlexible{Data: []interface{}{}}
 	}
 
 	// Definir IDs

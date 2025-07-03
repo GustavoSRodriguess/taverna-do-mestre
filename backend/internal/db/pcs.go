@@ -13,9 +13,12 @@ import (
 func (p *PostgresDB) GetPCsByPlayer(ctx context.Context, playerID int, limit, offset int) ([]models.PC, error) {
 	pcs := []models.PC{}
 	log.Printf("Fetching PCs for player ID: %d with limit: %d and offset: %d", playerID, limit, offset)
+
 	query := `
 		SELECT id, name, description, level, race, class, background, alignment, 
-		       attributes, abilities, equipment, hp, ca, player_name, player_id, created_at
+		       attributes, abilities, equipment, hp, current_hp, ca, proficiency_bonus,
+		       inspiration, skills, attacks, spells, personality_traits, ideals, bonds, 
+		       flaws, features, player_name, player_id, created_at
 		FROM pcs 
 		WHERE player_id = $1 
 		ORDER BY created_at DESC 
@@ -24,9 +27,11 @@ func (p *PostgresDB) GetPCsByPlayer(ctx context.Context, playerID int, limit, of
 
 	err := p.DB.SelectContext(ctx, &pcs, query, playerID, limit, offset)
 	if err != nil {
+		log.Printf("Error fetching PCs: %v", err)
 		return nil, fmt.Errorf("failed to fetch PCs for player %d: %w", playerID, err)
 	}
 
+	log.Printf("Successfully fetched %d PCs", len(pcs))
 	return pcs, nil
 }
 

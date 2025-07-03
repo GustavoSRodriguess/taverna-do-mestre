@@ -52,17 +52,17 @@ services:
     environment:
       - PYTHON_API_URL=http://python-api:5000
       - DATABASE_URL=postgresql://user:password@db:5432/rpg_saas
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_SECRET=${JWT_SECRET}
     depends_on:
       - db
       - python-api
-  # frontend:
-  #   build: ./frontend
-  #   container_name: rpg_saas_frontend
-  #   ports:
-  #     - "5173:5173"
-  #   depends_on:
-  #     - backend
+# frontend:
+#   build: ./frontend
+#   container_name: rpg_saas_frontend
+#   ports:
+#     - "5173:5173"
+#   depends_on:
+#     - backend
 
 volumes:
   pgadmin_data:

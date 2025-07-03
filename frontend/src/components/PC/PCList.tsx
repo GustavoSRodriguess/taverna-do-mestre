@@ -15,6 +15,7 @@ const PCList: React.FC = () => {
         try {
             setLoading(true);
             const response = await pcService.getPCs();
+            console.log('PCs loaded:', response);
             setPCs(response.pcs || []);
         } catch (err) {
             setError('Erro ao carregar personagens');

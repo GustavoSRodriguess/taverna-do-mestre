@@ -44,39 +44,57 @@ func (j *JSONB) Scan(value any) error {
 }
 
 // JSONBFlexible - tipo flexível que aceita arrays, objects, etc. (pc.go)
-type JSONBFlexible json.RawMessage
+type JSONBFlexible struct {
+	Data any
+}
 
-func (j JSONBFlexible) Value() (driver.Value, error) {
-	if j == nil {
-		return nil, nil
-	}
-	return string(j), nil
+func (j JSONBFlexible) Unmarshal(m *map[string]any) any {
+	panic("unimplemented")
 }
 
 func (j *JSONBFlexible) Scan(value any) error {
 	if value == nil {
-		*j = nil
+		j.Data = nil
 		return nil
 	}
 
+	var result any
 	switch v := value.(type) {
 	case []byte:
-		*j = JSONBFlexible(v)
-		return nil
+		if err := json.Unmarshal(v, &result); err != nil {
+			j.Data = nil // Se falhar, usar nil
+			return nil
+		}
 	case string:
-		*j = JSONBFlexible(v)
-		return nil
+		if err := json.Unmarshal([]byte(v), &result); err != nil {
+			j.Data = nil
+			return nil
+		}
 	default:
 		return fmt.Errorf("cannot scan %T into JSONBFlexible", value)
 	}
+
+	j.Data = result
+	return nil
+}
+
+func (j JSONBFlexible) Value() (driver.Value, error) {
+	if j.Data == nil {
+		return nil, nil
+	}
+	data, err := json.Marshal(j.Data)
+	if err != nil {
+		return nil, err
+	}
+	return string(data), nil
 }
 
 // MarshalJSON implementa json.Marshaler
 func (j JSONBFlexible) MarshalJSON() ([]byte, error) {
-	if j == nil {
+	if j.Data == nil {
 		return []byte("null"), nil
 	}
-	return []byte(j), nil
+	return json.Marshal(j.Data)
 }
 
 // UnmarshalJSON implementa json.Unmarshaler
@@ -84,6 +102,5 @@ func (j *JSONBFlexible) UnmarshalJSON(data []byte) error {
 	if j == nil {
 		return errors.New("JSONBFlexible: UnmarshalJSON on nil pointer")
 	}
-	*j = append((*j)[0:0], data...)
-	return nil
+	return json.Unmarshal(data, &j.Data)
 }

@@ -146,13 +146,19 @@ func CalculateModifier(score int) int {
 func (pc *PC) GetAttributeModifiers() map[string]int {
 	modifiers := make(map[string]int)
 
-	if pc.Attributes == nil {
+	// Para struct, verificar se o campo está vazio de forma diferente
+	if pc.Attributes == (JSONBFlexible{}) {
 		return modifiers
 	}
 
-	// Como Attributes agora é JSONBFlexible, precisamos fazer unmarshal
-	var attributes map[string]interface{}
-	if err := json.Unmarshal(pc.Attributes, &attributes); err != nil {
+	// Marshal o struct para bytes, depois unmarshal para map
+	data, err := json.Marshal(pc.Attributes)
+	if err != nil {
+		return modifiers
+	}
+
+	var attributes map[string]any
+	if err := json.Unmarshal(data, &attributes); err != nil {
 		return modifiers
 	}
 
