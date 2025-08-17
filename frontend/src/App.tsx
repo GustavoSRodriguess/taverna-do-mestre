@@ -1,3 +1,4 @@
+// frontend/src/App.tsx - Com imports atualizados
 import React from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
@@ -26,15 +27,14 @@ const App: React.FC = () => {
             <Route path="/generator" element={<IntegratedGenerator />} />
             <Route path="/doc" element={<ComponentDoc />} />
 
-            {/* Rotas de Campanhas */}
+            {/* Campaign Routes */}
             <Route path="/campaigns" element={<CampaignsList />} />
             <Route path="/campaigns/:id" element={<CampaignDetails />} />
 
-            {/* Rotas de Personagens */}
+            {/* Character Routes */}
             <Route path="/characters" element={<PCList />} />
             <Route path="/pc-editor/:id" element={<PCEditor />} />
             <Route path="/pc/:id/campaigns" element={<PCCampaigns />} />
-
           </Route>
 
           <Route path="*" element={

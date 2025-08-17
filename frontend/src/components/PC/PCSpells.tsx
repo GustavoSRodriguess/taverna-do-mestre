@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { CardBorder, Button, Modal, ModalConfirmFooter } from '../../ui';
-import { PCData } from './PCEditor';
-import { dndService } from '../../services/dndService';
+import { CardBorder, Button, Modal } from '../../ui';
+import { dndService, getAbilityModifier } from '../../services/dndService';
+import { formatModifier } from '../../utils';
+import { FullCharacter } from '../../types';
 
 interface PCSpellsProps {
-    pcData: PCData;
-    updatePCData: (updates: Partial<PCData>) => void;
+    pcData: FullCharacter;
+    updatePCData: (updates: Partial<FullCharacter>) => void;
 }
 
 const PCSpells: React.FC<PCSpellsProps> = ({ pcData, updatePCData }) => {
@@ -14,16 +15,8 @@ const PCSpells: React.FC<PCSpellsProps> = ({ pcData, updatePCData }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedLevel, setSelectedLevel] = useState<number | undefined>();
 
-    const getModifier = (score: number): number => {
-        return Math.floor((score - 10) / 2);
-    };
-
-    const formatModifier = (modifier: number): string => {
-        return modifier >= 0 ? `+${modifier}` : modifier.toString();
-    };
-
     const spellcastingModifier = pcData.spells.spellcasting_ability ?
-        getModifier(pcData.attributes[pcData.spells.spellcasting_ability as keyof PCData['attributes']]) : 0;
+        getAbilityModifier(pcData.attributes[pcData.spells.spellcasting_ability as keyof FullCharacter['attributes']]) : 0;
 
     const spellAttackBonus = spellcastingModifier + pcData.proficiency_bonus;
     const spellSaveDC = 8 + spellcastingModifier + pcData.proficiency_bonus;
@@ -107,7 +100,7 @@ const PCSpells: React.FC<PCSpellsProps> = ({ pcData, updatePCData }) => {
                             <select
                                 value={pcData.spells.spellcasting_ability || ''}
                                 onChange={(e) => updatePCData({
-                                    spells: { ...pcData.spells, spellcasting_ability: e.target.value }
+                                    spells: { ...pcData.spells, spellcasting_ability: e.target.value as keyof typeof pcData.attributes || undefined }
                                 })}
                                 className="w-full px-3 py-2 bg-indigo-900/50 text-white border border-indigo-700 rounded"
                             >

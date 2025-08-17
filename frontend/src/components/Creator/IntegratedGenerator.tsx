@@ -1,275 +1,177 @@
+// frontend/src/components/Creator/IntegratedGenerator.tsx - Versão Refatorada
 import React, { useState } from 'react';
-// import { CharacterGeneratorForm, CharacterSheet } from './CharCreation';
+import { Button, CardBorder, Page, Section, Alert } from '../../ui';
+import apiService, { GenerationFormData } from '../../services/apiService';
 import { NPCGeneratorForm, NPCSheet } from './NPCCreation';
 import { EncounterGeneratorForm, EncounterSheet } from './EncounterCreation';
 import { LootGeneratorForm, LootSheet } from './LootCreation';
-import apiService from '../../services/apiService';
-import { Button, CardBorder, Page, Section } from '../../ui';
 import CreatorTabs from './CreatorTabs';
+
+interface GenerationState {
+    data: any;
+    loading: boolean;
+    error: string | null;
+}
 
 const IntegratedGenerator: React.FC = () => {
     const [activeTab, setActiveTab] = useState('npc');
 
-    // Character state
-    // const [character, setCharacter] = useState<any>(null);
-    // const [characterLoading, setCharacterLoading] = useState(false);
-    // const [characterError, setCharacterError] = useState<string | null>(null);
+    // Consolidated state for all generators
+    const [npc, setNPC] = useState<GenerationState>({ data: null, loading: false, error: null });
+    const [encounter, setEncounter] = useState<GenerationState>({ data: null, loading: false, error: null });
+    const [loot, setLoot] = useState<GenerationState>({ data: null, loading: false, error: null });
 
-    // NPC state
-    const [npc, setNPC] = useState<any>(null);
-    const [npcLoading, setNPCLoading] = useState(false);
-    const [npcError, setNPCError] = useState<string | null>(null);
-
-    // Encounter state
-    const [encounter, setEncounter] = useState<any>(null);
-    const [encounterLoading, setEncounterLoading] = useState(false);
-    const [encounterError, setEncounterError] = useState<string | null>(null);
-
-    // Loot state
-    const [loot, setLoot] = useState<any>(null);
-    const [lootLoading, setLootLoading] = useState(false);
-    const [lootError, setLootError] = useState<string | null>(null);
-
-    // const handleGenerateCharacter = async (formData: any) => {
-    //     setCharacterLoading(true);
-    //     setCharacterError(null);
-
-    //     try {
-    //         const characterData = await apiService.generateCharacter(formData);
-    //         setCharacter(characterData);
-    //     } catch (err) {
-    //         setCharacterError("Erro ao gerar personagem. Por favor, tente novamente.");
-    //         console.error(err);
-    //     } finally {
-    //         setCharacterLoading(false);
-    //     }
-    // };
-
-    const handleGenerateNPC = async (formData: any) => {
-        setNPCLoading(true);
-        setNPCError(null);
+    // Generic handler for all generation types
+    const handleGeneration = async (
+        type: 'npc' | 'encounter' | 'loot',
+        formData: GenerationFormData,
+        generatorFunction: (data: GenerationFormData) => Promise<any>,
+        setState: React.Dispatch<React.SetStateAction<GenerationState>>
+    ) => {
+        setState(prev => ({ ...prev, loading: true, error: null }));
 
         try {
-            const npcData = await apiService.generateNPC(formData);
-            setNPC(npcData);
+            const result = await generatorFunction(formData);
+            const transformedResult = type === 'npc'
+                ? apiService.transformToCharacterSheet(result)
+                : result;
+
+            setState({ data: transformedResult, loading: false, error: null });
         } catch (err) {
-            setNPCError("Erro ao gerar NPC. Por favor, tente novamente.");
-            console.error(err);
-        } finally {
-            setNPCLoading(false);
+            setState({
+                data: null,
+                loading: false,
+                error: `Erro ao gerar ${type}. Tente novamente.`
+            });
+            console.error(`Error generating ${type}:`, err);
         }
     };
 
-    const handleGenerateEncounter = async (formData: any) => {
-        setEncounterLoading(true);
-        setEncounterError(null);
-
-        try {
-            const encounterData = await apiService.generateEncounter(formData);
-            setEncounter(encounterData);
-        } catch (err) {
-            setEncounterError("Erro ao gerar encontro. Por favor, tente novamente.");
-            console.error(err);
-        } finally {
-            setEncounterLoading(false);
-        }
+    const handleGenerateNPC = (formData: any) => {
+        handleGeneration('npc', formData, apiService.generateNPC.bind(apiService), setNPC);
     };
 
-    const handleGenerateLoot = async (formData: any) => {
-        setLootLoading(true);
-        setLootError(null);
+    const handleGenerateEncounter = (formData: any) => {
+        handleGeneration('encounter', formData, apiService.generateEncounter.bind(apiService), setEncounter);
+    };
 
-        try {
-            const lootData = await apiService.generateLoot(formData);
-            setLoot(lootData);
-        } catch (err) {
-            setLootError("Erro ao gerar tesouro. Por favor, tente novamente.");
-            console.error(err);
-        } finally {
-            setLootLoading(false);
-        }
+    const handleGenerateLoot = (formData: any) => {
+        handleGeneration('loot', formData, apiService.generateLoot.bind(apiService), setLoot);
     };
 
     const handleRandomGenerate = () => {
-        switch (activeTab) {
-            // case 'character':
-            //     handleGenerateCharacter({
-            //         nivel: Math.floor(Math.random() * 10) + 1,
-            //         raca: ["Humano", "Elfo", "Anão", "Halfling"][Math.floor(Math.random() * 4)],
-            //         classe: ["Guerreiro", "Mago", "Ladino", "Clérigo"][Math.floor(Math.random() * 4)],
-            //         antecedente: ["Nobre", "Eremita", "Soldado", "Criminoso"][Math.floor(Math.random() * 4)],
-            //         metodoAtributos: "rolagem"
-            //     });
-            //     break;
-            case 'npc':
-                handleGenerateNPC({
-                    nivel: Math.floor(Math.random() * 10) + 1,
-                    metodo: "automatic"
-                });
-                break;
-            case 'encounter':
-                handleGenerateEncounter({
-                    nivelJogadores: Math.floor(Math.random() * 10) + 1,
-                    quantidadeJogadores: Math.floor(Math.random() * 4) + 2,
-                    dificuldade: ['f', 'm', 'd', 'mo'][Math.floor(Math.random() * 4)]
-                });
-                break;
-            case 'loot':
-                handleGenerateLoot({
-                    level: Math.floor(Math.random() * 10) + 1,
-                    coin_type: "standard",
-                    item_categories: ["armor", "weapons", "potions", "rings", "rods", "scrolls", "staves", "wands", "wondrous"],
-                    quantity: 1,
-                    gems: Math.random() > 0.3, // 70% chance de incluir gemas
-                    art_objects: Math.random() > 0.4, // 60% chance de incluir objetos de arte
-                    magic_items: Math.random() > 0.2, // 80% chance de incluir itens mágicos
-                    ranks: ["minor", "medium", "major"],
+        const randomGenerators = {
+            npc: () => handleGenerateNPC({
+                level: (Math.floor(Math.random() * 10) + 1).toString(),
+                manual: false,
+                attributes_method: "rolagem"
+            }),
+            encounter: () => handleGenerateEncounter({
+                nivelJogadores: (Math.floor(Math.random() * 10) + 1).toString(),
+                quantidadeJogadores: (Math.floor(Math.random() * 4) + 2).toString(),
+                dificuldade: ['f', 'm', 'd', 'mo'][Math.floor(Math.random() * 4)]
+            }),
+            loot: () => handleGenerateLoot({
+                level: (Math.floor(Math.random() * 10) + 1).toString(),
+                coin_type: "standard",
+                item_categories: ["armor", "weapons", "potions", "rings", "scrolls"],
+                quantity: 1,
+                gems: Math.random() > 0.3,
+                art_objects: Math.random() > 0.4,
+                magic_items: Math.random() > 0.2,
+                ranks: ["minor", "medium", "major"]
+            })
+        };
 
-                    // Campos adicionais
-                    valuable_type: "standard",
-                    item_type: "standard",
-                    more_random_coins: false,
-                    trade: "none",
-                    psionic_items: false,
-                    chaositech_items: false,
-                    max_value: 0,
-                    combine_hoards: false
-                });
-                break;
-            default:
-                break;
-        }
+        const generator = randomGenerators[activeTab as keyof typeof randomGenerators];
+        if (generator) generator();
     };
 
-    const renderTitle = () => {
-        switch (activeTab) {
-            // case 'character':
-            //     return "Criação de Personagem";
-            case 'npc':
-                return "Geração de NPC";
-            case 'encounter':
-                return "Gerador de Encontros";
-            case 'loot':
-                return 'Gerador de Loot'
-            default:
-                return "Criação";
-        }
+    const getTitle = (): string => {
+        const titles = {
+            npc: "Geração de NPC",
+            encounter: "Gerador de Encontros",
+            loot: "Gerador de Loot"
+        };
+        return titles[activeTab as keyof typeof titles] || "Criação";
+    };
+
+    const getCurrentState = (): GenerationState => {
+        const states = { npc, encounter, loot };
+        return states[activeTab as keyof typeof states] || { data: null, loading: false, error: null };
     };
 
     const renderForm = () => {
-        switch (activeTab) {
-            // case 'character':
-            //     return (
-            //         <div>
-            //             <div className="flex justify-between mb-4">
-            //                 <h1 className='bold text-xl'>Gerador de Personagem</h1>
-            //                 <Button buttonLabel="Aleatório" onClick={handleRandomGenerate} classname="bg-purple-600" />
-            //             </div>
-            //             <CharacterGeneratorForm onGenerateCharacter={handleGenerateCharacter} />
+        const currentState = getCurrentState();
 
-            //             {characterLoading && (
-            //                 <div className="mt-4 text-center text-indigo-300">
-            //                     <p>Gerando personagem...</p>
-            //                 </div>
-            //             )}
+        const forms = {
+            npc: (
+                <NPCGeneratorForm
+                    onGenerateNPC={handleGenerateNPC}
+                />
+            ),
+            encounter: (
+                <EncounterGeneratorForm
+                    onGenerateEncounter={handleGenerateEncounter}
+                />
+            ),
+            loot: (
+                <LootGeneratorForm
+                    onGenerateLoot={handleGenerateLoot}
+                />
+            )
+        };
 
-            //             {characterError && (
-            //                 <div className="mt-4 text-center text-red-400">
-            //                     <p>{characterError}</p>
-            //                 </div>
-            //             )}
-            //         </div>
-            //     );
-            case 'npc':
-                return (
-                    <div>
-                        <div className="flex justify-between mb-4">
-                            <h1 className='bold text-xl'>Gerador de NPC</h1>
-                            <Button buttonLabel="Aleatório" onClick={handleRandomGenerate} classname="bg-purple-600" />
-                        </div>
-                        <NPCGeneratorForm onGenerateNPC={handleGenerateNPC} />
+        return (
+            <div>
+                <div className="flex justify-between mb-4">
+                    <h1 className="bold text-xl">Gerador de {activeTab.toUpperCase()}</h1>
+                    <Button
+                        buttonLabel="🎲 Aleatório"
+                        onClick={handleRandomGenerate}
+                        classname="bg-purple-600"
+                    />
+                </div>
 
-                        {npcLoading && (
-                            <div className="mt-4 text-center text-indigo-300">
-                                <p>Gerando NPC...</p>
-                            </div>
-                        )}
+                {forms[activeTab as keyof typeof forms]}
 
-                        {npcError && (
-                            <div className="mt-4 text-center text-red-400">
-                                <p>{npcError}</p>
-                            </div>
-                        )}
+                {currentState.loading && (
+                    <div className="mt-4 text-center text-indigo-300">
+                        <p>Gerando {activeTab}...</p>
                     </div>
-                );
-            case 'encounter':
-                return (
-                    <div>
-                        <div className="flex justify-between mb-4">
-                            <h1 className='bold text-xl'>Gerador de Encontros</h1>
-                            <Button buttonLabel="Aleatório" onClick={handleRandomGenerate} classname="bg-purple-600" />
-                        </div>
-                        <EncounterGeneratorForm onGenerateEncounter={handleGenerateEncounter} />
+                )}
 
-                        {encounterLoading && (
-                            <div className="mt-4 text-center text-indigo-300">
-                                <p>Gerando encontro...</p>
-                            </div>
-                        )}
-
-                        {encounterError && (
-                            <div className="mt-4 text-center text-red-400">
-                                <p>{encounterError}</p>
-                            </div>
-                        )}
-                    </div>
-                );
-            case 'loot':
-                return (
-                    <div>
-                        <div className="flex justify-between mb-4">
-                            <h1 className='bold text-xl'>Gerador de Tesouro</h1>
-                            <Button buttonLabel="Aleatório" onClick={handleRandomGenerate} classname="bg-purple-600" />
-                        </div>
-                        <LootGeneratorForm onGenerateLoot={handleGenerateLoot} />
-
-                        {lootLoading && (
-                            <div className="mt-4 text-center text-indigo-300">
-                                <p>Gerando tesouro...</p>
-                            </div>
-                        )}
-
-                        {lootError && (
-                            <div className="mt-4 text-center text-red-400">
-                                <p>{lootError}</p>
-                            </div>
-                        )}
-                    </div>
-                );
-            default:
-                return null;
-        }
+                {currentState.error && (
+                    <Alert
+                        message={currentState.error}
+                        variant="error"
+                        className="mt-4"
+                        onClose={() => {
+                            const setters = { npc: setNPC, encounter: setEncounter, loot: setLoot };
+                            const setter = setters[activeTab as keyof typeof setters];
+                            if (setter) {
+                                setter(prev => ({ ...prev, error: null }));
+                            }
+                        }}
+                    />
+                )}
+            </div>
+        );
     };
 
     const renderSheet = () => {
-        switch (activeTab) {
-            // case 'character':
-            //     console.log(character);
-            //     return <CharacterSheet character={character} />;
-            case 'npc':
-                return <NPCSheet npc={npc} />;
-            case 'encounter':
-                return <EncounterSheet encounter={encounter} />;
-            case 'loot':
-                return <LootSheet loot={loot} />;
-            default:
-                return null;
-        }
+        const sheets = {
+            npc: <NPCSheet npc={npc.data} />,
+            encounter: <EncounterSheet encounter={encounter.data} />,
+            loot: <LootSheet loot={loot.data} />
+        };
+
+        return sheets[activeTab as keyof typeof sheets] || null;
     };
 
     return (
         <Page>
-            <Section title={renderTitle()} className="py-8">
+            <Section title={getTitle()} className="py-8">
                 <p className="text-lg mb-8 max-w-3xl mx-auto">
                     Crie recursos para sua campanha de RPG de forma rápida e fácil.
                     Selecione a guia desejada e preencha o formulário com as características desejadas.

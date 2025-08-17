@@ -27,7 +27,7 @@ const CampaignCharacters: React.FC<CampaignCharactersProps> = ({
     const [editForm, setEditForm] = useState<UpdateCharacterData>({
         current_hp: undefined,
         temp_ac: undefined,
-        status: '',
+        status: 'active',
         campaign_notes: ''
     });
 
@@ -363,7 +363,7 @@ const CampaignCharacters: React.FC<CampaignCharactersProps> = ({
                         <label className="block text-indigo-200 mb-2">Status</label>
                         <select
                             value={editForm.status}
-                            onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                            onChange={(e) => setEditForm({ ...editForm, status: e.target.value as UpdateCharacterData['status'] })}
                             className="w-full px-3 py-2 border border-indigo-700 rounded-md 
                        bg-indigo-900/50 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                         >

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Page, Section, Button, Tabs, Alert, Loading } from '../../ui';
-import { pcService, PCAttributesType } from '../../services/pcService';
+import { pcService } from '../../services/pcService';
 import { dndService } from '../../services/dndService';
+import { FullCharacter } from '../../types/game';
+import { validateCharacterName, validateLevel, validateAttributes, validateHP } from '../../utils/gameUtils';
 import PCBasicInfo from './PCBasicInfo';
 import PCAttributes from './PCAttributes';
 import PCSkills from './PCSkills';
@@ -11,76 +13,17 @@ import PCSpells from './PCSpells';
 import PCEquipment from './PCEquipment';
 import PCDescription from './PCDescription';
 
-export interface PCData {
-    id?: number;
-    player_id?: number;
-    created_at?: string;
-    name: string;
-    race: string;
-    class: string;
-    level: number;
-    background: string;
-    alignment: string;
-    attributes: {
-        strength: number;
-        dexterity: number;
-        constitution: number;
-        intelligence: number;
-        wisdom: number;
-        charisma: number;
-    };
-    abilities: { [key: string]: any }; // NOVO CAMPO ADICIONADO
-    skills: { [key: string]: { proficient: boolean; expertise: boolean; bonus: number } };
-    hp: number;
-    current_hp?: number;
-    ca: number;
-    attacks: Array<{
-        name: string;
-        bonus: number;
-        damage: string;
-        type: string;
-        range?: string;
-    }>;
-    spells: {
-        spell_slots: { [level: string]: { total: number; used: number } };
-        known_spells: Array<{
-            name: string;
-            level: number;
-            school: string;
-            prepared?: boolean;
-        }>;
-        spellcasting_ability?: string;
-        spell_attack_bonus?: number;
-        spell_save_dc?: number;
-    };
-    equipment: Array<{
-        name: string;
-        quantity: number;
-        equipped?: boolean;
-        description?: string;
-    }>;
-    proficiency_bonus: number;
-    inspiration: boolean;
-    description: string;
-    personality_traits: string;
-    ideals: string;
-    bonds: string;
-    flaws: string;
-    features: string[];
-    player_name?: string;
-}
-
 const PCEditor: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('basic');
-    const [pcData, setPCData] = useState<PCData | null>(null);
+    const [pcData, setPCData] = useState<FullCharacter | null>(null);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
-    // Dados D&D para dropdown
+    // D&D API Data
     const [dndRaces, setDndRaces] = useState<any[]>([]);
     const [dndClasses, setDndClasses] = useState<any[]>([]);
     const [dndBackgrounds, setDndBackgrounds] = useState<any[]>([]);
@@ -115,48 +58,27 @@ const PCEditor: React.FC = () => {
         try {
             setLoading(true);
             const pc = await pcService.getPC(parseInt(id!));
-
-            const pcData: PCData = {
+            setPCData({
                 ...pc,
                 name: pc.name || '',
                 race: pc.race || '',
                 class: pc.class || '',
-                level: pc.level || 1,
                 background: pc.background || '',
                 alignment: pc.alignment || '',
-                attributes: pc.attributes || {
-                    strength: 10,
-                    dexterity: 10,
-                    constitution: 10,
-                    intelligence: 10,
-                    wisdom: 10,
-                    charisma: 10
-                },
-                abilities: pc.abilities || {}, // GARANTIR QUE ABILITIES EXISTE
-                hp: pc.hp || 1,
-                current_hp: pc.current_hp ?? pc.hp ?? 1,
-                ca: pc.ca || 10,
-                proficiency_bonus: pc.proficiency_bonus || pcService.calculateProficiencyBonus(pc.level || 1),
+                abilities: pc.abilities || {},
                 skills: pc.skills || {},
                 attacks: pc.attacks || [],
-                spells: pc.spells || {
-                    spell_slots: {},
-                    known_spells: []
-                },
+                spells: pc.spells || { spell_slots: {}, known_spells: [] },
                 equipment: pc.equipment || [],
-                inspiration: pc.inspiration || false,
                 description: pc.description || '',
                 personality_traits: pc.personality_traits || '',
                 ideals: pc.ideals || '',
                 bonds: pc.bonds || '',
                 flaws: pc.flaws || '',
                 features: pc.features || []
-            };
-
-            setPCData(pcData);
+            });
         } catch (err: any) {
             setError('Erro ao carregar personagem: ' + err.message);
-            console.error(err);
         } finally {
             setLoading(false);
         }
@@ -164,26 +86,25 @@ const PCEditor: React.FC = () => {
 
     const initializeNewPC = () => {
         const defaultPC = pcService.createDefaultPC('', '', 1);
-
         setPCData({
+            ...defaultPC,
             name: '',
             race: '',
             class: '',
-            level: 1,
             background: '',
             alignment: '',
-            attributes: defaultPC.attributes,
-            abilities: {}, // NOVO CAMPO INICIALIZADO
-            hp: defaultPC.hp,
-            current_hp: defaultPC.hp,
-            ca: defaultPC.ca,
-            proficiency_bonus: defaultPC.proficiency_bonus || 2,
+            attributes: defaultPC.attributes ?? {
+                strength: 10,
+                dexterity: 10,
+                constitution: 10,
+                intelligence: 10,
+                wisdom: 10,
+                charisma: 10
+            },
+            abilities: {},
             skills: {},
             attacks: [],
-            spells: {
-                spell_slots: {},
-                known_spells: []
-            },
+            spells: { spell_slots: {}, known_spells: [] },
             equipment: [],
             inspiration: false,
             description: '',
@@ -191,8 +112,38 @@ const PCEditor: React.FC = () => {
             ideals: '',
             bonds: '',
             flaws: '',
-            features: []
+            features: [],
+            // Ensure level is always a number
+            level: defaultPC.level ?? 1,
+            hp: defaultPC.hp ?? 1,
+            current_hp: defaultPC.current_hp ?? defaultPC.hp ?? 1,
+            ca: typeof defaultPC.ca === 'number'
+                ? defaultPC.ca
+                : 10 + (defaultPC.attributes?.dexterity !== undefined
+                    ? pcService.calculateModifier(defaultPC.attributes.dexterity)
+                    : 0),
+            proficiency_bonus: typeof defaultPC.proficiency_bonus === 'number'
+                ? defaultPC.proficiency_bonus
+                : pcService.calculateProficiencyBonus(defaultPC.level ?? 1)
         });
+    };
+
+    const validateData = (data: FullCharacter): string[] => {
+        const errors: string[] = [];
+
+        const nameError = validateCharacterName(data.name);
+        if (nameError) errors.push(nameError);
+
+        const levelError = validateLevel(data.level);
+        if (levelError) errors.push(levelError);
+
+        errors.push(...validateAttributes(data.attributes));
+        errors.push(...validateHP(data.hp, data.current_hp));
+
+        if (!data.race?.trim()) errors.push('Raça é obrigatória');
+        if (!data.class?.trim()) errors.push('Classe é obrigatória');
+
+        return errors;
     };
 
     const handleSave = async () => {
@@ -202,8 +153,7 @@ const PCEditor: React.FC = () => {
             setSaving(true);
             setError(null);
 
-            // Validar dados
-            const validationErrors = pcService.validatePCData(pcData);
+            const validationErrors = validateData(pcData);
             if (validationErrors.length > 0) {
                 setError('Erros de validação: ' + validationErrors.join(', '));
                 return;
@@ -227,116 +177,22 @@ const PCEditor: React.FC = () => {
         }
     };
 
-    const updatePCData = (updates: Partial<PCData>) => {
-        if (pcData) {
-            const newData = { ...pcData, ...updates };
-
-            // Recalcular bônus de proficiência se o nível mudou
-            if (updates.level && updates.level !== pcData.level) {
-                newData.proficiency_bonus = pcService.calculateProficiencyBonus(updates.level);
-            }
-
-            // Recalcular CA base se a destreza mudou
-            if (updates.attributes?.dexterity && updates.attributes.dexterity !== pcData.attributes.dexterity) {
-                const dexMod = pcService.calculateModifier(updates.attributes.dexterity);
-                newData.ca = 10 + dexMod; // CA base
-            }
-
-            setPCData(newData);
-        }
-    };
-
-    // Função auxiliar para aplicar modificadores raciais
-    const applyRacialModifiers = (raceIndex: string, baseAttributes: PCAttributesType): PCAttributesType => {
-        const race = dndRaces.find(r => r.api_index === raceIndex);
-        if (!race || !race.ability_bonuses) return baseAttributes;
-
-        const modifiedAttributes = { ...baseAttributes };
-
-        try {
-            const bonuses = Array.isArray(race.ability_bonuses)
-                ? race.ability_bonuses
-                : JSON.parse(race.ability_bonuses);
-
-            bonuses.forEach((bonus: any) => {
-                const abilityName = bonus.ability_score?.name || bonus.ability_score;
-                const bonusValue = bonus.bonus || 0;
-
-                switch (abilityName) {
-                    case 'str':
-                    case 'strength':
-                        modifiedAttributes.strength += bonusValue;
-                        break;
-                    case 'dex':
-                    case 'dexterity':
-                        modifiedAttributes.dexterity += bonusValue;
-                        break;
-                    case 'con':
-                    case 'constitution':
-                        modifiedAttributes.constitution += bonusValue;
-                        break;
-                    case 'int':
-                    case 'intelligence':
-                        modifiedAttributes.intelligence += bonusValue;
-                        break;
-                    case 'wis':
-                    case 'wisdom':
-                        modifiedAttributes.wisdom += bonusValue;
-                        break;
-                    case 'cha':
-                    case 'charisma':
-                        modifiedAttributes.charisma += bonusValue;
-                        break;
-                }
-            });
-        } catch (err) {
-            console.error('Erro ao aplicar modificadores raciais:', err);
-        }
-
-        return modifiedAttributes;
-    };
-
-    // Handler para mudança de raça
-    const handleRaceChange = (raceIndex: string) => {
+    const updatePCData = (updates: Partial<FullCharacter>) => {
         if (!pcData) return;
 
-        const race = dndRaces.find(r => r.api_index === raceIndex);
-        if (!race) return;
+        const newData = { ...pcData, ...updates };
 
-        // Aplicar modificadores raciais aos atributos base
-        const baseAttributes: PCAttributesType = {
-            strength: 10,
-            dexterity: 10,
-            constitution: 10,
-            intelligence: 10,
-            wisdom: 10,
-            charisma: 10
-        };
+        // Auto-calculations
+        if (updates.level && updates.level !== pcData.level) {
+            newData.proficiency_bonus = pcService.calculateProficiencyBonus(updates.level);
+        }
 
-        const modifiedAttributes = applyRacialModifiers(raceIndex, baseAttributes);
+        if (updates.attributes?.dexterity && updates.attributes.dexterity !== pcData.attributes.dexterity) {
+            const dexMod = pcService.calculateModifier(updates.attributes.dexterity);
+            newData.ca = 10 + dexMod;
+        }
 
-        updatePCData({
-            race: race.name,
-            attributes: modifiedAttributes
-        });
-    };
-
-    // Handler para mudança de classe
-    const handleClassChange = (classIndex: string) => {
-        if (!pcData) return;
-
-        const dndClass = dndClasses.find(c => c.api_index === classIndex);
-        if (!dndClass) return;
-
-        // Calcular HP base baseado no Hit Die da classe
-        const hitDie = dndClass.hit_die || 8;
-        const conMod = pcService.calculateModifier(pcData.attributes.constitution);
-        const newHP = hitDie + conMod + (pcData.level - 1) * (Math.floor(hitDie / 2) + 1 + conMod);
-
-        updatePCData({
-            class: dndClass.name,
-            hp: Math.max(newHP, 1)
-        });
+        setPCData(newData);
     };
 
     const tabs = [
@@ -365,10 +221,7 @@ const PCEditor: React.FC = () => {
                 <Section title="Erro">
                     <div className="text-center">
                         <p className="mb-4">Erro ao carregar o personagem.</p>
-                        <Button
-                            buttonLabel="Voltar"
-                            onClick={() => navigate('/characters')}
-                        />
+                        <Button buttonLabel="Voltar" onClick={() => navigate('/characters')} />
                     </div>
                 </Section>
             </Page>
@@ -379,58 +232,28 @@ const PCEditor: React.FC = () => {
         <Page>
             <Section title={isNew ? "Criar Personagem" : `Editando: ${pcData.name || 'Personagem'}`} className="py-6">
                 <div className="max-w-7xl mx-auto">
-                    {error && (
-                        <Alert
-                            message={error}
-                            variant="error"
-                            onClose={() => setError(null)}
-                            className="mb-6"
-                        />
-                    )}
+                    {error && <Alert message={error} variant="error" onClose={() => setError(null)} className="mb-6" />}
+                    {success && <Alert message={success} variant="success" className="mb-6" />}
 
-                    {success && (
-                        <Alert
-                            message={success}
-                            variant="success"
-                            className="mb-6"
-                        />
-                    )}
-
-                    {/* Barra de ações */}
+                    {/* Action Bar */}
                     <div className="flex justify-between items-center mb-6 bg-indigo-950/50 p-4 rounded-lg border border-indigo-800">
                         <div className="flex items-center gap-4">
-                            <Button
-                                buttonLabel="← Voltar"
-                                onClick={() => navigate('/characters')}
-                                classname="bg-gray-600 hover:bg-gray-700"
-                            />
+                            <Button buttonLabel="← Voltar" onClick={() => navigate('/characters')} classname="bg-gray-600 hover:bg-gray-700" />
                             <div className="text-indigo-200">
                                 <h3 className="font-bold">{pcData.name || 'Novo Personagem'}</h3>
-                                <p className="text-sm">
-                                    {pcData.race} {pcData.class} - Nível {pcData.level}
-                                </p>
+                                <p className="text-sm">{pcData.race} {pcData.class} - Nível {pcData.level}</p>
                             </div>
                         </div>
-
-                        <div className="flex gap-2">
-                            <Button
-                                buttonLabel={saving ? "Salvando..." : "💾 Salvar"}
-                                onClick={handleSave}
-                                disabled={saving}
-                                classname="bg-green-600 hover:bg-green-700"
-                            />
-                        </div>
+                        <Button
+                            buttonLabel={saving ? "Salvando..." : "💾 Salvar"}
+                            onClick={handleSave}
+                            disabled={saving}
+                            classname="bg-green-600 hover:bg-green-700"
+                        />
                     </div>
 
-                    {/* Tabs */}
-                    <Tabs
-                        tabs={tabs}
-                        defaultTabId="basic"
-                        onChange={setActiveTab}
-                        className="mb-6"
-                    />
+                    <Tabs tabs={tabs} defaultTabId="basic" onChange={setActiveTab} className="mb-6" />
 
-                    {/* Conteúdo das tabs */}
                     <div className="min-h-96">
                         {activeTab === 'basic' && (
                             <PCBasicInfo
@@ -439,51 +262,25 @@ const PCEditor: React.FC = () => {
                                 races={dndRaces}
                                 classes={dndClasses}
                                 backgrounds={dndBackgrounds}
-                                onRaceChange={handleRaceChange}
-                                onClassChange={handleClassChange}
                             />
                         )}
-
                         {activeTab === 'attributes' && (
-                            <PCAttributes
-                                pcData={pcData}
-                                updatePCData={updatePCData}
-                            />
+                            <PCAttributes pcData={pcData} updatePCData={updatePCData} />
                         )}
-
                         {activeTab === 'skills' && (
-                            <PCSkills
-                                pcData={pcData}
-                                updatePCData={updatePCData}
-                            />
+                            <PCSkills pcData={pcData} updatePCData={updatePCData} />
                         )}
-
                         {activeTab === 'combat' && (
-                            <PCCombat
-                                pcData={pcData}
-                                updatePCData={updatePCData}
-                            />
+                            <PCCombat pcData={pcData} updatePCData={updatePCData} />
                         )}
-
                         {activeTab === 'spells' && (
-                            <PCSpells
-                                pcData={pcData}
-                                updatePCData={updatePCData}
-                            />
+                            <PCSpells pcData={pcData} updatePCData={updatePCData} />
                         )}
-
                         {activeTab === 'equipment' && (
-                            <PCEquipment
-                                pcData={pcData}
-                                updatePCData={updatePCData}
-                            />
+                            <PCEquipment pcData={pcData} updatePCData={updatePCData} />
                         )}
-
                         {activeTab === 'description' && (
-                            <PCDescription
-                                pcData={pcData}
-                                updatePCData={updatePCData}
-                            />
+                            <PCDescription pcData={pcData} updatePCData={updatePCData} />
                         )}
                     </div>
                 </div>

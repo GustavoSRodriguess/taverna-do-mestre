@@ -1,8 +1,11 @@
+// frontend/src/components/Campaign/CampaignDetails.tsx - Versão Refatorada
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Page, Section, Button, CardBorder, Badge, Alert, Tabs, Modal } from '../../ui';
+import { Page, Section, Button, CardBorder, Alert, Tabs, Modal } from '../../ui';
 import { campaignService, Campaign, CampaignCharacter } from '../../services/campaignService';
 import { useAuth } from '../../context/AuthContext';
+import { StatusBadge } from '../Generic';
+import { formatDate } from '../../utils/gameUtils';
 import CampaignCharacters from './CampaignCharacters';
 import CampaignSettings from './CampaignSettings';
 
@@ -22,13 +25,23 @@ const CampaignDetails: React.FC = () => {
     const campaignId = parseInt(id || '0');
     const isDM = campaign && user && campaign.dm_id === parseInt(user.id);
 
-    const loadCampaign = async () => {
+    useEffect(() => {
+        if (campaignId) {
+            loadData();
+        }
+    }, [campaignId]);
+
+    const loadData = async () => {
         try {
             setLoading(true);
-            const campaignData = await campaignService.getCampaign(campaignId);
+            const [campaignData, charactersData] = await Promise.all([
+                campaignService.getCampaign(campaignId),
+                campaignService.getCampaignCharacters(campaignId)
+            ]);
             setCampaign(campaignData);
+            setCharacters(charactersData.characters || []);
         } catch (err) {
-            setError('Erro ao carregar campanha');
+            setError('Erro ao carregar dados da campanha');
             console.error(err);
         } finally {
             setLoading(false);
@@ -43,13 +56,6 @@ const CampaignDetails: React.FC = () => {
             console.error('Erro ao carregar personagens:', err);
         }
     };
-
-    useEffect(() => {
-        if (campaignId) {
-            loadCampaign();
-            loadCharacters();
-        }
-    }, [campaignId]);
 
     const handleShowInviteCode = async () => {
         try {
@@ -80,18 +86,6 @@ const CampaignDetails: React.FC = () => {
         } catch (err) {
             console.error('Erro ao copiar:', err);
         }
-    };
-
-    const getStatusBadge = (status: string) => {
-        const statusMap = {
-            planning: { variant: 'info' as const, text: 'Planejando' },
-            active: { variant: 'success' as const, text: 'Ativa' },
-            paused: { variant: 'warning' as const, text: 'Pausada' },
-            completed: { variant: 'primary' as const, text: 'Concluída' }
-        };
-
-        const statusInfo = statusMap[status as keyof typeof statusMap] || statusMap.planning;
-        return <Badge text={statusInfo.text} variant={statusInfo.variant} />;
     };
 
     const tabs = [
@@ -141,13 +135,13 @@ const CampaignDetails: React.FC = () => {
                         />
                     )}
 
-                    {/* Header da campanha */}
+                    {/* Campaign Header */}
                     <CardBorder className="mb-8 bg-indigo-950/80">
                         <div className="flex justify-between items-start mb-4">
                             <div className="flex-1">
                                 <div className="flex items-center gap-4 mb-2">
                                     <h2 className="text-2xl font-bold text-white">{campaign.name}</h2>
-                                    {getStatusBadge(campaign.status)}
+                                    <StatusBadge status={campaign.status} type="campaign" />
                                 </div>
 
                                 {campaign.description && (
@@ -161,22 +155,17 @@ const CampaignDetails: React.FC = () => {
                                             {campaign.player_count || 0}/{campaign.max_players}
                                         </span>
                                     </div>
-
                                     <div>
                                         <span className="text-indigo-400">Sessão:</span>
                                         <span className="text-white ml-2">{campaign.current_session || 1}</span>
                                     </div>
-
                                     <div>
                                         <span className="text-indigo-400">Mestre:</span>
                                         <span className="text-white ml-2">{campaign.dm_name || 'Desconhecido'}</span>
                                     </div>
-
                                     <div>
                                         <span className="text-indigo-400">Criada em:</span>
-                                        <span className="text-white ml-2">
-                                            {new Date(campaign.created_at).toLocaleDateString('pt-BR')}
-                                        </span>
+                                        <span className="text-white ml-2">{formatDate(campaign.created_at)}</span>
                                     </div>
                                 </div>
                             </div>
@@ -187,7 +176,6 @@ const CampaignDetails: React.FC = () => {
                                     onClick={() => navigate('/campaigns')}
                                     classname="bg-gray-600 hover:bg-gray-700"
                                 />
-
                                 {isDM && (
                                     <Button
                                         buttonLabel="Código de Convite"
@@ -199,7 +187,6 @@ const CampaignDetails: React.FC = () => {
                         </div>
                     </CardBorder>
 
-                    {/* Tabs */}
                     <Tabs
                         tabs={tabs}
                         defaultTabId="overview"
@@ -207,41 +194,34 @@ const CampaignDetails: React.FC = () => {
                         className="mb-6"
                     />
 
-                    {/* Conteúdo das tabs */}
+                    {/* Tab Content */}
                     <div className="min-h-96">
                         {activeTab === 'overview' && (
                             <div className="grid md:grid-cols-2 gap-6">
                                 <CardBorder className="bg-indigo-950/80">
                                     <h3 className="text-xl font-bold mb-4">Informações da Campanha</h3>
-
                                     <div className="space-y-3">
                                         <div className="flex justify-between">
                                             <span className="text-indigo-400">Status:</span>
-                                            {getStatusBadge(campaign.status)}
+                                            <StatusBadge status={campaign.status} type="campaign" />
                                         </div>
-
                                         <div className="flex justify-between">
                                             <span className="text-indigo-400">Máximo de jogadores:</span>
                                             <span className="text-white">{campaign.max_players}</span>
                                         </div>
-
                                         <div className="flex justify-between">
                                             <span className="text-indigo-400">Sessão atual:</span>
                                             <span className="text-white">{campaign.current_session || 1}</span>
                                         </div>
-
                                         <div className="flex justify-between">
                                             <span className="text-indigo-400">Última atualização:</span>
-                                            <span className="text-white">
-                                                {new Date(campaign.updated_at).toLocaleDateString('pt-BR')}
-                                            </span>
+                                            <span className="text-white">{formatDate(campaign.updated_at)}</span>
                                         </div>
                                     </div>
                                 </CardBorder>
 
                                 <CardBorder className="bg-indigo-950/80">
                                     <h3 className="text-xl font-bold mb-4">Resumo dos Personagens</h3>
-
                                     {characters.length === 0 ? (
                                         <p className="text-indigo-300">Nenhum personagem na campanha ainda.</p>
                                     ) : (
@@ -261,7 +241,6 @@ const CampaignDetails: React.FC = () => {
                                                     </div>
                                                 </div>
                                             ))}
-
                                             {characters.length > 4 && (
                                                 <div className="text-center text-indigo-400 text-sm">
                                                     +{characters.length - 4} personagens adicionais
@@ -285,14 +264,14 @@ const CampaignDetails: React.FC = () => {
                         {activeTab === 'settings' && isDM && (
                             <CampaignSettings
                                 campaign={campaign}
-                                onCampaignUpdate={loadCampaign}
+                                onCampaignUpdate={loadData}
                             />
                         )}
                     </div>
                 </div>
             </Section>
 
-            {/* Modal do código de convite */}
+            {/* Invite Code Modal */}
             <Modal
                 isOpen={showInviteModal}
                 onClose={() => setShowInviteModal(false)}

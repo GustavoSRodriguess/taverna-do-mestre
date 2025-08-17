@@ -176,7 +176,7 @@ const CampaignSettings: React.FC<CampaignSettingsProps> = ({
                             </label>
                             <select
                                 value={formData.status || 'planning'}
-                                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                                onChange={(e) => setFormData({ ...formData, status: e.target.value as typeof formData.status })}
                                 className="w-full px-3 py-2 border border-indigo-700 rounded-md 
                          focus:outline-none focus:ring-2 focus:ring-purple-500 
                          bg-indigo-900/50 text-white"

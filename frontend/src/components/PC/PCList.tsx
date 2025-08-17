@@ -1,21 +1,28 @@
+// frontend/src/components/PC/PCList.tsx - Versão Simplificada
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Page, Section, Button, CardBorder, Badge, Alert, Modal, ModalConfirmFooter } from '../../ui';
-import { pcService, PC } from '../../services/pcService';
+import { Page, Section, Button, CardBorder, Alert, Modal, ModalConfirmFooter } from '../../ui';
+import { pcService } from '../../services/pcService';
+import { FullCharacter } from '../../types/game';
+import { StatusBadge, AttributeDisplay, CombatStats, LevelBadge, CharacterCardSkeleton } from '../Generic';
+import { formatDate } from '../../utils/gameUtils';
 
 const PCList: React.FC = () => {
     const navigate = useNavigate();
-    const [pcs, setPCs] = useState<PC[]>([]);
+    const [pcs, setPCs] = useState<FullCharacter[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [pcToDelete, setPCToDelete] = useState<PC | null>(null);
+    const [pcToDelete, setPCToDelete] = useState<FullCharacter | null>(null);
+
+    useEffect(() => {
+        loadPCs();
+    }, []);
 
     const loadPCs = async () => {
         try {
             setLoading(true);
             const response = await pcService.getPCs();
-            console.log('PCs loaded:', response);
             setPCs(response.pcs || []);
         } catch (err) {
             setError('Erro ao carregar personagens');
@@ -25,15 +32,11 @@ const PCList: React.FC = () => {
         }
     };
 
-    useEffect(() => {
-        loadPCs();
-    }, []);
-
     const handleDelete = async () => {
         if (!pcToDelete) return;
 
         try {
-            await pcService.deletePC(pcToDelete.id);
+            await pcService.deletePC(pcToDelete.id!);
             setPCs(pcs.filter(pc => pc.id !== pcToDelete.id));
             setShowDeleteModal(false);
             setPCToDelete(null);
@@ -42,32 +45,112 @@ const PCList: React.FC = () => {
         }
     };
 
-    const confirmDelete = (pc: PC) => {
+    const confirmDelete = (pc: FullCharacter) => {
         setPCToDelete(pc);
         setShowDeleteModal(true);
     };
 
-    const getModifier = (score: number): number => {
-        return Math.floor((score - 10) / 2);
-    };
+    const EmptyState = () => (
+        <CardBorder className="text-center py-12 bg-indigo-950/50">
+            <div className="text-6xl mb-4">🧙‍♂️</div>
+            <h3 className="text-xl font-bold mb-2">Nenhum personagem encontrado</h3>
+            <p className="text-indigo-300 mb-6">
+                Comece criando seu primeiro personagem para usar em campanhas.
+            </p>
+            <div className="flex justify-center gap-4">
+                <Button
+                    buttonLabel="🎲 Gerar Aleatório"
+                    onClick={() => navigate('/generator')}
+                    classname="bg-green-600 hover:bg-green-700"
+                />
+                <Button
+                    buttonLabel="✍️ Criar Manual"
+                    onClick={() => navigate('/pc-editor/new')}
+                />
+            </div>
+        </CardBorder>
+    );
 
-    const formatModifier = (modifier: number): string => {
-        return modifier >= 0 ? `+${modifier}` : modifier.toString();
-    };
+    const CharacterCard: React.FC<{ pc: FullCharacter }> = ({ pc }) => (
+        <CardBorder className="bg-indigo-950/80 hover:bg-indigo-900/80 transition-colors">
+            <div className="flex justify-between items-start mb-4">
+                <div>
+                    <h3 className="font-bold text-lg text-white">{pc.name}</h3>
+                    <p className="text-indigo-300 text-sm">{pc.race} {pc.class}</p>
+                </div>
+                <LevelBadge level={pc.level} />
+            </div>
 
-    const getLevelColor = (level: number): string => {
-        if (level <= 5) return 'text-green-400';
-        if (level <= 10) return 'text-blue-400';
-        if (level <= 15) return 'text-purple-400';
-        return 'text-yellow-400';
-    };
+            <CombatStats
+                hp={pc.hp}
+                currentHp={pc.current_hp}
+                ca={pc.ca}
+                proficiencyBonus={pc.proficiency_bonus}
+                className="mb-4"
+            />
+
+            <AttributeDisplay
+                attributes={pc.attributes}
+                layout="grid"
+                showModifiers={true}
+                className="mb-4 text-xs"
+            />
+
+            {/* Additional Info */}
+            <div className="space-y-1 mb-4 text-xs">
+                {pc.background && (
+                    <div className="flex justify-between">
+                        <span className="text-indigo-400">Antecedente:</span>
+                        <span className="text-white">{pc.background}</span>
+                    </div>
+                )}
+                {pc.alignment && (
+                    <div className="flex justify-between">
+                        <span className="text-indigo-400">Alinhamento:</span>
+                        <span className="text-white">{pc.alignment}</span>
+                    </div>
+                )}
+                {pc.player_name && (
+                    <div className="flex justify-between">
+                        <span className="text-indigo-400">Jogador:</span>
+                        <span className="text-white">{pc.player_name}</span>
+                    </div>
+                )}
+            </div>
+
+            <div className="text-xs text-indigo-400 mb-4">
+                Criado em: {formatDate(pc.created_at!)}
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2 pt-4 border-t border-indigo-800">
+                <Button
+                    buttonLabel="✏️ Editar"
+                    onClick={() => navigate(`/pc-editor/${pc.id}`)}
+                    classname="flex-1 text-sm py-2"
+                />
+                <Button
+                    buttonLabel="📊 Campanhas"
+                    onClick={() => navigate(`/pc/${pc.id}/campaigns`)}
+                    classname="flex-1 text-sm py-2 bg-blue-600 hover:bg-blue-700"
+                />
+                <Button
+                    buttonLabel="🗑️"
+                    onClick={() => confirmDelete(pc)}
+                    classname="text-sm py-2 px-3 bg-red-600 hover:bg-red-700"
+                />
+            </div>
+        </CardBorder>
+    );
 
     if (loading) {
         return (
             <Page>
                 <Section title="Meus Personagens">
-                    <div className="text-center">
-                        <p>Carregando personagens...</p>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+                        {Array.from({ length: 6 }, (_, i) => (
+                            <CharacterCardSkeleton key={i} />
+                        ))}
                     </div>
                 </Section>
             </Page>
@@ -87,7 +170,7 @@ const PCList: React.FC = () => {
                         />
                     )}
 
-                    {/* Header com botões de ação */}
+                    {/* Header */}
                     <div className="flex justify-between items-center mb-8">
                         <div>
                             <h3 className="text-lg text-indigo-200">
@@ -110,132 +193,20 @@ const PCList: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Lista de personagens */}
+                    {/* Character List */}
                     {pcs.length === 0 ? (
-                        <CardBorder className="text-center py-12 bg-indigo-950/50">
-                            <div className="text-6xl mb-4">🧙‍♂️</div>
-                            <h3 className="text-xl font-bold mb-2">Nenhum personagem encontrado</h3>
-                            <p className="text-indigo-300 mb-6">
-                                Comece criando seu primeiro personagem para usar em campanhas.
-                            </p>
-                            <div className="flex justify-center gap-4">
-                                <Button
-                                    buttonLabel="🎲 Gerar Aleatório"
-                                    onClick={() => navigate('/generator')}
-                                    classname="bg-green-600 hover:bg-green-700"
-                                />
-                                <Button
-                                    buttonLabel="✍️ Criar Manual"
-                                    onClick={() => navigate('/pc-editor/new')}
-                                />
-                            </div>
-                        </CardBorder>
+                        <EmptyState />
                     ) : (
                         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {pcs.map((pc) => (
-                                <CardBorder key={pc.id} className="bg-indigo-950/80 hover:bg-indigo-900/80 transition-colors">
-                                    {/* Header do card */}
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div>
-                                            <h3 className="font-bold text-lg text-white">{pc.name}</h3>
-                                            <p className="text-indigo-300 text-sm">
-                                                {pc.race} {pc.class}
-                                            </p>
-                                        </div>
-                                        <Badge
-                                            text={`Nível ${pc.level}`}
-                                            variant="primary"
-                                            className={getLevelColor(pc.level)}
-                                        />
-                                    </div>
-
-                                    {/* Atributos principais */}
-                                    <div className="grid grid-cols-3 gap-2 mb-4 text-sm">
-                                        <div className="text-center p-2 bg-red-900/30 rounded">
-                                            <div className="text-red-300 text-xs">HP</div>
-                                            <div className="text-white font-bold">
-                                                {pc.current_hp || pc.hp}/{pc.hp}
-                                            </div>
-                                        </div>
-                                        <div className="text-center p-2 bg-blue-900/30 rounded">
-                                            <div className="text-blue-300 text-xs">CA</div>
-                                            <div className="text-white font-bold">{pc.ca}</div>
-                                        </div>
-                                        <div className="text-center p-2 bg-purple-900/30 rounded">
-                                            <div className="text-purple-300 text-xs">PROF</div>
-                                            <div className="text-white font-bold">+{pc.proficiency_bonus}</div>
-                                        </div>
-                                    </div>
-
-                                    {/* Atributos */}
-                                    <div className="grid grid-cols-6 gap-1 mb-4 text-xs">
-                                        {Object.entries(pc.attributes).map(([attr, value]) => {
-                                            const modifier = getModifier(value);
-                                            const shortAttr = attr.substring(0, 3).toUpperCase();
-
-                                            return (
-                                                <div key={attr} className="text-center p-1 bg-indigo-900/30 rounded">
-                                                    <div className="text-indigo-300">{shortAttr}</div>
-                                                    <div className="text-white font-bold">{value}</div>
-                                                    <div className="text-purple-300">{formatModifier(modifier)}</div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-
-                                    {/* Informações adicionais */}
-                                    <div className="space-y-1 mb-4 text-xs">
-                                        {pc.background && (
-                                            <div className="flex justify-between">
-                                                <span className="text-indigo-400">Antecedente:</span>
-                                                <span className="text-white">{pc.background}</span>
-                                            </div>
-                                        )}
-                                        {pc.alignment && (
-                                            <div className="flex justify-between">
-                                                <span className="text-indigo-400">Alinhamento:</span>
-                                                <span className="text-white">{pc.alignment}</span>
-                                            </div>
-                                        )}
-                                        {pc.player_name && (
-                                            <div className="flex justify-between">
-                                                <span className="text-indigo-400">Jogador:</span>
-                                                <span className="text-white">{pc.player_name}</span>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Data de criação */}
-                                    <div className="text-xs text-indigo-400 mb-4">
-                                        Criado em: {new Date(pc.created_at).toLocaleDateString('pt-BR')}
-                                    </div>
-
-                                    {/* Ações */}
-                                    <div className="flex gap-2 pt-4 border-t border-indigo-800">
-                                        <Button
-                                            buttonLabel="✏️ Editar"
-                                            onClick={() => navigate(`/pc-editor/${pc.id}`)}
-                                            classname="flex-1 text-sm py-2"
-                                        />
-                                        <Button
-                                            buttonLabel="📊 Campanhas"
-                                            onClick={() => navigate(`/pc/${pc.id}/campaigns`)}
-                                            classname="flex-1 text-sm py-2 bg-blue-600 hover:bg-blue-700"
-                                        />
-                                        <Button
-                                            buttonLabel="🗑️"
-                                            onClick={() => confirmDelete(pc)}
-                                            classname="text-sm py-2 px-3 bg-red-600 hover:bg-red-700"
-                                        />
-                                    </div>
-                                </CardBorder>
+                                <CharacterCard key={pc.id} pc={pc} />
                             ))}
                         </div>
                     )}
                 </div>
             </Section>
 
-            {/* Modal de confirmação de exclusão */}
+            {/* Delete Confirmation Modal */}
             <Modal
                 isOpen={showDeleteModal}
                 onClose={() => setShowDeleteModal(false)}

@@ -1,4 +1,6 @@
+// frontend/src/services/campaignService.ts - Versão Refatorada
 import { fetchFromAPI } from "./apiService";
+import { StatusType, BaseCharacter } from "../types/game";
 
 export interface Campaign {
     id: number;
@@ -7,7 +9,7 @@ export interface Campaign {
     dm_id: number;
     max_players: number;
     current_session: number;
-    status: 'planning' | 'active' | 'paused' | 'completed';
+    status: StatusType;
     invite_code: string;
     created_at: string;
     updated_at: string;
@@ -22,7 +24,7 @@ export interface CampaignPlayer {
     campaign_id: number;
     user_id: number;
     joined_at: string;
-    status: 'active' | 'inactive' | 'removed';
+    status: StatusType;
     user?: {
         id: number;
         username: string;
@@ -35,20 +37,12 @@ export interface CampaignCharacter {
     campaign_id: number;
     player_id: number;
     pc_id: number;
-    status: 'active' | 'inactive' | 'dead' | 'retired';
+    status: StatusType;
     joined_at: string;
     current_hp?: number;
     temp_ac?: number;
     campaign_notes: string;
-    pc?: {
-        id: number;
-        name: string;
-        race: string;
-        class: string;
-        level: number;
-        hp: number;
-        ca: number;
-    };
+    pc?: BaseCharacter;
     player?: {
         id: number;
         username: string;
@@ -66,7 +60,7 @@ export interface UpdateCampaignData {
     description?: string;
     max_players?: number;
     current_session?: number;
-    status?: string;
+    status?: StatusType;
 }
 
 export interface AddCharacterData {
@@ -76,81 +70,89 @@ export interface AddCharacterData {
 export interface UpdateCharacterData {
     current_hp?: number;
     temp_ac?: number;
-    status?: string;
+    status?: StatusType;
     campaign_notes?: string;
 }
 
-// Serviços de Campanha
-export const campaignService = {
-    // Listar campanhas do usuário
-    getCampaigns: async (): Promise<{ campaigns: Campaign[], count: number }> => {
-        return await fetchFromAPI('/campaigns');
-    },
-
-    // Obter campanha específica
-    getCampaign: async (id: number): Promise<Campaign> => {
-        return await fetchFromAPI(`/campaigns/${id}`);
-    },
-
-    // Criar nova campanha
-    createCampaign: async (data: CreateCampaignData): Promise<Campaign> => {
-        return await fetchFromAPI('/campaigns', 'POST', data);
-    },
-
-    // Atualizar campanha
-    updateCampaign: async (id: number, data: UpdateCampaignData): Promise<Campaign> => {
-        return await fetchFromAPI(`/campaigns/${id}`, 'PUT', data);
-    },
-
-    // Deletar campanha
-    deleteCampaign: async (id: number): Promise<void> => {
-        return await fetchFromAPI(`/campaigns/${id}`, 'DELETE');
-    },
-
-    // Obter código de convite
-    getInviteCode: async (id: number): Promise<{ invite_code: string, message: string }> => {
-        return await fetchFromAPI(`/campaigns/${id}/invite-code`);
-    },
-
-    // Regenerar código de convite
-    regenerateInviteCode: async (id: number): Promise<{ invite_code: string, message: string }> => {
-        return await fetchFromAPI(`/campaigns/${id}/regenerate-code`, 'POST');
-    },
-
-    // Entrar na campanha
-    joinCampaign: async (inviteCode: string): Promise<{ message: string }> => {
-        return await fetchFromAPI('/campaigns/join', 'POST', { invite_code: inviteCode });
-    },
-
-    // Sair da campanha
-    leaveCampaign: async (id: number): Promise<void> => {
-        return await fetchFromAPI(`/campaigns/${id}/leave`, 'DELETE');
-    },
-
-    // Listar PCs disponíveis para a campanha
-    getAvailableCharacters: async (id: number): Promise<{ available_characters: any[], count: number }> => {
-        return await fetchFromAPI(`/campaigns/${id}/available-characters`);
-    },
-
-    // Listar personagens da campanha
-    getCampaignCharacters: async (id: number): Promise<{ characters: CampaignCharacter[], count: number }> => {
-        return await fetchFromAPI(`/campaigns/${id}/characters`);
-    },
-
-    // Adicionar PC à campanha
-    addCharacterToCampaign: async (campaignId: number, data: AddCharacterData): Promise<CampaignCharacter> => {
-        return await fetchFromAPI(`/campaigns/${campaignId}/characters`, 'POST', data);
-    },
-
-    // Atualizar status do personagem na campanha
-    updateCampaignCharacter: async (campaignId: number, characterId: number, data: UpdateCharacterData): Promise<CampaignCharacter> => {
-        return await fetchFromAPI(`/campaigns/${campaignId}/characters/${characterId}`, 'PUT', data);
-    },
-
-    // Remover personagem da campanha
-    removeCampaignCharacter: async (campaignId: number, characterId: number): Promise<void> => {
-        return await fetchFromAPI(`/campaigns/${campaignId}/characters/${characterId}`, 'DELETE');
+// Campaign Service Class
+class CampaignService {
+    // Campaign CRUD
+    async getCampaigns(): Promise<{ campaigns: Campaign[], count: number }> {
+        return fetchFromAPI('/campaigns');
     }
-};
 
+    async getCampaign(id: number): Promise<Campaign> {
+        return fetchFromAPI(`/campaigns/${id}`);
+    }
+
+    async createCampaign(data: CreateCampaignData): Promise<Campaign> {
+        return fetchFromAPI('/campaigns', 'POST', data);
+    }
+
+    async updateCampaign(id: number, data: UpdateCampaignData): Promise<Campaign> {
+        return fetchFromAPI(`/campaigns/${id}`, 'PUT', data);
+    }
+
+    async deleteCampaign(id: number): Promise<void> {
+        return fetchFromAPI(`/campaigns/${id}`, 'DELETE');
+    }
+
+    // Invite Management
+    async getInviteCode(id: number): Promise<{ invite_code: string, message: string }> {
+        return fetchFromAPI(`/campaigns/${id}/invite-code`);
+    }
+
+    async regenerateInviteCode(id: number): Promise<{ invite_code: string, message: string }> {
+        return fetchFromAPI(`/campaigns/${id}/regenerate-code`, 'POST');
+    }
+
+    async joinCampaign(inviteCode: string): Promise<{ message: string }> {
+        return fetchFromAPI('/campaigns/join', 'POST', { invite_code: inviteCode });
+    }
+
+    async leaveCampaign(id: number): Promise<void> {
+        return fetchFromAPI(`/campaigns/${id}/leave`, 'DELETE');
+    }
+
+    // Character Management
+    async getAvailableCharacters(id: number): Promise<{ available_characters: BaseCharacter[], count: number }> {
+        return fetchFromAPI(`/campaigns/${id}/available-characters`);
+    }
+
+    async getCampaignCharacters(id: number): Promise<{ characters: CampaignCharacter[], count: number }> {
+        return fetchFromAPI(`/campaigns/${id}/characters`);
+    }
+
+    async addCharacterToCampaign(campaignId: number, data: AddCharacterData): Promise<CampaignCharacter> {
+        return fetchFromAPI(`/campaigns/${campaignId}/characters`, 'POST', data);
+    }
+
+    async updateCampaignCharacter(campaignId: number, characterId: number, data: UpdateCharacterData): Promise<CampaignCharacter> {
+        return fetchFromAPI(`/campaigns/${campaignId}/characters/${characterId}`, 'PUT', data);
+    }
+
+    async removeCampaignCharacter(campaignId: number, characterId: number): Promise<void> {
+        return fetchFromAPI(`/campaigns/${campaignId}/characters/${characterId}`, 'DELETE');
+    }
+
+    // Utility methods
+    validateCampaignData(data: CreateCampaignData): string[] {
+        const errors: string[] = [];
+
+        if (!data.name?.trim()) errors.push('Nome da campanha é obrigatório');
+        if (data.name && data.name.length > 100) errors.push('Nome deve ter no máximo 100 caracteres');
+        if (data.max_players < 1 || data.max_players > 10) errors.push('Número de jogadores deve ser entre 1 e 10');
+        if (data.description && data.description.length > 500) errors.push('Descrição deve ter no máximo 500 caracteres');
+
+        return errors;
+    }
+
+    validateInviteCode(code: string): string | null {
+        const cleanCode = code.replace(/[^A-Za-z0-9]/g, '');
+        if (cleanCode.length !== 8) return 'Código deve ter 8 caracteres';
+        return null;
+    }
+}
+
+export const campaignService = new CampaignService();
 export default campaignService;
