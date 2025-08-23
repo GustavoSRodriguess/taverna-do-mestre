@@ -10,18 +10,24 @@ import (
 	"github.com/go-chi/chi/v5"
 	"golang.org/x/crypto/bcrypt"
 
-	"rpg-saas-backend/internal/api/middleware" // Adicionado import para o middleware
-	"rpg-saas-backend/internal/auth"           // Adicionado import para o pacote auth
+	"rpg-saas-backend/internal/auth" // Adicionado import para o pacote auth
 	"rpg-saas-backend/internal/db"
 	"rpg-saas-backend/internal/models"
+	"rpg-saas-backend/internal/utils"
 )
 
 type userHandler struct {
-	DB *db.PostgresDB
+	DB        *db.PostgresDB
+	Response  *utils.ResponseHandler
+	Validator *utils.Validator
 }
 
 func NewUserHandler(db *db.PostgresDB) *userHandler {
-	return &userHandler{DB: db}
+	return &userHandler{
+		DB:        db,
+		Response:  utils.NewResponseHandler(),
+		Validator: utils.NewValidator(),
+	}
 }
 
 func (h *userHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
@@ -34,40 +40,39 @@ func (h *userHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *userHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
-	idStr := chi.URLParam(r, "id")
-	id, err := strconv.Atoi(idStr)
+	// Extract ID using utility
+	id, err := utils.ExtractID(r)
 	if err != nil {
-		http.Error(w, "invalid user ID", http.StatusBadRequest)
+		h.Response.SendBadRequest(w, err.Error())
 		return
 	}
 
 	user, err := h.DB.GetUserByID(r.Context(), id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		h.Response.HandleDBError(w, err, "fetch user")
 		return
 	}
-	json.NewEncoder(w).Encode(user)
+	h.Response.SendJSON(w, user, http.StatusOK)
 }
 
 // GetCurrentUser retorna os dados do usuário autenticado
 func (h *userHandler) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
-	// Obter o ID do usuário do contexto (inserido pelo AuthMiddleware)
-	userID, ok := r.Context().Value(middleware.UserIDKey).(int)
-	if !ok {
-		http.Error(w, "ID do usuário não encontrado no contexto", http.StatusInternalServerError)
+	// Extract user ID using utility
+	userID, err := utils.ExtractUserID(r)
+	if err != nil {
+		h.Response.SendInternalError(w, "User ID not found in context")
 		return
 	}
 
 	// Buscar o usuário no banco de dados
 	user, err := h.DB.GetUserByID(r.Context(), userID)
 	if err != nil {
-		http.Error(w, "Usuário não encontrado", http.StatusNotFound)
+		h.Response.HandleDBError(w, err, "fetch current user")
 		return
 	}
 
-	// Retornar os dados do usuário
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
+	// Send response using utility
+	h.Response.SendJSON(w, user, http.StatusOK)
 }
 
 func (h *userHandler) Login(w http.ResponseWriter, r *http.Request) {
@@ -103,7 +108,7 @@ func (h *userHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	// Retornar usuário e token
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"user":  user,
 		"token": tokenString,
 	})
@@ -112,13 +117,25 @@ func (h *userHandler) Login(w http.ResponseWriter, r *http.Request) {
 func (h *userHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		http.Error(w, "invalid request payload", http.StatusBadRequest)
+		h.Response.SendBadRequest(w, "Invalid request payload")
+		return
+	}
+
+	// Validate using centralized validator
+	validationErrors := h.Validator.BatchValidate(
+		func() error { return h.Validator.ValidateRequired(user.Username, "username") },
+		func() error { return h.Validator.ValidateEmail(user.Email) },
+		func() error { return h.Validator.ValidatePassword(user.Password) },
+	)
+
+	if validationErrors.HasErrors() {
+		h.Response.SendValidationError(w, validationErrors.Error())
 		return
 	}
 
 	hashedPwd, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
-		http.Error(w, "failed to hash password", http.StatusInternalServerError)
+		h.Response.SendInternalError(w, "Failed to hash password")
 		return
 	}
 
@@ -153,7 +170,7 @@ func (h *userHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"user":  createdUser,
 		"token": tokenString,
 	})

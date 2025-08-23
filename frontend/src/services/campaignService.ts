@@ -32,17 +32,45 @@ export interface CampaignPlayer {
     };
 }
 
+// Interface para o modelo de snapshot completo
 export interface CampaignCharacter {
     id: number;
     campaign_id: number;
     player_id: number;
-    pc_id: number;
+    source_pc_id: number; // ID do PC original
+
+    // Snapshot completo do PC
+    name: string;
+    description: string;
+    level: number;
+    race: string;
+    class: string;
+    background: string;
+    alignment: string;
+    attributes: any;
+    abilities: any;
+    equipment: any;
+    hp: number;
+    current_hp?: number;
+    ca: number;
+    proficiency_bonus: number;
+    inspiration: boolean;
+    skills: any;
+    attacks: any;
+    spells: any;
+    personality_traits: string;
+    ideals: string;
+    bonds: string;
+    flaws: string;
+    features: string[];
+    player_name: string;
+
+    // Metadados da campanha
     status: StatusType;
     joined_at: string;
-    current_hp?: number;
-    temp_ac?: number;
+    last_sync?: string;
     campaign_notes: string;
-    pc?: BaseCharacter;
+
     player?: {
         id: number;
         username: string;
@@ -74,10 +102,45 @@ export interface UpdateCharacterData {
     campaign_notes?: string;
 }
 
+// Interface para atualização completa do PC na campanha
+export interface UpdateCampaignCharacterData {
+    name?: string;
+    description?: string;
+    level?: number;
+    race?: string;
+    class?: string;
+    background?: string;
+    alignment?: string;
+    attributes?: any;
+    abilities?: any;
+    equipment?: any;
+    hp?: number;
+    current_hp?: number;
+    ca?: number;
+    proficiency_bonus?: number;
+    inspiration?: boolean;
+    skills?: any;
+    attacks?: any;
+    spells?: any;
+    personality_traits?: string;
+    ideals?: string;
+    bonds?: string;
+    flaws?: string;
+    features?: string[];
+    player_name?: string;
+    status?: StatusType;
+    campaign_notes?: string;
+}
+
+// Interface para sincronização
+export interface SyncCharacterData {
+    sync_to_other_campaigns?: boolean;
+}
+
 // Campaign Service Class
 class CampaignService {
     // Campaign CRUD
-    async getCampaigns(): Promise<{ campaigns: Campaign[], count: number }> {
+    async getCampaigns(): Promise<{ campaigns: Campaign[], results: any, count: number }> {
         return fetchFromAPI('/campaigns');
     }
 
@@ -115,7 +178,7 @@ class CampaignService {
     }
 
     // Character Management
-    async getAvailableCharacters(id: number): Promise<{ available_characters: BaseCharacter[], count: number }> {
+    async getAvailableCharacters(id: number): Promise<{ available_characters: BaseCharacter[], results: any, count: number }> {
         return fetchFromAPI(`/campaigns/${id}/available-characters`);
     }
 
@@ -127,12 +190,25 @@ class CampaignService {
         return fetchFromAPI(`/campaigns/${campaignId}/characters`, 'POST', data);
     }
 
-    async updateCampaignCharacter(campaignId: number, characterId: number, data: UpdateCharacterData): Promise<CampaignCharacter> {
+    async updateCampaignCharacterStatus(campaignId: number, characterId: number, data: UpdateCharacterData): Promise<CampaignCharacter> {
         return fetchFromAPI(`/campaigns/${campaignId}/characters/${characterId}`, 'PUT', data);
     }
 
     async removeCampaignCharacter(campaignId: number, characterId: number): Promise<void> {
         return fetchFromAPI(`/campaigns/${campaignId}/characters/${characterId}`, 'DELETE');
+    }
+
+    // Novos métodos para gerenciar snapshots completos
+    async getCampaignCharacter(campaignId: number, characterId: number): Promise<CampaignCharacter> {
+        return fetchFromAPI(`/campaigns/${campaignId}/characters/${characterId}`);
+    }
+
+    async updateCampaignCharacterFull(campaignId: number, characterId: number, data: UpdateCampaignCharacterData): Promise<CampaignCharacter> {
+        return fetchFromAPI(`/campaigns/${campaignId}/characters/${characterId}/full`, 'PUT', data);
+    }
+
+    async syncCampaignCharacter(campaignId: number, characterId: number, data: SyncCharacterData): Promise<{ message: string }> {
+        return fetchFromAPI(`/campaigns/${campaignId}/characters/${characterId}/sync`, 'POST', data);
     }
 
     // Utility methods

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Button, CardBorder, Badge, Modal, ModalConfirmFooter, Alert } from '../../ui';
 import { campaignService, CampaignCharacter, UpdateCharacterData } from '../../services/campaignService';
+import { Edit, Settings, Trash2, Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface CampaignCharactersProps {
     campaignId: number;
@@ -21,6 +23,7 @@ const CampaignCharacters: React.FC<CampaignCharactersProps> = ({
     const [selectedCharacter, setSelectedCharacter] = useState<CampaignCharacter | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const navigate = useNavigate();
 
     // Form states
     const [selectedPCId, setSelectedPCId] = useState<number | null>(null);
@@ -40,12 +43,12 @@ const CampaignCharacters: React.FC<CampaignCharactersProps> = ({
             console.log('Resposta da API:', response);
             console.log('PCs disponíveis:', response.available_characters);
 
-            setAvailablePCs(response.available_characters || []);
+            setAvailablePCs(response.results.available_characters || []);
 
-            if (!response.available_characters || response.available_characters.length === 0) {
+            if (!response.results.available_characters || response.results.available_characters.length === 0) {
                 console.log('Nenhum PC disponível encontrado');
             } else {
-                console.log(`${response.available_characters.length} PCs disponíveis encontrados`);
+                console.log(`${response.results.available_characters.length} PCs disponíveis encontrados`);
             }
         } catch (err: any) {
             console.error('Erro detalhado ao carregar PCs disponíveis:', err);
@@ -88,7 +91,7 @@ const CampaignCharacters: React.FC<CampaignCharactersProps> = ({
         setSelectedCharacter(character);
         setEditForm({
             current_hp: character.current_hp,
-            temp_ac: character.temp_ac,
+            temp_ac: undefined, // temp_ac não existe mais no novo modelo
             status: character.status,
             campaign_notes: character.campaign_notes || ''
         });
@@ -102,7 +105,7 @@ const CampaignCharacters: React.FC<CampaignCharactersProps> = ({
             setLoading(true);
             setError(null);
 
-            await campaignService.updateCampaignCharacter(
+            await campaignService.updateCampaignCharacterStatus(
                 campaignId,
                 selectedCharacter.id,
                 editForm
@@ -173,7 +176,9 @@ const CampaignCharacters: React.FC<CampaignCharactersProps> = ({
             {/* Lista de personagens */}
             {characters.length === 0 ? (
                 <CardBorder className="text-center py-8 bg-indigo-950/50">
-                    <div className="text-4xl mb-4">🎭</div>
+                    <div className="mb-4">
+                        <Users size={64} className="mx-auto text-indigo-400" />
+                    </div>
                     <h4 className="text-lg font-bold mb-2">Nenhum personagem na campanha</h4>
                     <p className="text-indigo-300 mb-4">
                         Adicione personagens existentes à campanha para começar a aventura!
@@ -191,10 +196,10 @@ const CampaignCharacters: React.FC<CampaignCharactersProps> = ({
                             <div className="flex justify-between items-start mb-4">
                                 <div>
                                     <h4 className="font-bold text-lg text-white">
-                                        {character.pc?.name || 'Nome não disponível'}
+                                        {character.name || 'Nome não disponível'}
                                     </h4>
                                     <p className="text-indigo-300">
-                                        {character.pc?.race} {character.pc?.class} - Nível {character.pc?.level}
+                                        {character.race} {character.class} - Nível {character.level}
                                     </p>
                                     <p className="text-indigo-400 text-sm">
                                         Jogador: {character.player?.username}
@@ -208,17 +213,14 @@ const CampaignCharacters: React.FC<CampaignCharactersProps> = ({
                                 <div>
                                     <span className="text-indigo-400">HP:</span>
                                     <span className="text-white ml-2">
-                                        {(character.current_hp ?? character.pc?.hp) || 0}/{character.pc?.hp || 0}
+                                        {character.current_hp ?? character.hp}/{character.hp}
                                     </span>
                                 </div>
 
                                 <div>
                                     <span className="text-indigo-400">CA:</span>
                                     <span className="text-white ml-2">
-                                        {(character.temp_ac ?? character.pc?.ca) || 0}
-                                        {character.temp_ac && character.temp_ac !== character.pc?.ca && (
-                                            <span className="text-green-400"> (+{character.temp_ac - (character.pc?.ca || 0)})</span>
-                                        )}
+                                        {character.ca}
                                     </span>
                                 </div>
                             </div>
@@ -235,18 +237,37 @@ const CampaignCharacters: React.FC<CampaignCharactersProps> = ({
 
                             {/* Ações */}
                             <div className="flex gap-2">
-                                <Button
-                                    buttonLabel="Editar"
+                                {/* Edição rápida de stats */}
+                                <button
                                     onClick={() => handleEditCharacter(character)}
-                                    classname="flex-1 text-sm py-1"
-                                />
+                                    className="flex items-center justify-center flex-1 text-sm py-2 px-3 bg-indigo-600 hover:bg-indigo-700 
+                                             text-white rounded transition-colors"
+                                    title="Editar HP, CA e Status"
+                                >
+                                    <Settings size={16} className="mr-1" />
+                                    Stats
+                                </button>
+
+                                {/* Edição completa - navega para editor */}
+                                <button
+                                    onClick={() => navigate(`/campaign-character-editor/${campaignId}/${character.id}`)}
+                                    className="flex items-center justify-center flex-1 text-sm py-2 px-3 bg-purple-600 hover:bg-purple-700 
+                                             text-white rounded transition-colors"
+                                    title="Editar personagem completo"
+                                >
+                                    <Edit size={16} className="mr-1" />
+                                    Editar
+                                </button>
 
                                 {isDM && (
-                                    <Button
-                                        buttonLabel="Remover"
+                                    <button
                                         onClick={() => handleRemoveCharacter(character.id)}
-                                        classname="flex-1 text-sm py-1 bg-red-600 hover:bg-red-700"
-                                    />
+                                        className="flex items-center justify-center px-3 py-2 text-sm bg-red-600 hover:bg-red-700 
+                                                 text-white rounded transition-colors"
+                                        title="Remover da campanha"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
                                 )}
                             </div>
                         </CardBorder>
@@ -313,7 +334,7 @@ const CampaignCharacters: React.FC<CampaignCharactersProps> = ({
             <Modal
                 isOpen={showEditModal}
                 onClose={() => setShowEditModal(false)}
-                title={`Editar ${selectedCharacter?.pc?.name || 'Personagem'}`}
+                title={`Editar ${selectedCharacter?.name || 'Personagem'}`}
                 size="md"
                 footer={
                     <ModalConfirmFooter
@@ -335,10 +356,10 @@ const CampaignCharacters: React.FC<CampaignCharactersProps> = ({
                                 className="w-full px-3 py-2 border border-indigo-700 rounded-md 
                          bg-indigo-900/50 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                                 min={0}
-                                max={selectedCharacter?.pc?.hp || 100}
+                                max={selectedCharacter?.hp || 100}
                             />
                             <div className="text-xs text-indigo-400 mt-1">
-                                Máximo: {selectedCharacter?.pc?.hp || 0}
+                                Máximo: {selectedCharacter?.hp || 0}
                             </div>
                         </div>
 
@@ -354,7 +375,7 @@ const CampaignCharacters: React.FC<CampaignCharactersProps> = ({
                                 max={30}
                             />
                             <div className="text-xs text-indigo-400 mt-1">
-                                Base: {selectedCharacter?.pc?.ca || 0}
+                                Base: {selectedCharacter?.ca || 0}
                             </div>
                         </div>
                     </div>

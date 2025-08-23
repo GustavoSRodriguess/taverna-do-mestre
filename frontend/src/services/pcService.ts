@@ -30,6 +30,10 @@ export interface PCListResponse {
     limit: number;
     offset: number;
     count: number;
+    results: {
+        pcs: any;
+        count: number;
+    };
 }
 
 export interface PCCampaignsResponse {

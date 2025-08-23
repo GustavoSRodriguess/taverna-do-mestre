@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Page, Section, Button, CardBorder, Alert, Modal, ModalConfirmFooter } from '../../ui';
 import { pcService } from '../../services/pcService';
 import { FullCharacter } from '../../types/game';
-import { StatusBadge, AttributeDisplay, CombatStats, LevelBadge, CharacterCardSkeleton } from '../Generic';
+import { AttributeDisplay, CombatStats, LevelBadge, CharacterCardSkeleton } from '../Generic';
 import { formatDate } from '../../utils/gameUtils';
 
 const PCList: React.FC = () => {
@@ -23,6 +23,8 @@ const PCList: React.FC = () => {
         try {
             setLoading(true);
             const response = await pcService.getPCs();
+            console.log('Fetched PCs:', response);
+            console.log('Fetched PCs:', response.pcs);
             setPCs(response.pcs || []);
         } catch (err) {
             setError('Erro ao carregar personagens');

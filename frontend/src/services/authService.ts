@@ -10,7 +10,7 @@ type RegisterData = {
 };
 
 type User = {
-    id: string;
+    id: number;
     username: string;
     email: string;
 };
@@ -103,7 +103,7 @@ export const getCurrentUser = async (): Promise<User | null> => {
             await new Promise(resolve => setTimeout(resolve, 300));
 
             return {
-                id: '1',
+                id: 1,
                 username: 'Usuário Mockado',
                 email: 'usuario@exemplo.com',
             };
@@ -138,7 +138,7 @@ export const mockLogin = async (credentials: LoginCredentials): Promise<User> =>
     // Verifica as credenciais (para testes)
     if (credentials.email === 'admin@example.com' && credentials.password === 'password') {
         const user = {
-            id: '1',
+            id: 1,
             username: 'Admin User',
             email: credentials.email,
         };
@@ -162,7 +162,7 @@ export const mockRegister = async (userData: RegisterData): Promise<User> => {
     }
 
     const user = {
-        id: Math.floor(Math.random() * 1000).toString(),
+        id: Math.floor(Math.random() * 1000),
         username: userData.username,
         email: userData.email,
     };
@@ -174,7 +174,7 @@ export const mockRegister = async (userData: RegisterData): Promise<User> => {
 };
 
 // Função auxiliar para decidir qual versão usar (real ou mock)
-const USE_MOCKS = false; // Mude para false quando tiver uma API real
+const USE_MOCKS = false;
 
 export default {
     login: USE_MOCKS ? mockLogin : login,

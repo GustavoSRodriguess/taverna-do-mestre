@@ -20,15 +20,17 @@ export const fetchFromAPI = async (endpoint: string, method: string = 'GET', dat
         if (data) {
             options.body = JSON.stringify(data);
         }
-
+        console.log(`Fetching ${method} ${API_BASE_URL}${endpoint}`, data);
         const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+        // console.log(`Response from ${endpoint}:`, response.json());
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => null);
             throw new Error(errorData?.message || `Error ${response.status}: ${response.statusText}`);
         }
-
-        return await response.json();
+        const responseJson = await response.json();
+        console.log(`Response data from ${endpoint}:`, responseJson.results);
+        return responseJson.results || responseJson;
     } catch (error) {
         console.error(`API Error (${endpoint}):`, error);
         throw error;
@@ -100,7 +102,11 @@ class ApiService {
             payload.attributes_method = formData.attributes_method || 'rolagem';
         }
 
-        return this.callGenerationEndpoint('/npcs/generate', payload);
+        const response = await this.callGenerationEndpoint('/npcs/generate', payload);
+
+        const result = response.data || {};
+
+        return result;
     }
 
     // Encounter Generation
@@ -112,7 +118,9 @@ class ApiService {
             theme: formData.tema || formData.theme
         };
 
-        const result = await this.callGenerationEndpoint('/encounters/generate', payload);
+        const response = await this.callGenerationEndpoint('/encounters/generate', payload);
+
+        const result = response.data || response;
 
         return {
             tema: result.theme || 'Variado',
@@ -148,7 +156,12 @@ class ApiService {
             combine_hoards: false
         };
 
-        const result = await this.callGenerationEndpoint('/treasures/generate', payload);
+        const response = await this.callGenerationEndpoint('/treasures/generate', payload);
+
+        console.log('Loot generation result:', response);
+
+        // A resposta vem com structure { message: "", data: {...} }
+        const result = response.data || response;
 
         return {
             nivel: result.level,
@@ -263,45 +276,45 @@ class ApiService {
 // MOCK DATA FALLBACKS
 // ========================================
 
-const MOCK_CHARACTER = {
-    name: "Personagem Mockado",
-    description: "Um bravo aventureiro gerado para testes.",
-    race: "Humano", class: "Guerreiro", background: "Soldado",
-    level: 1, hp: 15, ca: 16,
-    attributes: { strength: 15, dexterity: 14, constitution: 13, intelligence: 12, wisdom: 10, charisma: 8 },
-    abilities: { abilities: ["Ataque Extra"], spells: {} },
-    equipment: { items: ["Espada Longa", "Escudo"] }
-};
+// const MOCK_CHARACTER = {
+//     name: "Personagem Mockado",
+//     description: "Um bravo aventureiro gerado para testes.",
+//     race: "Humano", class: "Guerreiro", background: "Soldado",
+//     level: 1, hp: 15, ca: 16,
+//     attributes: { strength: 15, dexterity: 14, constitution: 13, intelligence: 12, wisdom: 10, charisma: 8 },
+//     abilities: { abilities: ["Ataque Extra"], spells: {} },
+//     equipment: { items: ["Espada Longa", "Escudo"] }
+// };
 
-const MOCK_NPC = {
-    ...MOCK_CHARACTER,
-    name: "NPC Mockado",
-    description: "Um NPC gerado para testes.",
-    race: "Goblin", class: "Guerreiro", background: "Capanga"
-};
+// const MOCK_NPC = {
+//     ...MOCK_CHARACTER,
+//     name: "NPC Mockado",
+//     description: "Um NPC gerado para testes.",
+//     race: "Goblin", class: "Guerreiro", background: "Capanga"
+// };
 
-const MOCK_ENCOUNTER = {
-    tema: "Mortos-Vivos",
-    xpTotal: 1200,
-    monstros: [
-        { nome: "Esqueleto", xp: 50, cr: 0.25 },
-        { nome: "Zumbi", xp: 50, cr: 0.25 },
-        { nome: "Vampiro", xp: 3900, cr: 7 }
-    ],
-    descricaoNarrativa: "Um cemitério abandonado profanado por um necromante."
-};
+// const MOCK_ENCOUNTER = {
+//     tema: "Mortos-Vivos",
+//     xpTotal: 1200,
+//     monstros: [
+//         { nome: "Esqueleto", xp: 50, cr: 0.25 },
+//         { nome: "Zumbi", xp: 50, cr: 0.25 },
+//         { nome: "Vampiro", xp: 3900, cr: 7 }
+//     ],
+//     descricaoNarrativa: "Um cemitério abandonado profanado por um necromante."
+// };
 
-const MOCK_LOOT = {
-    nivel: 5, valorTotal: 1500,
-    hoards: [{
-        valor: 950,
-        coins: { copper: 350, silver: 150, gold: 45 },
-        items: [
-            { nome: "Anel de Proteção", tipo: "Anel Mágico", valor: 300, raridade: "Incomum" },
-            { nome: "Poção de Cura", tipo: "Poção", valor: 50, raridade: "Comum" }
-        ]
-    }]
-};
+// const MOCK_LOOT = {
+//     nivel: 5, valorTotal: 1500,
+//     hoards: [{
+//         valor: 950,
+//         coins: { copper: 350, silver: 150, gold: 45 },
+//         items: [
+//             { nome: "Anel de Proteção", tipo: "Anel Mágico", valor: 300, raridade: "Incomum" },
+//             { nome: "Poção de Cura", tipo: "Poção", valor: 50, raridade: "Comum" }
+//         ]
+//     }]
+// };
 
 const apiService = new ApiService();
 export default apiService;

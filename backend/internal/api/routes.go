@@ -130,7 +130,10 @@ func SetupRoutes(dbClient *db.PostgresDB, pythonClient *python.Client) *chi.Mux 
 
 		r.Get("/{id}/characters", campaignHandler.GetCampaignCharacters)
 		r.Post("/{id}/characters", campaignHandler.AddCharacterToCampaign)
+		r.Get("/{id}/characters/{characterId}", campaignHandler.GetSingleCampaignCharacter)
 		r.Put("/{id}/characters/{characterId}", campaignHandler.UpdateCampaignCharacter)
+		r.Put("/{id}/characters/{characterId}/full", campaignHandler.UpdateCampaignCharacterFull)
+		r.Post("/{id}/characters/{characterId}/sync", campaignHandler.SyncCampaignCharacter)
 		r.Delete("/{id}/characters/{characterId}", campaignHandler.DeleteCampaignCharacter)
 	})
 

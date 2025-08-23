@@ -111,7 +111,7 @@ func (p *PostgresDB) DeletePC(ctx context.Context, id, playerID int) error {
 	checkQuery := `
 		SELECT COUNT(*) 
 		FROM campaign_characters 
-		WHERE pc_id = $1 AND status IN ('active', 'inactive')
+		WHERE source_pc_id = $1 AND status IN ('active', 'inactive')
 	`
 	err := p.DB.GetContext(ctx, &campaignCount, checkQuery, id)
 	if err != nil {
@@ -157,7 +157,7 @@ func (p *PostgresDB) GetPCCampaigns(ctx context.Context, pcID, playerID int) ([]
 		LEFT JOIN users u ON c.dm_id = u.id
 		LEFT JOIN campaign_players cp ON c.id = cp.campaign_id AND cp.status = 'active'
 		JOIN campaign_characters cc ON c.id = cc.campaign_id
-		WHERE cc.pc_id = $1 AND cc.player_id = $2 AND cc.status != 'removed'
+		WHERE cc.source_pc_id = $1 AND cc.player_id = $2 AND cc.status != 'removed'
 		GROUP BY c.id, u.username, c.name, c.description, c.status, c.max_players, 
 		         c.current_session, c.created_at, c.updated_at, cc.status, cc.current_hp
 		ORDER BY c.updated_at DESC

@@ -45,13 +45,13 @@ CREATE TABLE npcs (
     level INTEGER DEFAULT 1,
     race VARCHAR(100),
     class VARCHAR(100),
+    background VARCHAR(100),
     attributes JSONB,
     abilities JSONB,
     equipment JSONB,
     hp INTEGER,
     ca INTEGER,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    player_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE pcs (
@@ -165,32 +165,54 @@ CREATE TABLE campaign_players (
     UNIQUE(campaign_id, user_id)
 );
 
--- Tabela para personagens da campanha (PCs dos jogadores)
+-- Tabela para personagens da campanha (PCs dos jogadores) - VERSÃO SNAPSHOT
 CREATE TABLE campaign_characters (
     id SERIAL PRIMARY KEY,
     campaign_id INTEGER NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
     player_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    pc_id INTEGER NOT NULL REFERENCES pcs(id) ON DELETE CASCADE,
+    source_pc_id INTEGER NOT NULL REFERENCES pcs(id) ON DELETE CASCADE, -- Referência ao PC original
     
-    -- Status específico da campanha
+    -- Snapshot completo do PC para esta campanha
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    level INTEGER NOT NULL DEFAULT 1,
+    race VARCHAR(100),
+    class VARCHAR(100),
+    background VARCHAR(100),
+    alignment VARCHAR(50),
+    attributes JSONB,
+    abilities JSONB,
+    equipment JSONB,
+    hp INTEGER,
+    ca INTEGER,
+    current_hp INTEGER,
+    proficiency_bonus INTEGER DEFAULT 2,
+    inspiration BOOLEAN DEFAULT FALSE,
+    skills JSONB DEFAULT '{}',
+    attacks JSONB DEFAULT '[]',
+    spells JSONB DEFAULT '{"spell_slots": {}, "known_spells": []}',
+    personality_traits TEXT DEFAULT '',
+    ideals TEXT DEFAULT '',
+    bonds TEXT DEFAULT '',
+    flaws TEXT DEFAULT '',
+    features TEXT[] DEFAULT '{}',
+    player_name VARCHAR(100),
+    
+    -- Status e metadados específicos da campanha
     status VARCHAR(20) DEFAULT 'active', -- active, inactive, dead, retired, removed
     joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Stats que podem mudar durante a campanha (opcionais)
-    current_hp INTEGER NULL, -- HP atual (pode ser diferente do PC original)
-    temp_ac INTEGER NULL,    -- AC temporária (buffs/debuffs)
-    campaign_notes TEXT,     -- Notas específicas da campanha
+    last_sync TIMESTAMP NULL, -- Última vez que foi sincronizado com o PC original
+    campaign_notes TEXT, -- Notas específicas desta campanha
     
     -- Constraints
-    UNIQUE(campaign_id, pc_id) -- Um PC só pode estar uma vez por campanha ativa
+    UNIQUE(campaign_id, source_pc_id) -- Um PC original só pode estar uma vez por campanha
 );
 
 -- Atualizar tabela de NPCs para associar com campanhas
 ALTER TABLE npcs ADD COLUMN campaign_id INTEGER REFERENCES campaigns(id) ON DELETE SET NULL;
-ALTER TABLE npcs DROP COLUMN IF EXISTS player_id;
 
 -- Atualizar tabela de PCs para associar com campanhas (opcional, mantém independente)
-ALTER TABLE pcs DROP COLUMN IF EXISTS player_id;
+-- PCs mantêm player_id para identificar o criador
 
 -- Atualizar tabela de encounters para associar com campanhas
 ALTER TABLE encounters ADD COLUMN campaign_id INTEGER REFERENCES campaigns(id) ON DELETE SET NULL;
@@ -202,6 +224,9 @@ CREATE INDEX idx_campaign_players_campaign_id ON campaign_players(campaign_id);
 CREATE INDEX idx_campaign_players_user_id ON campaign_players(user_id);
 CREATE INDEX idx_campaign_players_status ON campaign_players(status);
 CREATE INDEX idx_campaign_characters_campaign ON campaign_characters(campaign_id);
+CREATE INDEX idx_campaign_characters_player ON campaign_characters(player_id);
+CREATE INDEX idx_campaign_characters_source_pc ON campaign_characters(source_pc_id);
+CREATE INDEX idx_campaign_characters_status ON campaign_characters(status);
 CREATE INDEX idx_npcs_campaign_id ON npcs(campaign_id);
 CREATE INDEX idx_encounters_campaign_id ON encounters(campaign_id);
 CREATE INDEX idx_campaigns_invite_code ON campaigns(invite_code);
@@ -224,10 +249,10 @@ INSERT INTO classes (name, description) VALUES
 ('Bardo', 'Artista e inspirador');
 
 -- NPCs de exemplo
-INSERT INTO npcs (name, description, level, race, class) VALUES 
-('Goblin Arqueiro', 'Um pequeno goblin verde com arco', 2, 'Goblin', 'Arqueiro'),
-('Orc Bárbaro', 'Um temível guerreiro orc', 5, 'Orc', 'Bárbaro'),
-('Mago Ancião', 'Um poderoso mago humano de barba branca', 8, 'Humano', 'Mago');
+INSERT INTO npcs (name, description, level, race, class, background) VALUES 
+('Goblin Archer', 'A small green goblin with bow', 2, 'Goblin', 'Archer', 'Tribal Warrior'),
+('Orc Barbarian', 'A fierce orc warrior', 5, 'Orc', 'Barbarian', 'Outlander'),
+('Ancient Mage', 'A powerful human mage with white beard', 8, 'Human', 'Wizard', 'Hermit');
 
 -- Tesouros de exemplo
 INSERT INTO treasures (level, name, total_value) VALUES

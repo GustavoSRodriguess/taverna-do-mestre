@@ -12,4 +12,33 @@
   @theme {
     --font-minecraft: 'Minecraft', sans-serif;
   }
+
+  /* Custom Scrollbar - Dark Theme Compatible */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #4f46e5 #1e1b4b;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #1e1b4b;
+    border-radius: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #4f46e5;
+    border-radius: 4px;
+    border: 1px solid #312e81;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #5b52f5;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:active {
+    background: #3730a3;
+  }
   

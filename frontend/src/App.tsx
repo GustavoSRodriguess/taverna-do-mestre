@@ -10,6 +10,7 @@ import ComponentDoc from './components/ComponentDoc';
 import UserProfile from './components/Profile/UserProfile';
 import IntegratedGenerator from './components/Creator/IntegratedGenerator';
 import { CampaignDetails, CampaignsList } from './components/Campaign';
+import CampaignCharacterEditor from './components/Campaign/CampaignCharacterEditor';
 import PCList from './components/PC/PCList';
 import { PCEditor } from './components/PC';
 import PCCampaigns from './components/PC/PCCampagins';
@@ -30,6 +31,7 @@ const App: React.FC = () => {
             {/* Campaign Routes */}
             <Route path="/campaigns" element={<CampaignsList />} />
             <Route path="/campaigns/:id" element={<CampaignDetails />} />
+            <Route path="/campaign-character-editor/:campaignId/:characterId" element={<CampaignCharacterEditor />} />
 
             {/* Character Routes */}
             <Route path="/characters" element={<PCList />} />

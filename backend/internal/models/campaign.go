@@ -2,6 +2,8 @@ package models
 
 import (
 	"time"
+
+	"github.com/lib/pq"
 )
 
 type Campaign struct {
@@ -30,21 +32,45 @@ type CampaignPlayer struct {
 	Status     string    `json:"status" db:"status"` // active, inactive, removed
 }
 
+// CampaignCharacter - Snapshot completo do PC para uma campanha específica
 type CampaignCharacter struct {
 	ID         int   `json:"id" db:"id"`
 	CampaignID int   `json:"campaign_id" db:"campaign_id"`
 	PlayerID   int   `json:"player_id" db:"player_id"`
 	Player     *User `json:"player,omitempty"`
-	PCID       int   `json:"pc_id" db:"pc_id"`
+	SourcePCID int   `json:"source_pc_id" db:"source_pc_id"` // Referência ao PC original
 
-	Status   string    `json:"status" db:"status"` // active, inactive, dead, retired
-	JoinedAt time.Time `json:"joined_at" db:"joined_at"`
+	// Snapshot completo do PC
+	Name              string         `json:"name" db:"name"`
+	Description       string         `json:"description" db:"description"`
+	Level             int            `json:"level" db:"level"`
+	Race              string         `json:"race" db:"race"`
+	Class             string         `json:"class" db:"class"`
+	Background        string         `json:"background" db:"background"`
+	Alignment         string         `json:"alignment" db:"alignment"`
+	Attributes        JSONBFlexible  `json:"attributes" db:"attributes"`
+	Abilities         JSONBFlexible  `json:"abilities" db:"abilities"`
+	Equipment         JSONBFlexible  `json:"equipment" db:"equipment"`
+	HP                int            `json:"hp" db:"hp"`
+	CurrentHP         *int           `json:"current_hp" db:"current_hp"`
+	CA                int            `json:"ca" db:"ca"`
+	ProficiencyBonus  int            `json:"proficiency_bonus" db:"proficiency_bonus"`
+	Inspiration       bool           `json:"inspiration" db:"inspiration"`
+	Skills            JSONBFlexible  `json:"skills" db:"skills"`
+	Attacks           JSONBFlexible  `json:"attacks" db:"attacks"`
+	Spells            JSONBFlexible  `json:"spells" db:"spells"`
+	PersonalityTraits string         `json:"personality_traits" db:"personality_traits"`
+	Ideals            string         `json:"ideals" db:"ideals"`
+	Bonds             string         `json:"bonds" db:"bonds"`
+	Flaws             string         `json:"flaws" db:"flaws"`
+	Features          pq.StringArray `json:"features" db:"features"`
+	PlayerName        string         `json:"player_name" db:"player_name"`
 
-	CurrentHP *int   `json:"current_hp,omitempty" db:"current_hp"`
-	TempAC    *int   `json:"temp_ac,omitempty" db:"temp_ac"`
-	Notes     string `json:"campaign_notes" db:"campaign_notes"`
-
-	PC *PC `json:"pc,omitempty"`
+	// Metadados específicos da campanha
+	Status        string     `json:"status" db:"status"` // active, inactive, dead, retired
+	JoinedAt      time.Time  `json:"joined_at" db:"joined_at"`
+	LastSync      *time.Time `json:"last_sync" db:"last_sync"`
+	CampaignNotes string     `json:"campaign_notes" db:"campaign_notes"`
 }
 
 type CreateCampaignRequest struct {
@@ -71,7 +97,7 @@ type CampaignInviteResponse struct {
 }
 
 type AddCharacterRequest struct {
-	PCID int `json:"pc_id" binding:"required"`
+	PCID int `json:"source_pc_id" binding:"required"`
 }
 
 type UpdateCharacterStatusRequest struct {
@@ -79,6 +105,41 @@ type UpdateCharacterStatusRequest struct {
 	TempAC    *int   `json:"temp_ac"`
 	Status    string `json:"status"`
 	Notes     string `json:"campaign_notes"`
+}
+
+// Novo request para atualizar PC completo na campanha
+type UpdateCampaignCharacterRequest struct {
+	Name              string        `json:"name"`
+	Description       string        `json:"description"`
+	Level             int           `json:"level"`
+	Race              string        `json:"race"`
+	Class             string        `json:"class"`
+	Background        string        `json:"background"`
+	Alignment         string        `json:"alignment"`
+	Attributes        JSONBFlexible `json:"attributes"`
+	Abilities         JSONBFlexible `json:"abilities"`
+	Equipment         JSONBFlexible `json:"equipment"`
+	HP                int           `json:"hp"`
+	CurrentHP         *int          `json:"current_hp"`
+	CA                int           `json:"ca"`
+	ProficiencyBonus  int           `json:"proficiency_bonus"`
+	Inspiration       bool          `json:"inspiration"`
+	Skills            JSONBFlexible `json:"skills"`
+	Attacks           JSONBFlexible `json:"attacks"`
+	Spells            JSONBFlexible `json:"spells"`
+	PersonalityTraits string        `json:"personality_traits"`
+	Ideals            string        `json:"ideals"`
+	Bonds             string        `json:"bonds"`
+	Flaws             string        `json:"flaws"`
+	Features          []string      `json:"features"`
+	PlayerName        string        `json:"player_name"`
+	Status            string        `json:"status"`
+	CampaignNotes     string        `json:"campaign_notes"`
+}
+
+// Request para sincronizar com o PC original
+type SyncCharacterRequest struct {
+	SyncToOtherCampaigns bool `json:"sync_to_other_campaigns"` // Se deve sincronizar com outras campanhas
 }
 
 type CampaignSummary struct {

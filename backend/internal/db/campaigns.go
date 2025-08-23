@@ -336,14 +336,16 @@ func (p *PostgresDB) GetCampaignCharacters(ctx context.Context, campaignID int) 
 	characters := []models.CampaignCharacter{}
 	query := `
 		SELECT 
-			cc.id, cc.campaign_id, cc.player_id, cc.pc_id, cc.status, 
-			cc.joined_at, cc.current_hp, cc.temp_ac, cc.campaign_notes,
-			u.username as player_username,
-			pc.name, pc.race, pc.class, pc.level, pc.hp as max_hp, pc.ca as base_ac,
-			pc.attributes, pc.abilities, pc.equipment, pc.description, pc.background
+			cc.id, cc.campaign_id, cc.player_id, cc.source_pc_id, cc.status, 
+			cc.joined_at, cc.last_sync, cc.campaign_notes,
+			cc.name, cc.description, cc.level, cc.race, cc.class, cc.background,
+			cc.alignment, cc.attributes, cc.abilities, cc.equipment, cc.hp, 
+			cc.current_hp, cc.ca, cc.proficiency_bonus, cc.inspiration,
+			cc.skills, cc.attacks, cc.spells, cc.personality_traits, cc.ideals,
+			cc.bonds, cc.flaws, cc.features, cc.player_name,
+			u.username as player_username
 		FROM campaign_characters cc
 		LEFT JOIN users u ON cc.player_id = u.id
-		LEFT JOIN pcs pc ON cc.pc_id = pc.id
 		WHERE cc.campaign_id = $1 AND cc.status != 'removed'
 		ORDER BY cc.joined_at ASC
 	`
@@ -356,22 +358,22 @@ func (p *PostgresDB) GetCampaignCharacters(ctx context.Context, campaignID int) 
 
 	for rows.Next() {
 		var character models.CampaignCharacter
-		var pc models.PC
 		var playerUsername string
 
 		err := rows.Scan(
-			&character.ID, &character.CampaignID, &character.PlayerID, &character.PCID,
-			&character.Status, &character.JoinedAt, &character.CurrentHP, &character.TempAC,
-			&character.Notes, &playerUsername,
-			&pc.Name, &pc.Race, &pc.Class, &pc.Level, &pc.HP, &pc.CA,
-			&pc.Attributes, &pc.Abilities, &pc.Equipment, &pc.Description, &pc.Background,
+			&character.ID, &character.CampaignID, &character.PlayerID, &character.SourcePCID,
+			&character.Status, &character.JoinedAt, &character.LastSync, &character.CampaignNotes,
+			&character.Name, &character.Description, &character.Level, &character.Race,
+			&character.Class, &character.Background, &character.Alignment, &character.Attributes,
+			&character.Abilities, &character.Equipment, &character.HP, &character.CurrentHP,
+			&character.CA, &character.ProficiencyBonus, &character.Inspiration, &character.Skills,
+			&character.Attacks, &character.Spells, &character.PersonalityTraits, &character.Ideals,
+			&character.Bonds, &character.Flaws, &character.Features, &character.PlayerName,
+			&playerUsername,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan campaign character: %w", err)
 		}
-
-		pc.ID = character.PCID
-		character.PC = &pc
 
 		if playerUsername != "" {
 			character.Player = &models.User{
@@ -399,7 +401,7 @@ func (p *PostgresDB) GetAvailablePCs(ctx context.Context, userID, campaignID int
 		FROM pcs pc
 		WHERE pc.player_id = $1 
 		AND pc.id NOT IN (
-			SELECT COALESCE(cc.pc_id, 0)
+			SELECT COALESCE(cc.source_pc_id, 0)
 			FROM campaign_characters cc 
 			WHERE cc.campaign_id = $2 
 			AND cc.status IN ('active', 'inactive')
@@ -417,20 +419,30 @@ func (p *PostgresDB) GetAvailablePCs(ctx context.Context, userID, campaignID int
 
 func (p *PostgresDB) AddPCToCampaign(ctx context.Context, campaignChar *models.CampaignCharacter) error {
 	query := `
-		INSERT INTO campaign_characters (campaign_id, player_id, pc_id, status, current_hp, temp_ac, campaign_notes, joined_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		INSERT INTO campaign_characters (
+			campaign_id, player_id, source_pc_id, status, joined_at, campaign_notes,
+			name, description, level, race, class, background, alignment, 
+			attributes, abilities, equipment, hp, current_hp, ca, proficiency_bonus,
+			inspiration, skills, attacks, spells, personality_traits, ideals, 
+			bonds, flaws, features, player_name
+		) VALUES (
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 
+			$17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
+		)
 		RETURNING id
 	`
 
 	err := p.DB.QueryRowContext(ctx, query,
-		campaignChar.CampaignID,
-		campaignChar.PlayerID,
-		campaignChar.PCID,
-		campaignChar.Status,
-		campaignChar.CurrentHP,
-		campaignChar.TempAC,
-		campaignChar.Notes,
-		campaignChar.JoinedAt,
+		campaignChar.CampaignID, campaignChar.PlayerID, campaignChar.SourcePCID,
+		campaignChar.Status, campaignChar.JoinedAt, campaignChar.CampaignNotes,
+		campaignChar.Name, campaignChar.Description, campaignChar.Level,
+		campaignChar.Race, campaignChar.Class, campaignChar.Background,
+		campaignChar.Alignment, campaignChar.Attributes, campaignChar.Abilities,
+		campaignChar.Equipment, campaignChar.HP, campaignChar.CurrentHP,
+		campaignChar.CA, campaignChar.ProficiencyBonus, campaignChar.Inspiration,
+		campaignChar.Skills, campaignChar.Attacks, campaignChar.Spells,
+		campaignChar.PersonalityTraits, campaignChar.Ideals, campaignChar.Bonds,
+		campaignChar.Flaws, campaignChar.Features, campaignChar.PlayerName,
 	).Scan(&campaignChar.ID)
 
 	if err != nil {
@@ -442,7 +454,7 @@ func (p *PostgresDB) AddPCToCampaign(ctx context.Context, campaignChar *models.C
 
 func (p *PostgresDB) IsPCInCampaign(ctx context.Context, campaignID, pcID int) (bool, error) {
 	var exists bool
-	query := `SELECT EXISTS(SELECT 1 FROM campaign_characters WHERE campaign_id = $1 AND pc_id = $2 AND status IN ('active', 'inactive'))`
+	query := `SELECT EXISTS(SELECT 1 FROM campaign_characters WHERE campaign_id = $1 AND source_pc_id = $2 AND status IN ('active', 'inactive'))`
 
 	err := p.DB.GetContext(ctx, &exists, query, campaignID, pcID)
 	if err != nil {
@@ -455,8 +467,14 @@ func (p *PostgresDB) IsPCInCampaign(ctx context.Context, campaignID, pcID int) (
 func (p *PostgresDB) GetCampaignCharacter(ctx context.Context, charID, campaignID, userID int) (*models.CampaignCharacter, error) {
 	var character models.CampaignCharacter
 	query := `
-		SELECT cc.id, cc.campaign_id, cc.player_id, cc.pc_id, cc.status, 
-		       cc.joined_at, cc.current_hp, cc.temp_ac, cc.campaign_notes
+		SELECT 
+			cc.id, cc.campaign_id, cc.player_id, cc.source_pc_id, cc.status, 
+			cc.joined_at, cc.last_sync, cc.campaign_notes,
+			cc.name, cc.description, cc.level, cc.race, cc.class, cc.background,
+			cc.alignment, cc.attributes, cc.abilities, cc.equipment, cc.hp, 
+			cc.current_hp, cc.ca, cc.proficiency_bonus, cc.inspiration,
+			cc.skills, cc.attacks, cc.spells, cc.personality_traits, cc.ideals,
+			cc.bonds, cc.flaws, cc.features, cc.player_name
 		FROM campaign_characters cc
 		JOIN campaigns c ON cc.campaign_id = c.id
 		WHERE cc.id = $1 AND cc.campaign_id = $2 
@@ -471,20 +489,60 @@ func (p *PostgresDB) GetCampaignCharacter(ctx context.Context, charID, campaignI
 	return &character, nil
 }
 
+// UpdateCampaignCharacter - para atualizações simples (quick stats)
 func (p *PostgresDB) UpdateCampaignCharacter(ctx context.Context, character *models.CampaignCharacter) error {
 	query := `
 		UPDATE campaign_characters SET
-		current_hp = $1, temp_ac = $2, status = $3, campaign_notes = $4
-		WHERE id = $5 AND campaign_id = $6
+		current_hp = $1, status = $2, campaign_notes = $3
+		WHERE id = $4 AND campaign_id = $5
 	`
 
 	result, err := p.DB.ExecContext(ctx, query,
-		character.CurrentHP, character.TempAC, character.Status, character.Notes,
+		character.CurrentHP, character.Status, character.CampaignNotes,
 		character.ID, character.CampaignID,
 	)
 
 	if err != nil {
 		return fmt.Errorf("failed to update campaign character: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get affected rows: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("character not found in campaign")
+	}
+
+	return nil
+}
+
+// UpdateCampaignCharacterFull - para atualizações completas do snapshot
+func (p *PostgresDB) UpdateCampaignCharacterFull(ctx context.Context, character *models.CampaignCharacter) error {
+	query := `
+		UPDATE campaign_characters SET
+		name = $1, description = $2, level = $3, race = $4, class = $5, background = $6,
+		alignment = $7, attributes = $8, abilities = $9, equipment = $10, hp = $11,
+		current_hp = $12, ca = $13, proficiency_bonus = $14, inspiration = $15, 
+		skills = $16, attacks = $17, spells = $18, personality_traits = $19, ideals = $20,
+		bonds = $21, flaws = $22, features = $23, player_name = $24, status = $25,
+		campaign_notes = $26, last_sync = CURRENT_TIMESTAMP
+		WHERE id = $27 AND campaign_id = $28
+	`
+
+	result, err := p.DB.ExecContext(ctx, query,
+		character.Name, character.Description, character.Level, character.Race,
+		character.Class, character.Background, character.Alignment, character.Attributes,
+		character.Abilities, character.Equipment, character.HP, character.CurrentHP,
+		character.CA, character.ProficiencyBonus, character.Inspiration, character.Skills,
+		character.Attacks, character.Spells, character.PersonalityTraits, character.Ideals,
+		character.Bonds, character.Flaws, character.Features, character.PlayerName,
+		character.Status, character.CampaignNotes, character.ID, character.CampaignID,
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to update campaign character full: %w", err)
 	}
 
 	rowsAffected, err := result.RowsAffected()

@@ -10,62 +10,54 @@ import (
 	"rpg-saas-backend/internal/db"
 	"rpg-saas-backend/internal/models"
 	"rpg-saas-backend/internal/python"
+	"rpg-saas-backend/internal/utils"
 )
 
 type NPCHandler struct {
-	DB     *db.PostgresDB
-	Python *python.Client
+	DB        *db.PostgresDB
+	Python    *python.Client
+	Response  *utils.ResponseHandler
+	Validator *utils.Validator
 }
 
 func NewNPCHandler(db *db.PostgresDB, python *python.Client) *NPCHandler {
 	return &NPCHandler{
-		DB:     db,
-		Python: python,
+		DB:        db,
+		Python:    python,
+		Response:  utils.NewResponseHandler(),
+		Validator: utils.NewValidator(),
 	}
 }
 
 func (h *NPCHandler) GetNPCs(w http.ResponseWriter, r *http.Request) {
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
+	// Extract pagination using utility
+	pagination := utils.ExtractPagination(r, 20)
 
-	if limit <= 0 {
-		limit = 20
-	}
-	if offset < 0 {
-		offset = 0
-	}
-
-	npcs, err := h.DB.GetNPCs(r.Context(), limit, offset)
+	npcs, err := h.DB.GetNPCs(r.Context(), pagination.Limit, pagination.Offset)
 	if err != nil {
-		http.Error(w, "Failed to fetch NPCs: "+err.Error(), http.StatusInternalServerError)
+		h.Response.HandleDBError(w, err, "fetch NPCs")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"npcs":   npcs,
-		"limit":  limit,
-		"offset": offset,
-		"count":  len(npcs),
-	})
+	// Send paginated response using utility
+	h.Response.SendPaginated(w, map[string]any{"npcs": npcs}, pagination, len(npcs), nil)
 }
 
 func (h *NPCHandler) GetNPCByID(w http.ResponseWriter, r *http.Request) {
-	idStr := chi.URLParam(r, "id")
-	id, err := strconv.Atoi(idStr)
+	// Extract ID using utility
+	id, err := utils.ExtractID(r)
 	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		h.Response.SendBadRequest(w, err.Error())
 		return
 	}
 
 	npc, err := h.DB.GetNPCByID(r.Context(), id)
 	if err != nil {
-		http.Error(w, "NPC not found", http.StatusNotFound)
+		h.Response.HandleDBError(w, err, "fetch NPC")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(npc)
+	h.Response.SendJSON(w, npc, http.StatusOK)
 }
 
 func (h *NPCHandler) CreateNPC(w http.ResponseWriter, r *http.Request) {
@@ -73,19 +65,28 @@ func (h *NPCHandler) CreateNPC(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&npc)
 	if err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		h.Response.SendBadRequest(w, "Invalid request body")
+		return
+	}
+
+	// Validate using centralized validator
+	validationErrors := h.Validator.BatchValidate(
+		func() error { return h.Validator.ValidateName(npc.Name, "name") },
+		func() error { return h.Validator.ValidateLevel(npc.Level) },
+	)
+
+	if validationErrors.HasErrors() {
+		h.Response.SendValidationError(w, validationErrors.Error())
 		return
 	}
 
 	err = h.DB.CreateNPC(r.Context(), &npc)
 	if err != nil {
-		http.Error(w, "Failed to create NPC: "+err.Error(), http.StatusInternalServerError)
+		h.Response.HandleDBError(w, err, "create NPC")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(npc)
+	h.Response.SendCreated(w, "NPC created successfully", npc)
 }
 
 func (h *NPCHandler) UpdateNPC(w http.ResponseWriter, r *http.Request) {
@@ -145,12 +146,7 @@ func (h *NPCHandler) GenerateRandomNPC(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		http.Error(w, "Invalid request body: "+err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	if request.Level < 1 || request.Level > 20 {
-		http.Error(w, "Level must be between 1 and 20", http.StatusBadRequest)
+		h.Response.SendBadRequest(w, "Invalid request body: "+err.Error())
 		return
 	}
 
@@ -159,38 +155,33 @@ func (h *NPCHandler) GenerateRandomNPC(w http.ResponseWriter, r *http.Request) {
 		request.AttributesMethod = "rolagem"
 	}
 
-	// Validate attributes_method only if not manual or if provided
-	if !request.Manual || request.AttributesMethod != "" {
-		if request.AttributesMethod != "rolagem" && request.AttributesMethod != "array" && request.AttributesMethod != "compra" {
-			http.Error(w, "Invalid attributes_method. Must be 'rolagem', 'array', or 'compra'", http.StatusBadRequest)
-			return
-		}
-	}
+	// Validate using centralized validator
+	validationErrors := h.Validator.BatchValidate(
+		func() error { return h.Validator.ValidateLevel(request.Level) },
+		func() error {
+			if !request.Manual || request.AttributesMethod != "" {
+				return h.Validator.ValidateAttributeMethod(request.AttributesMethod)
+			}
+			return nil
+		},
+	)
 
-	// If manual, ensure race, class, and background are provided (or handle defaults in Python service)
-	if request.Manual {
-		if request.Race == "" || request.Class == "" || request.Background == "" {
-			// Consider if these should be strictly required or if Python service can handle defaults
-			// For now, let it pass, Python service might have defaults.
-		}
-		// For manual generation, attributes_method might be implicitly handled by Python or could be required.
-		// If Python service needs it for manual, ensure it's passed or defaulted.
-		// Current frontend sends it for PCs (manual=true).
+	if validationErrors.HasErrors() {
+		h.Response.SendValidationError(w, validationErrors.Error())
+		return
 	}
 
 	npc, err := h.Python.GenerateNPC(r.Context(), request.Level, request.AttributesMethod, request.Manual, request.Race, request.Class, request.Background)
 	if err != nil {
-		http.Error(w, "Failed to generate NPC: "+err.Error(), http.StatusInternalServerError)
+		h.Response.SendInternalError(w, "Failed to generate NPC: "+err.Error())
 		return
 	}
 
 	err = h.DB.CreateNPC(r.Context(), npc) // Assuming npc is of type *models.NPC
 	if err != nil {
-		http.Error(w, "Failed to save generated NPC: "+err.Error(), http.StatusInternalServerError)
+		h.Response.HandleDBError(w, err, "save generated NPC")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(npc)
+	h.Response.SendCreated(w, "NPC generated and saved successfully", npc)
 }

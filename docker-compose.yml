@@ -43,7 +43,9 @@ services:
     command: sh -c "python -m flask run --host=0.0.0.0"
 
   backend:
-    build: ./backend
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile.dev
     container_name: rpg_saas_backend
     ports:
       - "8080:8080"
@@ -53,6 +55,8 @@ services:
       - PYTHON_API_URL=http://python-api:5000
       - DATABASE_URL=postgresql://user:password@db:5432/rpg_saas
       - JWT_SECRET=${JWT_SECRET}
+    volumes:
+      - ./backend:/app
     depends_on:
       - db
       - python-api

@@ -1,27 +1,15 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { CharacterGeneratorForm } from './CharacterGeneratorForm';
 import { CharacterSheet } from './CharacterSheet';
 import apiService from '../../../services/apiService';
 import { Page, Section } from '../../../ui';
+import { useAsyncOperation } from '../../../hooks';
 
 export const CharCreation: React.FC = () => {
-    const [character, setCharacter] = useState<any>(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const { data: character, loading, error, execute } = useAsyncOperation();
 
     const handleGenerateCharacter = async (formData: any) => {
-        setLoading(true);
-        setError(null);
-
-        try {
-            const characterData = await apiService.generateCharacter(formData);
-            setCharacter(characterData);
-        } catch (err) {
-            setError("Erro ao gerar personagem. Por favor, tente novamente.");
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
+        await execute(() => apiService.generateCharacter(formData));
     };
 
     return (

@@ -6,13 +6,11 @@ import {
 } from '../ui';
 
 const ComponentDoc: React.FC = () => {
-    // Estados para os exemplos
     const [activeTab, setActiveTab] = useState('badges');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [showAlert, setShowAlert] = useState(true);
 
-    // Simulação de loading
     const simulateLoading = () => {
         setIsLoading(true);
         setTimeout(() => {
@@ -104,7 +102,7 @@ const ComponentDoc: React.FC = () => {
                                     <h3 className="text-lg font-semibold">Tooltips</h3>
                                     <div className="flex flex-wrap gap-6 p-8 justify-center">
                                         <Tooltip content="Tooltip no topo" position="top">
-                                            <Button buttonLabel="Hover me (Top)" onClick={() => console.log('banana')}/>
+                                            <Button buttonLabel="Hover me (Top)" onClick={() => console.log('banana')} />
                                         </Tooltip>
 
                                         <Tooltip content="Tooltip à direita" position="right">
@@ -146,7 +144,7 @@ const ComponentDoc: React.FC = () => {
                         <Card
                             icon="🧙"
                             title="Card Component"
-                            description="Este é um exemplo do componente Card que você já tinha anteriormente."
+                            description="Este é um exemplo do componente Card."
                             button={{
                                 label: 'Ação do Card',
                                 onClick: () => alert('Clicou no Card!'),
@@ -156,7 +154,7 @@ const ComponentDoc: React.FC = () => {
 
                         <CardBorder>
                             <h3 className="text-lg font-bold mb-2">CardBorder Component</h3>
-                            <p>Este é um exemplo do componente CardBorder que você já tinha anteriormente.</p>
+                            <p>Este é um exemplo do componente CardBorder.</p>
                             <div className="mt-4">
                                 <Button buttonLabel="Ação no CardBorder" onClick={() => alert('Clicou no CardBorder!')} />
                             </div>

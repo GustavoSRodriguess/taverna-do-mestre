@@ -1,78 +1,57 @@
-// frontend/src/components/Creator/IntegratedGenerator.tsx - Versão Refatorada
+// frontend/src/components/Creator/IntegratedGenerator.tsx - Versão Refatorada com useAsyncOperation
 import React, { useState } from 'react';
 import { Button, CardBorder, Page, Section, Alert } from '../../ui';
-import apiService, { GenerationFormData } from '../../services/apiService';
+import apiService from '../../services/apiService';
 import { NPCGeneratorForm, NPCSheet } from './NPCCreation';
 import { EncounterGeneratorForm, EncounterSheet } from './EncounterCreation';
 import { LootGeneratorForm, LootSheet } from './LootCreation';
+import { useAsyncOperation } from '../../hooks';
+import { LEVEL_RANGE, DIFFICULTY_LEVELS, PLAYER_COUNT_RANGE } from '../../constants';
 import CreatorTabs from './CreatorTabs';
-
-interface GenerationState {
-    data: any;
-    loading: boolean;
-    error: string | null;
-}
 
 const IntegratedGenerator: React.FC = () => {
     const [activeTab, setActiveTab] = useState('npc');
 
-    // Consolidated state for all generators
-    const [npc, setNPC] = useState<GenerationState>({ data: null, loading: false, error: null });
-    const [encounter, setEncounter] = useState<GenerationState>({ data: null, loading: false, error: null });
-    const [loot, setLoot] = useState<GenerationState>({ data: null, loading: false, error: null });
+    // Using useAsyncOperation for each generator
+    const npcGenerator = useAsyncOperation();
+    const encounterGenerator = useAsyncOperation();
+    const lootGenerator = useAsyncOperation();
 
-    // Generic handler for all generation types
-    const handleGeneration = async (
-        type: 'npc' | 'encounter' | 'loot',
-        formData: GenerationFormData,
-        generatorFunction: (data: GenerationFormData) => Promise<any>,
-        setState: React.Dispatch<React.SetStateAction<GenerationState>>
-    ) => {
-        setState(prev => ({ ...prev, loading: true, error: null }));
-
-        try {
-            const result = await generatorFunction(formData);
-            const transformedResult = type === 'npc'
-                ? apiService.transformToCharacterSheet(result)
-                : result;
-
-            setState({ data: transformedResult, loading: false, error: null });
-        } catch (err) {
-            setState({
-                data: null,
-                loading: false,
-                error: `Erro ao gerar ${type}. Tente novamente.`
-            });
-            console.error(`Error generating ${type}:`, err);
+    const handleGenerateNPC = async (formData: any) => {
+        const result = await npcGenerator.execute(() => apiService.generateNPC(formData));
+        // Transform for NPC if needed
+        if (result) {
+            // apiService.transformToCharacterSheet could be applied here if needed
         }
     };
 
-    const handleGenerateNPC = (formData: any) => {
-        handleGeneration('npc', formData, apiService.generateNPC.bind(apiService), setNPC);
+    const handleGenerateEncounter = async (formData: any) => {
+        await encounterGenerator.execute(() => apiService.generateEncounter(formData));
     };
 
-    const handleGenerateEncounter = (formData: any) => {
-        handleGeneration('encounter', formData, apiService.generateEncounter.bind(apiService), setEncounter);
-    };
-
-    const handleGenerateLoot = (formData: any) => {
-        handleGeneration('loot', formData, apiService.generateLoot.bind(apiService), setLoot);
+    const handleGenerateLoot = async (formData: any) => {
+        await lootGenerator.execute(() => apiService.generateLoot(formData));
     };
 
     const handleRandomGenerate = () => {
+        // Generate random values using constants
+        const randomLevel = Math.floor(Math.random() * (LEVEL_RANGE.MAX - LEVEL_RANGE.MIN + 1)) + LEVEL_RANGE.MIN;
+        const randomPlayerCount = Math.floor(Math.random() * (PLAYER_COUNT_RANGE.MAX - PLAYER_COUNT_RANGE.MIN + 1)) + PLAYER_COUNT_RANGE.MIN;
+        const randomDifficulty = DIFFICULTY_LEVELS[Math.floor(Math.random() * DIFFICULTY_LEVELS.length)].value;
+
         const randomGenerators = {
             npc: () => handleGenerateNPC({
-                level: (Math.floor(Math.random() * 10) + 1).toString(),
+                level: randomLevel.toString(),
                 manual: false,
                 attributes_method: "rolagem"
             }),
             encounter: () => handleGenerateEncounter({
-                nivelJogadores: (Math.floor(Math.random() * 10) + 1).toString(),
-                quantidadeJogadores: (Math.floor(Math.random() * 4) + 2).toString(),
-                dificuldade: ['f', 'm', 'd', 'mo'][Math.floor(Math.random() * 4)]
+                nivelJogadores: randomLevel.toString(),
+                quantidadeJogadores: randomPlayerCount.toString(),
+                dificuldade: randomDifficulty
             }),
             loot: () => handleGenerateLoot({
-                level: (Math.floor(Math.random() * 10) + 1).toString(),
+                level: randomLevel.toString(),
                 coin_type: "standard",
                 item_categories: ["armor", "weapons", "potions", "rings", "scrolls"],
                 quantity: 1,
@@ -96,13 +75,17 @@ const IntegratedGenerator: React.FC = () => {
         return titles[activeTab as keyof typeof titles] || "Criação";
     };
 
-    const getCurrentState = (): GenerationState => {
-        const states = { npc, encounter, loot };
-        return states[activeTab as keyof typeof states] || { data: null, loading: false, error: null };
+    const getCurrentGenerator = () => {
+        const generators = {
+            npc: npcGenerator,
+            encounter: encounterGenerator,
+            loot: lootGenerator
+        };
+        return generators[activeTab as keyof typeof generators];
     };
 
     const renderForm = () => {
-        const currentState = getCurrentState();
+        const currentGenerator = getCurrentGenerator();
 
         const forms = {
             npc: (
@@ -135,24 +118,18 @@ const IntegratedGenerator: React.FC = () => {
 
                 {forms[activeTab as keyof typeof forms]}
 
-                {currentState.loading && (
+                {currentGenerator.loading && (
                     <div className="mt-4 text-center text-indigo-300">
                         <p>Gerando {activeTab}...</p>
                     </div>
                 )}
 
-                {currentState.error && (
+                {currentGenerator.error && (
                     <Alert
-                        message={currentState.error}
+                        message={currentGenerator.error}
                         variant="error"
                         className="mt-4"
-                        onClose={() => {
-                            const setters = { npc: setNPC, encounter: setEncounter, loot: setLoot };
-                            const setter = setters[activeTab as keyof typeof setters];
-                            if (setter) {
-                                setter(prev => ({ ...prev, error: null }));
-                            }
-                        }}
+                        onClose={() => currentGenerator.reset()}
                     />
                 )}
             </div>
@@ -161,9 +138,9 @@ const IntegratedGenerator: React.FC = () => {
 
     const renderSheet = () => {
         const sheets = {
-            npc: <NPCSheet npc={npc.data} />,
-            encounter: <EncounterSheet encounter={encounter.data} />,
-            loot: <LootSheet loot={loot.data} />
+            npc: <NPCSheet npc={npcGenerator.data} />,
+            encounter: <EncounterSheet encounter={encounterGenerator.data} />,
+            loot: <LootSheet loot={lootGenerator.data} />
         };
 
         return sheets[activeTab as keyof typeof sheets] || null;

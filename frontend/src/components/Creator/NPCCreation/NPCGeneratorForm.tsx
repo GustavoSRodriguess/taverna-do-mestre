@@ -1,33 +1,6 @@
 import React, { useState } from 'react';
 import { Button, SelectField, NumberField } from '../../../ui';
-
-const racas = [
-    { value: "human", label: "Humano" },
-    { value: "elf", label: "Elfo" },
-    { value: "dwarf", label: "Anão" },
-    { value: "halfling", label: "Halfling" },
-    { value: "tiefling", label: "Tiefling" },
-    { value: "dragonborn", label: "Dragonborn" },
-    { value: "gnome", label: "Gnomo" },
-    { value: "half-elf", label: "Meio-Elfo" },
-    { value: "half-orc", label: "Meio-Orc" }
-];
-
-const classes = [
-    "Guerreiro", "Mago", "Ladino", "Clérigo", "Bardo",
-    "Druida", "Monge", "Paladino", "Patrulheiro", "Feiticeiro", "Bruxo"
-];
-
-const antecedentes = [
-    "Nobre", "Eremita", "Soldado", "Criminoso", "Sábio",
-    "Charlatão", "Artífice", "Forasteiro", "Herói", "Mercenário"
-];
-
-const attributeMethods = [
-    { value: 'rolagem', label: 'Rolagem de Dados (4d6dL)' },
-    { value: 'array', label: 'Array Padrão (15,14,13,12,10,8)' },
-    { value: 'compra', label: 'Compra de Pontos' },
-];
+import { RACES, CLASSES, BACKGROUNDS, ATTRIBUTE_METHODS, LEVEL_RANGE } from '../../../constants';
 
 interface NPCGeneratorFormProps {
     onGenerateNPC: (npcData: {
@@ -43,10 +16,10 @@ interface NPCGeneratorFormProps {
 export const NPCGeneratorForm: React.FC<NPCGeneratorFormProps> = ({ onGenerateNPC }) => {
     const [level, setLevel] = useState("1");
     const [isManual, setIsManual] = useState(false);
-    const [selectedAttributesMethod, setSelectedAttributesMethod] = useState(attributeMethods[0].value);
-    const [race, setRace] = useState(racas[0]);
-    const [npcClass, setNpcClass] = useState(classes[0]);
-    const [background, setBackground] = useState(antecedentes[0]);
+    const [selectedAttributesMethod, setSelectedAttributesMethod] = useState(ATTRIBUTE_METHODS[0].value);
+    const [race, setRace] = useState(RACES[0]);
+    const [npcClass, setNpcClass] = useState(CLASSES[0].label);
+    const [background, setBackground] = useState(BACKGROUNDS[0].label);
 
     const handleGenerateNPC = () => {
         const npcData: {
@@ -119,7 +92,7 @@ export const NPCGeneratorForm: React.FC<NPCGeneratorFormProps> = ({ onGenerateNP
                         label="Método de Geração de Atributos"
                         value={selectedAttributesMethod}
                         onChange={setSelectedAttributesMethod}
-                        options={attributeMethods}
+                        options={ATTRIBUTE_METHODS}
                     />
                 )}
 
@@ -128,22 +101,22 @@ export const NPCGeneratorForm: React.FC<NPCGeneratorFormProps> = ({ onGenerateNP
                         <SelectField
                             label="Raça"
                             value={race.value}
-                            onChange={(value) => setRace(racas.find(r => r.value === value)!)}
-                            options={racas.map(r => ({ value: r.value, label: r.label }))}
+                            onChange={(value) => setRace(RACES.find(r => r.value === value)!)}
+                            options={RACES}
                         />
 
                         <SelectField
                             label="Classe"
                             value={npcClass}
                             onChange={setNpcClass}
-                            options={classes.map(c => ({ value: c, label: c }))}
+                            options={CLASSES}
                         />
 
                         <SelectField
                             label="Antecedente"
                             value={background}
                             onChange={setBackground}
-                            options={antecedentes.map(a => ({ value: a, label: a }))}
+                            options={BACKGROUNDS}
                         />
                     </div>
                 )}

@@ -4,69 +4,58 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
-
-	"github.com/go-chi/chi/v5"
 
 	"rpg-saas-backend/internal/db"
 	"rpg-saas-backend/internal/models"
 	"rpg-saas-backend/internal/python"
+	"rpg-saas-backend/internal/utils"
 )
 
 type ItemHandler struct {
-	DB     *db.PostgresDB
-	Python *python.Client
+	DB        *db.PostgresDB
+	Python    *python.Client
+	Response  *utils.ResponseHandler
+	Validator *utils.Validator
 }
 
 func NewItemHandler(db *db.PostgresDB, python *python.Client) *ItemHandler {
 	return &ItemHandler{
-		DB:     db,
-		Python: python,
+		DB:        db,
+		Python:    python,
+		Response:  utils.NewResponseHandler(),
+		Validator: utils.NewValidator(),
 	}
 }
 
 func (h *ItemHandler) GetTreasures(w http.ResponseWriter, r *http.Request) {
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
+	// Extract pagination using utility
+	pagination := utils.ExtractPagination(r, 20)
 
-	if limit <= 0 {
-		limit = 20
-	}
-	if offset < 0 {
-		offset = 0
-	}
-
-	treasures, err := h.DB.GetTreasures(r.Context(), limit, offset)
+	treasures, err := h.DB.GetTreasures(r.Context(), pagination.Limit, pagination.Offset)
 	if err != nil {
-		http.Error(w, "Failed to fetch treasures: "+err.Error(), http.StatusInternalServerError)
+		h.Response.HandleDBError(w, err, "fetch treasures")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"treasures": treasures,
-		"limit":     limit,
-		"offset":    offset,
-		"count":     len(treasures),
-	})
+	// Send paginated response using utility
+	h.Response.SendPaginated(w, map[string]any{"treasures": treasures}, pagination, len(treasures), nil)
 }
 
 func (h *ItemHandler) GetTreasureByID(w http.ResponseWriter, r *http.Request) {
-	idStr := chi.URLParam(r, "id")
-	id, err := strconv.Atoi(idStr)
+	// Extract ID using utility
+	id, err := utils.ExtractID(r)
 	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		h.Response.SendBadRequest(w, err.Error())
 		return
 	}
 
 	treasure, err := h.DB.GetTreasureByID(r.Context(), id)
 	if err != nil {
-		http.Error(w, "Treasure not found", http.StatusNotFound)
+		h.Response.HandleDBError(w, err, "fetch treasure")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(treasure)
+	h.Response.SendJSON(w, treasure, http.StatusOK)
 }
 
 func (h *ItemHandler) CreateTreasure(w http.ResponseWriter, r *http.Request) {
@@ -74,19 +63,17 @@ func (h *ItemHandler) CreateTreasure(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&treasure)
 	if err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		h.Response.SendBadRequest(w, "Invalid request body")
 		return
 	}
 
 	err = h.DB.CreateTreasure(r.Context(), &treasure)
 	if err != nil {
-		http.Error(w, "Failed to create treasure: "+err.Error(), http.StatusInternalServerError)
+		h.Response.HandleDBError(w, err, "create treasure")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(treasure)
+	h.Response.SendCreated(w, "Treasure created successfully", treasure)
 }
 
 func (h *ItemHandler) GenerateRandomTreasure(w http.ResponseWriter, r *http.Request) {
@@ -116,9 +103,14 @@ func (h *ItemHandler) GenerateRandomTreasure(w http.ResponseWriter, r *http.Requ
 		}
 	}
 
-	// Validações
-	if request.Level < 1 || request.Level > 20 {
-		http.Error(w, "Level must be between 1 and 20", http.StatusBadRequest)
+	// Validate using centralized validator
+	validationErrors := h.Validator.BatchValidate(
+		func() error { return h.Validator.ValidateLevel(request.Level) },
+		func() error { return h.Validator.ValidatePositive(request.Quantity, "quantity") },
+	)
+
+	if validationErrors.HasErrors() {
+		h.Response.SendValidationError(w, validationErrors.Error())
 		return
 	}
 
@@ -142,32 +134,30 @@ func (h *ItemHandler) GenerateRandomTreasure(w http.ResponseWriter, r *http.Requ
 
 	treasure, err := h.Python.GenerateTreasure(r.Context(), request)
 	if err != nil {
-		http.Error(w, "Failed to generate treasure: "+err.Error(), http.StatusInternalServerError)
+		h.Response.SendInternalError(w, "Failed to generate treasure: "+err.Error())
 		return
 	}
 
 	err = h.DB.CreateTreasure(r.Context(), treasure)
 	if err != nil {
-		http.Error(w, "Failed to save generated treasure: "+err.Error(), http.StatusInternalServerError)
+		h.Response.HandleDBError(w, err, "save generated treasure")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(treasure)
+	h.Response.SendCreated(w, "Treasure generated and saved successfully", treasure)
 }
 
 func (h *ItemHandler) DeleteTreasure(w http.ResponseWriter, r *http.Request) {
-	idStr := chi.URLParam(r, "id")
-	id, err := strconv.Atoi(idStr)
+	// Extract ID using utility
+	id, err := utils.ExtractID(r)
 	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		h.Response.SendBadRequest(w, err.Error())
 		return
 	}
 
 	err = h.DB.DeleteTreasure(r.Context(), id)
 	if err != nil {
-		http.Error(w, "Failed to delete treasure: "+err.Error(), http.StatusInternalServerError)
+		h.Response.HandleDBError(w, err, "delete treasure")
 		return
 	}
 

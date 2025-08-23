@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Modal, ModalConfirmFooter, Alert } from '../../ui';
 import { campaignService, CreateCampaignData } from '../../services/campaignService';
+import { CAMPAIGN_SETTINGS } from '../../constants';
 
 interface CreateCampaignModalProps {
     isOpen: boolean;
@@ -27,8 +28,8 @@ const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
             return;
         }
 
-        if (formData.max_players < 1 || formData.max_players > 10) {
-            setError('Número de jogadores deve ser entre 1 e 10');
+        if (formData.max_players < CAMPAIGN_SETTINGS.MIN_PLAYERS || formData.max_players > CAMPAIGN_SETTINGS.MAX_PLAYERS) {
+            setError(`Número de jogadores deve ser entre ${CAMPAIGN_SETTINGS.MIN_PLAYERS} e ${CAMPAIGN_SETTINGS.MAX_PLAYERS}`);
             return;
         }
 
@@ -69,6 +70,7 @@ const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
 
     return (
         <Modal
+            className='max-w-lg max-h-[90vh] overflow-y-auto'
             isOpen={isOpen}
             onClose={handleClose}
             title="Criar Nova Campanha"
@@ -140,8 +142,8 @@ const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
                         className="w-full px-3 py-2 border border-indigo-700 rounded-md 
                      focus:outline-none focus:ring-2 focus:ring-purple-500 
                      bg-indigo-900/50 text-white"
-                        min={1}
-                        max={10}
+                        min={CAMPAIGN_SETTINGS.MIN_PLAYERS}
+                        max={CAMPAIGN_SETTINGS.MAX_PLAYERS}
                         disabled={loading}
                     />
                     <div className="text-xs text-indigo-400 mt-1">

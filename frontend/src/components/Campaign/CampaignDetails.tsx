@@ -23,7 +23,7 @@ const CampaignDetails: React.FC = () => {
     const [inviteCode, setInviteCode] = useState('');
 
     const campaignId = parseInt(id || '0');
-    const isDM = campaign && user && campaign.dm_id === parseInt(user.id);
+    const isDM = campaign && user && campaign.dm_id === user.id;
 
     useEffect(() => {
         if (campaignId) {
@@ -90,7 +90,7 @@ const CampaignDetails: React.FC = () => {
 
     const tabs = [
         { id: 'overview', label: 'Visão Geral', icon: '📋' },
-        { id: 'characters', label: 'Personagens', icon: '🧙‍♂️' },
+        { id: 'characters', label: 'Personagens', icon: '👥' },
         ...(isDM ? [{ id: 'settings', label: 'Configurações', icon: '⚙️' }] : [])
     ];
 
@@ -230,10 +230,10 @@ const CampaignDetails: React.FC = () => {
                                                 <div key={character.id} className="flex justify-between items-center p-3 bg-indigo-900/50 rounded">
                                                     <div>
                                                         <div className="font-medium text-white">
-                                                            {character.pc?.name || 'Nome não disponível'}
+                                                            {character.name || 'Nome não disponível'}
                                                         </div>
                                                         <div className="text-sm text-indigo-300">
-                                                            {character.pc?.race} {character.pc?.class} - Nível {character.pc?.level}
+                                                            {character.race} {character.class} - Nível {character.level}
                                                         </div>
                                                     </div>
                                                     <div className="text-sm text-indigo-400">

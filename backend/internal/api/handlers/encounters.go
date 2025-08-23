@@ -3,69 +3,58 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
-
-	"github.com/go-chi/chi/v5"
 
 	"rpg-saas-backend/internal/db"
 	"rpg-saas-backend/internal/models"
 	"rpg-saas-backend/internal/python"
+	"rpg-saas-backend/internal/utils"
 )
 
 type EncounterHandler struct {
-	DB     *db.PostgresDB
-	Python *python.Client
+	DB        *db.PostgresDB
+	Python    *python.Client
+	Response  *utils.ResponseHandler
+	Validator *utils.Validator
 }
 
 func NewEncounterHandler(db *db.PostgresDB, python *python.Client) *EncounterHandler {
 	return &EncounterHandler{
-		DB:     db,
-		Python: python,
+		DB:        db,
+		Python:    python,
+		Response:  utils.NewResponseHandler(),
+		Validator: utils.NewValidator(),
 	}
 }
 
 func (h *EncounterHandler) GetEncounters(w http.ResponseWriter, r *http.Request) {
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
+	// Extract pagination using utility
+	pagination := utils.ExtractPagination(r, 20)
 
-	if limit <= 0 {
-		limit = 20
-	}
-	if offset < 0 {
-		offset = 0
-	}
-
-	encounters, err := h.DB.GetEncounters(r.Context(), limit, offset)
+	encounters, err := h.DB.GetEncounters(r.Context(), pagination.Limit, pagination.Offset)
 	if err != nil {
-		http.Error(w, "Failed to fetch encounters: "+err.Error(), http.StatusInternalServerError)
+		h.Response.HandleDBError(w, err, "fetch encounters")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"encounters": encounters,
-		"limit":      limit,
-		"offset":     offset,
-		"count":      len(encounters),
-	})
+	// Send paginated response using utility
+	h.Response.SendPaginated(w, map[string]any{"encounters": encounters}, pagination, len(encounters), nil)
 }
 
 func (h *EncounterHandler) GetEncounterByID(w http.ResponseWriter, r *http.Request) {
-	idStr := chi.URLParam(r, "id")
-	id, err := strconv.Atoi(idStr)
+	// Extract ID using utility
+	id, err := utils.ExtractID(r)
 	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		h.Response.SendBadRequest(w, err.Error())
 		return
 	}
 
 	encounter, err := h.DB.GetEncounterByID(r.Context(), id)
 	if err != nil {
-		http.Error(w, "Encounter not found", http.StatusNotFound)
+		h.Response.HandleDBError(w, err, "fetch encounter")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(encounter)
+	h.Response.SendJSON(w, encounter, http.StatusOK)
 }
 
 func (h *EncounterHandler) CreateEncounter(w http.ResponseWriter, r *http.Request) {
@@ -73,19 +62,17 @@ func (h *EncounterHandler) CreateEncounter(w http.ResponseWriter, r *http.Reques
 
 	err := json.NewDecoder(r.Body).Decode(&encounter)
 	if err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		h.Response.SendBadRequest(w, "Invalid request body")
 		return
 	}
 
 	err = h.DB.CreateEncounter(r.Context(), &encounter)
 	if err != nil {
-		http.Error(w, "Failed to create encounter: "+err.Error(), http.StatusInternalServerError)
+		h.Response.HandleDBError(w, err, "create encounter")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(encounter)
+	h.Response.SendCreated(w, "Encounter created successfully", encounter)
 }
 
 func (h *EncounterHandler) GenerateRandomEncounter(w http.ResponseWriter, r *http.Request) {
@@ -102,37 +89,34 @@ func (h *EncounterHandler) GenerateRandomEncounter(w http.ResponseWriter, r *htt
 		request.Difficulty = "m"
 	}
 
-	if request.PlayerLevel < 1 || request.PlayerLevel > 20 {
-		http.Error(w, "Player level must be between 1 and 20", http.StatusBadRequest)
-		return
-	}
-
-	if request.PlayerCount < 1 {
-		http.Error(w, "Player count must be at least 1", http.StatusBadRequest)
-		return
-	}
-
+	// Set default difficulty if empty
 	if request.Difficulty == "" {
 		request.Difficulty = "m"
 	}
-	if request.Difficulty != "e" && request.Difficulty != "m" && request.Difficulty != "d" && request.Difficulty != "mo" {
-		http.Error(w, "Invalid difficulty. Must be 'e', 'm', 'd', or 'mo'", http.StatusBadRequest)
+
+	// Validate using centralized validator
+	validationErrors := h.Validator.BatchValidate(
+		func() error { return h.Validator.ValidateLevel(request.PlayerLevel) },
+		func() error { return h.Validator.ValidatePlayerCount(request.PlayerCount) },
+		func() error { return h.Validator.ValidateDifficulty(request.Difficulty) },
+	)
+
+	if validationErrors.HasErrors() {
+		h.Response.SendValidationError(w, validationErrors.Error())
 		return
 	}
 
 	encounter, err := h.Python.GenerateEncounter(r.Context(), request.PlayerLevel, request.PlayerCount, request.Difficulty)
 	if err != nil {
-		http.Error(w, "Failed to generate encounter: "+err.Error(), http.StatusInternalServerError)
+		h.Response.SendInternalError(w, "Failed to generate encounter: "+err.Error())
 		return
 	}
 
 	err = h.DB.CreateEncounter(r.Context(), encounter)
 	if err != nil {
-		http.Error(w, "Failed to save generated encounter: "+err.Error(), http.StatusInternalServerError)
+		h.Response.HandleDBError(w, err, "save generated encounter")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(encounter)
+	h.Response.SendCreated(w, "Encounter generated and saved successfully", encounter)
 }

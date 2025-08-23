@@ -1,48 +1,10 @@
 import React, { useState } from 'react';
 import { Button, SelectField, NumberField, RadioGroup } from '../../../ui';
+import { RACES, CLASSES, BACKGROUNDS, ATTRIBUTE_METHODS, LEVEL_RANGE } from '../../../constants';
 
 type AttributeMethod = 'rolagem' | 'array' | 'compra';
 
-const racas = [
-    { value: "human", label: "Humano" },
-    { value: "elf", label: "Elfo" },
-    { value: "dwarf", label: "Anão" },
-    { value: "halfling", label: "Halfling" },
-    { value: "tiefling", label: "Tiefling" },
-    { value: "dragonborn", label: "Dragonborn" },
-    { value: "gnome", label: "Gnomo" },
-    { value: "half-elf", label: "Meio-Elfo" },
-    { value: "half-orc", label: "Meio-Orc" }
-];
-
-const classes = [
-    { value: "warrior", label: "Guerreiro" },
-    { value: "wizard", label: "Mago" },
-    { value: "rogue", label: "Ladino" },
-    { value: "cleric", label: "Clérigo" },
-    { value: "bard", label: "Bardo" },
-    { value: "druid", label: "Druida" },
-    { value: "monk", label: "Monge" },
-    { value: "paladin", label: "Paladino" },
-    { value: "ranger", label: "Patrulheiro" },
-    { value: "sorcerer", label: "Feiticeiro" },
-    { value: "warlock", label: "Bruxo" }
-];
-
-const antecedentes = [
-    { value: "noble", label: "Nobre" },
-    { value: "hermit", label: "Eremita" },
-    { value: "soldier", label: "Soldado" },
-    { value: "criminal", label: "Criminoso" },
-    { value: "sage", label: "Sábio" },
-    { value: "charlatan", label: "Charlatão" },
-    { value: "artisan", label: "Artífice" },
-    { value: "outlander", label: "Forasteiro" },
-    { value: "hero", label: "Herói" },
-    { value: "mercenary", label: "Mercenário" }
-];
-
-const attributeMethods = [
+const attributeMethodsRadio = [
     {
         id: 'rolagem',
         value: 'rolagem',
@@ -72,9 +34,9 @@ interface CharacterGeneratorFormProps {
 
 export const CharacterGeneratorForm: React.FC<CharacterGeneratorFormProps> = ({ onGenerateCharacter }) => {
     const [level, setLevel] = useState("1");
-    const [race, setRace] = useState(racas[0]);
-    const [characterClass, setCharacterClass] = useState(classes[0]);
-    const [background, setBackground] = useState(antecedentes[0]);
+    const [race, setRace] = useState(RACES[0]);
+    const [characterClass, setCharacterClass] = useState(CLASSES[0]);
+    const [background, setBackground] = useState(BACKGROUNDS[0]);
     const [attributeMethod, setAttributeMethod] = useState<AttributeMethod>('rolagem');
 
     const handleGenerateCharacter = () => {
@@ -101,27 +63,27 @@ export const CharacterGeneratorForm: React.FC<CharacterGeneratorFormProps> = ({ 
                 <SelectField
                     label="Raça"
                     value={race.value}
-                    onChange={(value) => setRace(racas.find(raca => raca.value === value) || racas[0])}
-                    options={racas.map(raca => ({ value: raca.value, label: raca.label }))}
+                    onChange={(value) => setRace(RACES.find(raca => raca.value === value) || RACES[0])}
+                    options={RACES}
                 />
 
                 <SelectField
                     label="Classe"
                     value={characterClass.value}
-                    onChange={(value) => setCharacterClass(classes.find(classe => classe.value === value) || classes[0])}
-                    options={classes.map(classe => ({ value: classe.value, label: classe.label }))}
+                    onChange={(value) => setCharacterClass(CLASSES.find(classe => classe.value === value) || CLASSES[0])}
+                    options={CLASSES}
                 />
 
                 <SelectField
                     label="Antecedente"
                     value={background.value}
-                    onChange={(value) => setBackground(antecedentes.find(antecedente => antecedente.value === value) || antecedentes[0])}
-                    options={antecedentes.map(antecedente => ({ value: antecedente.value, label: antecedente.label }))}
+                    onChange={(value) => setBackground(BACKGROUNDS.find(antecedente => antecedente.value === value) || BACKGROUNDS[0])}
+                    options={BACKGROUNDS}
                 />
 
                 <RadioGroup
                     label="Método de Atributos"
-                    options={attributeMethods}
+                    options={attributeMethodsRadio}
                     value={attributeMethod}
                     onChange={(value) => setAttributeMethod(value as AttributeMethod)}
                 />

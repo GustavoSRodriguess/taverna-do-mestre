@@ -3,7 +3,7 @@ import authService from '../services/authService';
 
 // Definição do tipo de usuário
 type User = {
-    id: string;
+    id: number;
     username: string;
     email: string;
 };

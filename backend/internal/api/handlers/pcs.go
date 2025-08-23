@@ -5,137 +5,107 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 
-	"github.com/go-chi/chi/v5"
-
-	"rpg-saas-backend/internal/api/middleware"
 	"rpg-saas-backend/internal/db"
 	"rpg-saas-backend/internal/models"
 	"rpg-saas-backend/internal/python"
+	"rpg-saas-backend/internal/utils"
 )
 
 type PCHandler struct {
-	DB     *db.PostgresDB
-	Python *python.Client
+	DB        *db.PostgresDB
+	Python    *python.Client
+	Response  *utils.ResponseHandler
+	Validator *utils.Validator
 }
 
 func NewPCHandler(db *db.PostgresDB, python *python.Client) *PCHandler {
 	return &PCHandler{
-		DB:     db,
-		Python: python,
+		DB:        db,
+		Python:    python,
+		Response:  utils.NewResponseHandler(),
+		Validator: utils.NewValidator(),
 	}
 }
 
 // GetPCs retorna os PCs do usuário logado
 func (h *PCHandler) GetPCs(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(middleware.UserIDKey).(int)
-	if !ok {
-		http.Error(w, "User ID not found in context", http.StatusInternalServerError)
-		return
-	}
-
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
-
-	if limit <= 0 {
-		limit = 20
-	}
-	if offset < 0 {
-		offset = 0
-	}
-
-	pcs, err := h.DB.GetPCsByPlayer(r.Context(), userID, limit, offset)
-	log.Printf("Valor de pcs: %+v\n", pcs)
-	log.Printf("Fetching PCs for user ID: %d with limit: %d and offset: %d", userID, limit, offset)
+	// Extract user ID using utility
+	userID, err := utils.ExtractUserID(r)
 	if err != nil {
-		http.Error(w, "Failed to fetch PCs: "+err.Error(), http.StatusInternalServerError)
+		h.Response.SendInternalError(w, "User ID not found in context")
 		return
 	}
 
-	// ADICIONE ESTES LOGS PARA DEBUG:
-	log.Printf("Total PCs found: %d\n", len(pcs))
-	for i, pc := range pcs {
-		log.Printf("PC %d: ID=%d, Name=%s, Race=%s\n", i, pc.ID, pc.Name, pc.Race)
-		fmt.Printf("PC %d Attributes: %v\n", i, pc.Attributes.Data)
-	}
+	// Extract pagination using utility
+	pagination := utils.ExtractPagination(r, 20)
 
-	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(map[string]interface{}{
-		"pcs":    pcs,
-		"limit":  limit,
-		"offset": offset,
-		"count":  len(pcs),
-	})
-
-	// ADICIONE ESTE LOG TAMBÉM:
+	pcs, err := h.DB.GetPCsByPlayer(r.Context(), userID, pagination.Limit, pagination.Offset)
+	log.Printf("Fetching PCs for user ID: %d with limit: %d and offset: %d", userID, pagination.Limit, pagination.Offset)
 	if err != nil {
-		log.Printf("Erro na serialização JSON: %v\n", err)
-		http.Error(w, "JSON encoding error: "+err.Error(), http.StatusInternalServerError)
+		h.Response.HandleDBError(w, err, "fetch PCs")
 		return
 	}
+
+	log.Printf("Total PCs found: %d", len(pcs))
+
+	// Send paginated response using utility
+	h.Response.SendPaginated(w, map[string]any{"pcs": pcs}, pagination, len(pcs), nil)
 }
 
 // GetPCByID retorna um PC específico se pertence ao usuário
 func (h *PCHandler) GetPCByID(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(middleware.UserIDKey).(int)
-	if !ok {
-		http.Error(w, "User ID not found in context", http.StatusInternalServerError)
+	// Extract user ID using utility
+	userID, err := utils.ExtractUserID(r)
+	if err != nil {
+		h.Response.SendInternalError(w, "User ID not found in context")
 		return
 	}
 
-	idStr := chi.URLParam(r, "id")
-	id, err := strconv.Atoi(idStr)
+	// Extract ID using utility
+	id, err := utils.ExtractID(r)
 	if err != nil {
-		http.Error(w, "Invalid PC ID", http.StatusBadRequest)
+		h.Response.SendBadRequest(w, err.Error())
 		return
 	}
 
 	pc, err := h.DB.GetPCByIDAndPlayer(r.Context(), id, userID)
 	if err != nil {
-		http.Error(w, "PC not found: "+err.Error(), http.StatusNotFound)
+		h.Response.HandleDBError(w, err, "fetch PC")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(pc)
+	h.Response.SendJSON(w, pc, http.StatusOK)
 }
 
 func (h *PCHandler) CreatePC(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(middleware.UserIDKey).(int)
-	if !ok {
-		http.Error(w, "User ID not found in context", http.StatusInternalServerError)
+	// Extract user ID using utility
+	userID, err := utils.ExtractUserID(r)
+	if err != nil {
+		h.Response.SendInternalError(w, "User ID not found in context")
 		return
 	}
 
 	var pc models.PC
 	if err := json.NewDecoder(r.Body).Decode(&pc); err != nil {
 		fmt.Printf("Erro ao decodificar JSON: %v", err)
-		http.Error(w, "Invalid request body: "+err.Error(), http.StatusBadRequest)
+		h.Response.SendBadRequest(w, "Invalid request body: "+err.Error())
 		return
 	}
 
 	// fmt do JSON recebido para debug
 	fmt.Printf("JSON recebido para criação: %+v", pc)
 
-	// Validações básicas
-	if pc.Name == "" {
-		http.Error(w, "PC name is required", http.StatusBadRequest)
-		return
-	}
+	// Validate using centralized validator
+	validationErrors := h.Validator.BatchValidate(
+		func() error { return h.Validator.ValidateRequired(pc.Name, "name") },
+		func() error { return h.Validator.ValidateLevel(pc.Level) },
+		func() error { return h.Validator.ValidateRequired(pc.Race, "race") },
+		func() error { return h.Validator.ValidateRequired(pc.Class, "class") },
+	)
 
-	if pc.Level < 1 || pc.Level > 20 {
-		http.Error(w, "PC level must be between 1 and 20", http.StatusBadRequest)
-		return
-	}
-
-	if pc.Race == "" {
-		http.Error(w, "PC race is required", http.StatusBadRequest)
-		return
-	}
-
-	if pc.Class == "" {
-		http.Error(w, "PC class is required", http.StatusBadRequest)
+	if validationErrors.HasErrors() {
+		h.Response.SendValidationError(w, validationErrors.Error())
 		return
 	}
 
@@ -150,11 +120,11 @@ func (h *PCHandler) CreatePC(w http.ResponseWriter, r *http.Request) {
 
 	// Garantir que campos JSONBFlexible existam com valores padrão válidos
 	if pc.Abilities.Data == nil {
-		pc.Abilities = models.JSONBFlexible{Data: map[string]interface{}{}}
+		pc.Abilities = models.JSONBFlexible{Data: map[string]any{}}
 	}
 
 	if pc.Attributes.Data == nil {
-		pc.Attributes = models.JSONBFlexible{Data: map[string]interface{}{
+		pc.Attributes = models.JSONBFlexible{Data: map[string]any{
 			"strength":     10,
 			"dexterity":    10,
 			"constitution": 10,
@@ -165,99 +135,98 @@ func (h *PCHandler) CreatePC(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if pc.Skills.Data == nil {
-		pc.Skills = models.JSONBFlexible{Data: map[string]interface{}{}}
+		pc.Skills = models.JSONBFlexible{Data: map[string]any{}}
 	}
 
 	if pc.Attacks.Data == nil {
-		pc.Attacks = models.JSONBFlexible{Data: []interface{}{}}
+		pc.Attacks = models.JSONBFlexible{Data: []any{}}
 	}
 
 	if pc.Spells.Data == nil {
-		pc.Spells = models.JSONBFlexible{Data: map[string]interface{}{
-			"spell_slots":  map[string]interface{}{},
-			"known_spells": []interface{}{},
+		pc.Spells = models.JSONBFlexible{Data: map[string]any{
+			"spell_slots":  map[string]any{},
+			"known_spells": []any{},
 		}}
 	}
 
 	if pc.Equipment.Data == nil {
-		pc.Equipment = models.JSONBFlexible{Data: []interface{}{}}
+		pc.Equipment = models.JSONBFlexible{Data: []any{}}
 	}
 
 	// Associar ao usuário fmtado
 	pc.PlayerID = userID
 
-	err := h.DB.CreatePC(r.Context(), &pc)
+	err = h.DB.CreatePC(r.Context(), &pc)
 	if err != nil {
 		fmt.Printf("Erro ao criar PC no banco: %v", err)
-		http.Error(w, "Failed to create PC: "+err.Error(), http.StatusInternalServerError)
+		h.Response.HandleDBError(w, err, "create PC")
 		return
 	}
 
 	fmt.Printf("PC criado com sucesso: ID=%d", pc.ID)
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(pc)
+	h.Response.SendCreated(w, "PC created successfully", pc)
 }
 
 // UpdatePC atualiza um PC existente
 func (h *PCHandler) UpdatePC(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(middleware.UserIDKey).(int)
-	if !ok {
-		http.Error(w, "User ID not found in context", http.StatusInternalServerError)
+	// Extract user ID using utility
+	userID, err := utils.ExtractUserID(r)
+	if err != nil {
+		h.Response.SendInternalError(w, "User ID not found in context")
 		return
 	}
 
-	idStr := chi.URLParam(r, "id")
-	id, err := strconv.Atoi(idStr)
+	// Extract ID using utility
+	id, err := utils.ExtractID(r)
 	if err != nil {
-		http.Error(w, "Invalid PC ID", http.StatusBadRequest)
+		h.Response.SendBadRequest(w, err.Error())
 		return
 	}
 
 	var pc models.PC
 	if err := json.NewDecoder(r.Body).Decode(&pc); err != nil {
 		fmt.Printf("Erro ao decodificar JSON para update: %v", err)
-		http.Error(w, "Invalid request body: "+err.Error(), http.StatusBadRequest)
+		h.Response.SendBadRequest(w, "Invalid request body: "+err.Error())
 		return
 	}
 
 	// fmt do JSON recebido para debug
 	fmt.Printf("JSON recebido para atualização: %+v", pc)
 
-	// Validações básicas
-	if pc.Name == "" {
-		http.Error(w, "PC name is required", http.StatusBadRequest)
-		return
-	}
+	// Validate using centralized validator
+	validationErrors := h.Validator.BatchValidate(
+		func() error { return h.Validator.ValidateRequired(pc.Name, "name") },
+		func() error { return h.Validator.ValidateLevel(pc.Level) },
+	)
 
-	if pc.Level < 1 || pc.Level > 20 {
-		http.Error(w, "PC level must be between 1 and 20", http.StatusBadRequest)
+	if validationErrors.HasErrors() {
+		h.Response.SendValidationError(w, validationErrors.Error())
 		return
 	}
 
 	// Garantir que campos JSONBFlexible existam com valores padrão válidos
 	if pc.Abilities.Data == nil {
-		pc.Abilities = models.JSONBFlexible{Data: map[string]interface{}{}}
+		pc.Abilities = models.JSONBFlexible{Data: map[string]any{}}
 	}
 
 	if pc.Skills.Data == nil {
-		pc.Skills = models.JSONBFlexible{Data: map[string]interface{}{}}
+		pc.Skills = models.JSONBFlexible{Data: map[string]any{}}
 	}
 
 	if pc.Attacks.Data == nil {
-		pc.Attacks = models.JSONBFlexible{Data: []interface{}{}}
+		pc.Attacks = models.JSONBFlexible{Data: []any{}}
 	}
 
 	if pc.Spells.Data == nil {
-		pc.Spells = models.JSONBFlexible{Data: map[string]interface{}{
-			"spell_slots":  map[string]interface{}{},
-			"known_spells": []interface{}{},
+		pc.Spells = models.JSONBFlexible{Data: map[string]any{
+			"spell_slots":  map[string]any{},
+			"known_spells": []any{},
 		}}
 	}
 
 	if pc.Equipment.Data == nil {
-		pc.Equipment = models.JSONBFlexible{Data: []interface{}{}}
+		pc.Equipment = models.JSONBFlexible{Data: []any{}}
 	}
 
 	// Definir IDs
@@ -267,34 +236,34 @@ func (h *PCHandler) UpdatePC(w http.ResponseWriter, r *http.Request) {
 	err = h.DB.UpdatePC(r.Context(), &pc)
 	if err != nil {
 		fmt.Printf("Erro ao atualizar PC no banco: %v", err)
-		http.Error(w, "Failed to update PC: "+err.Error(), http.StatusInternalServerError)
+		h.Response.HandleDBError(w, err, "update PC")
 		return
 	}
 
 	fmt.Printf("PC atualizado com sucesso: ID=%d", pc.ID)
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(pc)
+	h.Response.SendJSON(w, pc, http.StatusOK)
 }
 
 // DeletePC deleta um PC
 func (h *PCHandler) DeletePC(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(middleware.UserIDKey).(int)
-	if !ok {
-		http.Error(w, "User ID not found in context", http.StatusInternalServerError)
+	// Extract user ID using utility
+	userID, err := utils.ExtractUserID(r)
+	if err != nil {
+		h.Response.SendInternalError(w, "User ID not found in context")
 		return
 	}
 
-	idStr := chi.URLParam(r, "id")
-	id, err := strconv.Atoi(idStr)
+	// Extract ID using utility
+	id, err := utils.ExtractID(r)
 	if err != nil {
-		http.Error(w, "Invalid PC ID", http.StatusBadRequest)
+		h.Response.SendBadRequest(w, err.Error())
 		return
 	}
 
 	err = h.DB.DeletePC(r.Context(), id, userID)
 	if err != nil {
-		http.Error(w, "Failed to delete PC: "+err.Error(), http.StatusInternalServerError)
+		h.Response.HandleDBError(w, err, "delete PC")
 		return
 	}
 
@@ -303,37 +272,37 @@ func (h *PCHandler) DeletePC(w http.ResponseWriter, r *http.Request) {
 
 // GetPCCampaigns retorna as campanhas de um PC
 func (h *PCHandler) GetPCCampaigns(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(middleware.UserIDKey).(int)
-	if !ok {
-		http.Error(w, "User ID not found in context", http.StatusInternalServerError)
+	// Extract user ID using utility
+	userID, err := utils.ExtractUserID(r)
+	if err != nil {
+		h.Response.SendInternalError(w, "User ID not found in context")
 		return
 	}
 
-	idStr := chi.URLParam(r, "id")
-	pcID, err := strconv.Atoi(idStr)
+	// Extract ID using utility
+	pcID, err := utils.ExtractID(r)
 	if err != nil {
-		http.Error(w, "Invalid PC ID", http.StatusBadRequest)
+		h.Response.SendBadRequest(w, err.Error())
 		return
 	}
 
 	// Verificar se o PC pertence ao usuário
 	_, err = h.DB.GetPCByIDAndPlayer(r.Context(), pcID, userID)
 	if err != nil {
-		http.Error(w, "PC not found or access denied", http.StatusNotFound)
+		h.Response.HandleDBError(w, err, "verify PC ownership")
 		return
 	}
 
 	campaigns, err := h.DB.GetPCCampaigns(r.Context(), pcID, userID)
 	if err != nil {
-		http.Error(w, "Failed to fetch PC campaigns: "+err.Error(), http.StatusInternalServerError)
+		h.Response.HandleDBError(w, err, "fetch PC campaigns")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	h.Response.SendJSON(w, map[string]any{
 		"campaigns": campaigns,
 		"count":     len(campaigns),
-	})
+	}, http.StatusOK)
 }
 
 // GenerateRandomPC gera um PC usando o serviço Python
