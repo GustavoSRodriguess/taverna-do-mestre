@@ -1,10 +1,11 @@
 import React from 'react';
 import { CardBorder, Button } from '../../ui';
-import { PCData } from './PCEditor';
+// import { PCData } from './PCEditor';
+import { FullCharacter } from '../../types';
 
 interface PCEquipmentProps {
-    pcData: PCData;
-    updatePCData: (updates: Partial<PCData>) => void;
+    pcData: FullCharacter;
+    updatePCData: (updates: Partial<FullCharacter>) => void;
 }
 
 const PCEquipment: React.FC<PCEquipmentProps> = ({ pcData, updatePCData }) => {

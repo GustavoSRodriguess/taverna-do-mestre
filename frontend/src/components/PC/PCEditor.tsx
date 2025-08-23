@@ -46,6 +46,8 @@ const PCEditor: React.FC = () => {
                 dndService.getClasses({ limit: 50 }),
                 dndService.getBackgrounds({ limit: 50 })
             ]);
+            console.log('races, classes, backgrounds');
+            console.log(races, classes, backgrounds);
             setDndRaces(races.results);
             setDndClasses(classes.results);
             setDndBackgrounds(backgrounds.results);

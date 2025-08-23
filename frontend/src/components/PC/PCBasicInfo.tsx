@@ -19,6 +19,8 @@ const PCBasicInfo: React.FC<PCBasicInfoProps> = ({
     classes,
     backgrounds
 }) => {
+    console.log('races2, classes2, backgrounds2');
+    console.log(races, classes, backgrounds);
     const handleRaceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const selectedRace = races && races.find(r => r.name === e.target.value);
         if (selectedRace) {

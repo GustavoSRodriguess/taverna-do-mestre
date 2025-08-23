@@ -46,9 +46,9 @@ const CampaignCharacterEditor: React.FC = () => {
                 dndService.getClasses({ limit: 50 }),
                 dndService.getBackgrounds({ limit: 50 })
             ]);
-            setDndRaces(races.results);
-            setDndClasses(classes.results);
-            setDndBackgrounds(backgrounds.results);
+            setDndRaces(races?.results || []);
+            setDndClasses(classes?.results || []);
+            setDndBackgrounds(backgrounds?.results || []);
         } catch (err) {
             console.error('Erro ao carregar dados D&D:', err);
         }
@@ -332,8 +332,8 @@ const CampaignCharacterEditor: React.FC = () => {
                                         key={tab.id}
                                         onClick={() => setActiveTab(tab.id)}
                                         className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === tab.id
-                                                ? 'border-purple-500 text-purple-400'
-                                                : 'border-transparent text-indigo-300 hover:text-indigo-200 hover:border-indigo-700'
+                                            ? 'border-purple-500 text-purple-400'
+                                            : 'border-transparent text-indigo-300 hover:text-indigo-200 hover:border-indigo-700'
                                             }`}
                                     >
                                         {tab.label}

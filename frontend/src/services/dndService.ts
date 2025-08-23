@@ -221,7 +221,12 @@ export const dndService = {
         if (params?.search) queryString.append('search', params.search);
 
         const url = `/dnd/races${queryString.toString() ? `?${queryString}` : ''}`;
-        return await fetchFromAPI(url);
+        const response = await fetchFromAPI(url);
+        // fetchFromAPI já extrai .results, então se response é array, significa que é o results direto
+        if (Array.isArray(response)) {
+            return { results: response, limit: params?.limit || 50, offset: params?.offset || 0 };
+        }
+        return response;
     },
 
     getRaceByIndex: async (index: string): Promise<DnDRace> => {
@@ -239,7 +244,12 @@ export const dndService = {
         if (params?.search) queryString.append('search', params.search);
 
         const url = `/dnd/classes${queryString.toString() ? `?${queryString}` : ''}`;
-        return await fetchFromAPI(url);
+        const response = await fetchFromAPI(url);
+        // fetchFromAPI já extrai .results, então se response é array, significa que é o results direto
+        if (Array.isArray(response)) {
+            return { results: response, limit: params?.limit || 50, offset: params?.offset || 0 };
+        }
+        return response;
     },
 
     getClassByIndex: async (index: string): Promise<DnDClass> => {
@@ -317,7 +327,12 @@ export const dndService = {
         if (params?.search) queryString.append('search', params.search);
 
         const url = `/dnd/backgrounds${queryString.toString() ? `?${queryString}` : ''}`;
-        return await fetchFromAPI(url);
+        const response = await fetchFromAPI(url);
+        // fetchFromAPI já extrai .results, então se response é array, significa que é o results direto
+        if (Array.isArray(response)) {
+            return { results: response, limit: params?.limit || 50, offset: params?.offset || 0 };
+        }
+        return response;
     },
 
     getBackgroundByIndex: async (index: string): Promise<DnDBackground> => {

@@ -1,10 +1,11 @@
 import React from 'react';
 import { CardBorder } from '../../ui';
-import { PCData } from './PCEditor';
+// import { PCData } from './PCEditor';
+import { FullCharacter } from '../../types';
 
 interface PCDescriptionProps {
-    pcData: PCData;
-    updatePCData: (updates: Partial<PCData>) => void;
+    pcData: FullCharacter;
+    updatePCData: (updates: Partial<FullCharacter>) => void;
 }
 
 const PCDescription: React.FC<PCDescriptionProps> = ({ pcData, updatePCData }) => {
