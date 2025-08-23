@@ -8,6 +8,7 @@ import { StatusBadge } from '../Generic';
 import { formatDate } from '../../utils/gameUtils';
 import CampaignCharacters from './CampaignCharacters';
 import CampaignSettings from './CampaignSettings';
+import { ClipboardList, Users, Settings } from 'lucide-react';
 
 const CampaignDetails: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -89,9 +90,9 @@ const CampaignDetails: React.FC = () => {
     };
 
     const tabs = [
-        { id: 'overview', label: 'Visão Geral', icon: '📋' },
-        { id: 'characters', label: 'Personagens', icon: '👥' },
-        ...(isDM ? [{ id: 'settings', label: 'Configurações', icon: '⚙️' }] : [])
+        { id: 'overview', label: 'Visão Geral', icon: <ClipboardList size={16} /> },
+        { id: 'characters', label: 'Personagens', icon: <Users size={16} /> },
+        ...(isDM ? [{ id: 'settings', label: 'Configurações', icon: <Settings size={16} /> }] : [])
     ];
 
     if (loading) {

@@ -20,7 +20,7 @@ const PCBasicInfo: React.FC<PCBasicInfoProps> = ({
     backgrounds
 }) => {
     const handleRaceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const selectedRace = races.find(r => r.name === e.target.value);
+        const selectedRace = races && races.find(r => r.name === e.target.value);
         if (selectedRace) {
             // Apply racial modifiers logic would go here
             updatePCData({ race: selectedRace.name });
@@ -28,7 +28,7 @@ const PCBasicInfo: React.FC<PCBasicInfoProps> = ({
     };
 
     const handleClassChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const selectedClass = classes.find(c => c.name === e.target.value);
+        const selectedClass = classes && classes.find(c => c.name === e.target.value);
         if (selectedClass) {
             // Apply class-based HP calculation would go here
             const hitDie = selectedClass.hit_die || 8;
@@ -85,11 +85,11 @@ const PCBasicInfo: React.FC<PCBasicInfoProps> = ({
                                  bg-indigo-900/50 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                             >
                                 <option value="">Selecione uma raça</option>
-                                {races.map((race) => (
-                                    <option key={race.api_index} value={race.name}>{race.name}</option>
+                                {races && races.map((race) => (
+                                    <option key={race.api_index || race.index} value={race.name}>{race.name}</option>
                                 ))}
                             </select>
-                            {races.length === 0 && (
+                            {(!races || races.length === 0) && (
                                 <div className="text-xs text-yellow-400 mt-1">Carregando raças...</div>
                             )}
                         </div>
@@ -103,11 +103,11 @@ const PCBasicInfo: React.FC<PCBasicInfoProps> = ({
                                  bg-indigo-900/50 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                             >
                                 <option value="">Selecione uma classe</option>
-                                {classes.map((cls) => (
+                                {classes && classes.map((cls) => (
                                     <option key={cls.api_index} value={cls.name}>{cls.name}</option>
                                 ))}
                             </select>
-                            {classes.length === 0 && (
+                            {(!classes || classes.length === 0) && (
                                 <div className="text-xs text-yellow-400 mt-1">Carregando classes...</div>
                             )}
                         </div>
@@ -158,11 +158,11 @@ const PCBasicInfo: React.FC<PCBasicInfoProps> = ({
                              bg-indigo-900/50 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                         >
                             <option value="">Selecione um antecedente</option>
-                            {backgrounds.map((bg) => (
+                            {backgrounds && backgrounds.map((bg) => (
                                 <option key={bg.api_index} value={bg.name}>{bg.name}</option>
                             ))}
                         </select>
-                        {backgrounds.length === 0 && (
+                        {(!backgrounds || backgrounds.length === 0) && (
                             <div className="text-xs text-yellow-400 mt-1">Carregando antecedentes...</div>
                         )}
                     </div>

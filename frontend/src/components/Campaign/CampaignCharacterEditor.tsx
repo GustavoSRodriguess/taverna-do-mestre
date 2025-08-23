@@ -65,10 +65,10 @@ const CampaignCharacterEditor: React.FC = () => {
 
             // Carregar personagem da campanha (snapshot)
             const character = await campaignService.getCampaignCharacter(
-                parseInt(campaignId!), 
+                parseInt(campaignId!),
                 parseInt(characterId!)
             );
-
+            console.log('Loaded campaign character:', character);
             // Converter para formato FullCharacter
             setPCData({
                 id: character.id,
@@ -255,9 +255,9 @@ const CampaignCharacterEditor: React.FC = () => {
                 <Section title="Erro">
                     <div className="text-center">
                         <p className="mb-4">Erro ao carregar o personagem da campanha.</p>
-                        <Button 
-                            buttonLabel="Voltar" 
-                            onClick={() => navigate(`/campaigns/${campaignId}`)} 
+                        <Button
+                            buttonLabel="Voltar"
+                            onClick={() => navigate(`/campaigns/${campaignId}`)}
                         />
                     </div>
                 </Section>
@@ -331,11 +331,10 @@ const CampaignCharacterEditor: React.FC = () => {
                                     <button
                                         key={tab.id}
                                         onClick={() => setActiveTab(tab.id)}
-                                        className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-                                            activeTab === tab.id
+                                        className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === tab.id
                                                 ? 'border-purple-500 text-purple-400'
                                                 : 'border-transparent text-indigo-300 hover:text-indigo-200 hover:border-indigo-700'
-                                        }`}
+                                            }`}
                                     >
                                         {tab.label}
                                     </button>
