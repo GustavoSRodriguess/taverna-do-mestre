@@ -5,6 +5,7 @@ import { FullCharacter, GameAttack } from '../../types/game';
 import { HPBar } from '../Generic';
 import { calculateModifier, formatModifier, DAMAGE_TYPES } from '../../utils/gameUtils';
 import useGameCalculations from '../../hooks/useGameCalculations';
+import { Heart, Shield, Zap, Sword, Plus, Dice6, Trash2, Skull } from 'lucide-react';
 
 interface PCCombatProps {
     pcData: FullCharacter;
@@ -39,14 +40,14 @@ const PCCombat: React.FC<PCCombatProps> = ({ pcData, updatePCData }) => {
     const rollAttack = (attack: GameAttack) => {
         const attackRoll = Math.floor(Math.random() * 20) + 1;
         const damageRoll = Math.floor(Math.random() * 6) + 1; // Simplified
-        alert(`🗡️ ${attack.name}\nAtaque: ${attackRoll} + ${attack.bonus} = ${attackRoll + attack.bonus}\nDano: ${damageRoll} (${attack.damage})`);
+        alert(`${attack.name}\nAtaque: ${attackRoll} + ${attack.bonus} = ${attackRoll + attack.bonus}\nDano: ${damageRoll} (${attack.damage})`);
     };
 
     const rollInitiative = () => {
         const roll = Math.floor(Math.random() * 20) + 1;
         const dexMod = modifiers.dexterity;
         const total = roll + dexMod;
-        alert(`⚡ Iniciativa\nRolagem: ${roll} + ${dexMod} = ${total}`);
+        alert(`Iniciativa\nRolagem: ${roll} + ${dexMod} = ${total}`);
     };
 
     const CombatStatCard: React.FC<{
@@ -116,12 +117,12 @@ const PCCombat: React.FC<PCCombatProps> = ({ pcData, updatePCData }) => {
 
                 <div className="flex gap-2 mt-4">
                     <Button
-                        buttonLabel="🎲"
+                        buttonLabel={<Dice6 className="w-4 h-4" />}
                         onClick={() => rollAttack(attack)}
                         classname="flex-1 bg-purple-600 hover:bg-purple-700 text-sm"
                     />
                     <Button
-                        buttonLabel="🗑️"
+                        buttonLabel={<Trash2 className="w-4 h-4" />}
                         onClick={() => removeAttack(index)}
                         classname="bg-red-600 hover:bg-red-700 text-sm px-2"
                     />
@@ -136,7 +137,10 @@ const PCCombat: React.FC<PCCombatProps> = ({ pcData, updatePCData }) => {
             <div className="grid md:grid-cols-3 gap-6">
                 {/* HP */}
                 <CardBorder className="bg-red-950/50 border-red-700">
-                    <h3 className="text-lg font-bold text-red-300 mb-4">💓 Pontos de Vida</h3>
+                    <div className="flex items-center justify-center gap-2 mb-4">
+                        <Heart className="w-5 h-5 text-red-300" />
+                        <h3 className="text-lg font-bold text-red-300">Pontos de Vida</h3>
+                    </div>
                     <div className="space-y-4">
                         <div>
                             <label className="block text-red-200 mb-2">HP Máximo</label>
@@ -171,8 +175,9 @@ const PCCombat: React.FC<PCCombatProps> = ({ pcData, updatePCData }) => {
                         />
 
                         {pcData.current_hp === 0 && (
-                            <div className="text-center text-red-300 text-sm">
-                                💀 Personagem inconsciente
+                            <div className="flex items-center justify-center gap-2 text-red-300 text-sm">
+                                <Skull className="w-4 h-4" />
+                                <span>Personagem inconsciente</span>
                             </div>
                         )}
                     </div>
@@ -180,7 +185,10 @@ const PCCombat: React.FC<PCCombatProps> = ({ pcData, updatePCData }) => {
 
                 {/* AC */}
                 <CardBorder className="bg-blue-950/50 border-blue-700">
-                    <h3 className="text-lg font-bold text-blue-300 mb-4">🛡️ Defesa</h3>
+                    <div className="flex items-center justify-center gap-2 mb-4">
+                        <Shield className="w-5 h-5 text-blue-300" />
+                        <h3 className="text-lg font-bold text-blue-300">Defesa</h3>
+                    </div>
                     <div className="space-y-4">
                         <div>
                             <label className="block text-blue-200 mb-2">Classe de Armadura</label>
@@ -203,7 +211,10 @@ const PCCombat: React.FC<PCCombatProps> = ({ pcData, updatePCData }) => {
 
                 {/* Initiative */}
                 <CardBorder className="bg-purple-950/50 border-purple-700">
-                    <h3 className="text-lg font-bold text-purple-300 mb-4">⚡ Iniciativa</h3>
+                    <div className="flex items-center justify-center gap-2 mb-4">
+                        <Zap className="w-5 h-5 text-purple-300" />
+                        <h3 className="text-lg font-bold text-purple-300">Iniciativa</h3>
+                    </div>
                     <div className="space-y-4">
                         <div className="text-center">
                             <div className="text-3xl font-bold text-white">
@@ -212,7 +223,12 @@ const PCCombat: React.FC<PCCombatProps> = ({ pcData, updatePCData }) => {
                             <div className="text-sm text-purple-300">Modificador</div>
                         </div>
                         <Button
-                            buttonLabel="🎲 Rolar Iniciativa"
+                            buttonLabel={
+                                <div className="flex items-center justify-center gap-1">
+                                    <Dice6 className="w-4 h-4" />
+                                    <span>Rolar Iniciativa</span>
+                                </div>
+                            }
                             onClick={rollInitiative}
                             classname="w-full bg-purple-600 hover:bg-purple-700"
                         />
@@ -223,9 +239,17 @@ const PCCombat: React.FC<PCCombatProps> = ({ pcData, updatePCData }) => {
             {/* Attacks */}
             <CardBorder className="bg-indigo-950/80">
                 <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold text-purple-400">⚔️ Ataques</h3>
+                    <div className="flex items-center gap-2">
+                        <Sword className="w-6 h-6 text-purple-400" />
+                        <h3 className="text-xl font-bold text-purple-400">Ataques</h3>
+                    </div>
                     <Button
-                        buttonLabel="+ Novo Ataque"
+                        buttonLabel={
+                            <div className="flex items-center gap-1">
+                                <Plus className="w-4 h-4" />
+                                <span>Novo Ataque</span>
+                            </div>
+                        }
                         onClick={addAttack}
                         classname="bg-green-600 hover:bg-green-700"
                     />
@@ -233,7 +257,7 @@ const PCCombat: React.FC<PCCombatProps> = ({ pcData, updatePCData }) => {
 
                 {pcData.attacks.length === 0 ? (
                     <div className="text-center py-8 text-indigo-300">
-                        <div className="text-4xl mb-4">⚔️</div>
+                        <Sword className="w-16 h-16 mx-auto mb-4 text-indigo-400" />
                         <p>Nenhum ataque cadastrado</p>
                         <p className="text-sm mt-2">Clique em "Novo Ataque" para adicionar</p>
                     </div>

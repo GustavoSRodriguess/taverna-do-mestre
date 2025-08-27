@@ -2,6 +2,7 @@
 import React from 'react';
 import { CardBorder, Button } from '../../ui';
 import { FullCharacter, GameAttributes } from '../../types/game';
+import { Dice1, BarChart3, ShoppingCart, Lightbulb } from 'lucide-react';
 import {
     STANDARD_ARRAY,
     POINT_BUY_DEFAULTS,
@@ -202,17 +203,32 @@ const PCAttributes: React.FC<PCAttributesProps> = ({ pcData, updatePCData }) => 
                 <h3 className="text-xl font-bold mb-4 text-purple-400">Métodos de Geração</h3>
                 <div className="flex align-center justify-center gap-4">
                     <Button
-                        buttonLabel="🎲 Rolar Atributos"
+                        buttonLabel={
+                            <div className="flex items-center gap-1">
+                                <Dice1 className="w-4 h-4" />
+                                <span>Rolar Atributos</span>
+                            </div>
+                        }
                         onClick={rollAttributes}
                         classname="bg-purple-600 hover:bg-purple-700"
                     />
                     <Button
-                        buttonLabel="📊 Array Padrão"
+                        buttonLabel={
+                            <div className="flex items-center gap-1">
+                                <BarChart3 className="w-4 h-4" />
+                                <span>Array Padrão</span>
+                            </div>
+                        }
                         onClick={useStandardArray}
                         classname="bg-blue-600 hover:bg-blue-700"
                     />
                     <Button
-                        buttonLabel="🛒 Point Buy"
+                        buttonLabel={
+                            <div className="flex items-center gap-1">
+                                <ShoppingCart className="w-4 h-4" />
+                                <span>Point Buy</span>
+                            </div>
+                        }
                         onClick={usePointBuy}
                         classname="bg-green-600 hover:bg-green-700"
                     />
@@ -241,7 +257,10 @@ const PCAttributes: React.FC<PCAttributesProps> = ({ pcData, updatePCData }) => 
                 <h3 className="text-xl font-bold mb-4 text-purple-400">Testes de Resistência</h3>
                 {renderSavingThrows()}
                 <div className="mt-4 text-sm text-indigo-300">
-                    <p>💡 Marque a caixa para adicionar bônus de proficiência aos testes de resistência</p>
+                    <div className="flex items-center gap-2">
+                        <Lightbulb className="w-4 h-4 text-yellow-400" />
+                        <span>Marque a caixa para adicionar bônus de proficiência aos testes de resistência</span>
+                    </div>
                 </div>
             </CardBorder>
         </div>

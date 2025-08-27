@@ -2,6 +2,7 @@ import React from 'react';
 import { CardBorder, Button } from '../../ui';
 // import { PCData } from './PCEditor';
 import { FullCharacter } from '../../types';
+import { Package, Sword, Backpack, Plus, PackageOpen, Trash2 } from 'lucide-react';
 
 interface PCEquipmentProps {
     pcData: FullCharacter;
@@ -40,24 +41,36 @@ const PCEquipment: React.FC<PCEquipmentProps> = ({ pcData, updatePCData }) => {
             {/* Estatísticas */}
             <div className="grid md:grid-cols-3 gap-6">
                 <CardBorder className="bg-indigo-950/80 text-center">
-                    <h3 className="text-lg font-bold text-purple-400 mb-2">📦 Total de Itens</h3>
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                        <Package className="w-5 h-5 text-purple-400" />
+                        <h3 className="text-lg font-bold text-purple-400">Total de Itens</h3>
+                    </div>
                     <div className="text-3xl font-bold text-white">{pcData.equipment.length}</div>
                 </CardBorder>
 
                 <CardBorder className="bg-indigo-950/80 text-center">
-                    <h3 className="text-lg font-bold text-green-400 mb-2">⚔️ Equipados</h3>
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                        <Sword className="w-5 h-5 text-green-400" />
+                        <h3 className="text-lg font-bold text-green-400">Equipados</h3>
+                    </div>
                     <div className="text-3xl font-bold text-white">{equippedItems.length}</div>
                 </CardBorder>
 
                 <CardBorder className="bg-indigo-950/80 text-center">
-                    <h3 className="text-lg font-bold text-blue-400 mb-2">🎒 Inventário</h3>
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                        <Backpack className="w-5 h-5 text-blue-400" />
+                        <h3 className="text-lg font-bold text-blue-400">Inventário</h3>
+                    </div>
                     <div className="text-3xl font-bold text-white">{inventoryItems.length}</div>
                 </CardBorder>
             </div>
 
             {/* Itens Equipados */}
             <CardBorder className="bg-green-950/30 border-green-700">
-                <h3 className="text-xl font-bold text-green-400 mb-4">⚔️ Equipamentos</h3>
+                <div className="flex items-center gap-2 mb-4">
+                    <Sword className="w-6 h-6 text-green-400" />
+                    <h3 className="text-xl font-bold text-green-400">Equipamentos</h3>
+                </div>
 
                 {equippedItems.length === 0 ? (
                     <p className="text-green-300 text-center py-4">Nenhum item equipado</p>
@@ -76,7 +89,12 @@ const PCEquipment: React.FC<PCEquipmentProps> = ({ pcData, updatePCData }) => {
                                             )}
                                         </div>
                                         <Button
-                                            buttonLabel="📤 Desequipar"
+                                            buttonLabel={
+                                <div className="flex items-center gap-1">
+                                    <PackageOpen className="w-3 h-3" />
+                                    <span>Desequipar</span>
+                                </div>
+                            }
                                             onClick={() => updateItem(index, { equipped: false })}
                                             classname="bg-yellow-600 hover:bg-yellow-700 text-xs px-2 py-1 ml-2"
                                         // title="Desequipar"
@@ -92,9 +110,17 @@ const PCEquipment: React.FC<PCEquipmentProps> = ({ pcData, updatePCData }) => {
             {/* Inventário */}
             <CardBorder className="bg-indigo-950/80">
                 <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold text-purple-400">🎒 Inventário</h3>
+                    <div className="flex items-center gap-2">
+                        <Backpack className="w-6 h-6 text-purple-400" />
+                        <h3 className="text-xl font-bold text-purple-400">Inventário</h3>
+                    </div>
                     <Button
-                        buttonLabel="+ Adicionar Item"
+                        buttonLabel={
+                            <div className="flex items-center gap-1">
+                                <Plus className="w-4 h-4" />
+                                <span>Adicionar Item</span>
+                            </div>
+                        }
                         onClick={addItem}
                         classname="bg-green-600 hover:bg-green-700"
                     />
@@ -102,7 +128,7 @@ const PCEquipment: React.FC<PCEquipmentProps> = ({ pcData, updatePCData }) => {
 
                 {pcData.equipment.length === 0 ? (
                     <div className="text-center py-8 text-indigo-300">
-                        <div className="text-4xl mb-4">🎒</div>
+                        <Backpack className="w-16 h-16 mx-auto mb-4 text-indigo-400" />
                         <p>Inventário vazio</p>
                         <p className="text-sm mt-2">Clique em "Adicionar Item" para começar</p>
                     </div>
@@ -151,7 +177,19 @@ const PCEquipment: React.FC<PCEquipmentProps> = ({ pcData, updatePCData }) => {
 
                                     <div className="flex gap-2">
                                         <Button
-                                            buttonLabel={item.equipped ? "📤 Desequipar" : "⚔️ Equipar"}
+                                            buttonLabel={
+                                                item.equipped ? (
+                                                    <div className="flex items-center gap-1">
+                                                        <PackageOpen className="w-3 h-3" />
+                                                        <span>Desequipar</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center gap-1">
+                                                        <Sword className="w-3 h-3" />
+                                                        <span>Equipar</span>
+                                                    </div>
+                                                )
+                                            }
                                             onClick={() => updateItem(index, { equipped: !item.equipped })}
                                             classname={`flex-1 text-sm ${item.equipped
                                                 ? 'bg-yellow-600 hover:bg-yellow-700'
@@ -160,7 +198,7 @@ const PCEquipment: React.FC<PCEquipmentProps> = ({ pcData, updatePCData }) => {
                                         // title={item.equipped ? "Desequipar" : "Equipar"}
                                         />
                                         <Button
-                                            buttonLabel="🗑️"
+                                            buttonLabel={<Trash2 className="w-4 h-4" />}
                                             onClick={() => removeItem(index)}
                                             classname="bg-red-600 hover:bg-red-700 text-sm px-2"
                                         />

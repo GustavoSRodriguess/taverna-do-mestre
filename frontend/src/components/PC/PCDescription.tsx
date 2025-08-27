@@ -2,6 +2,7 @@ import React from 'react';
 import { CardBorder } from '../../ui';
 // import { PCData } from './PCEditor';
 import { FullCharacter } from '../../types';
+import { FileText, Smile, Lightbulb, Heart, Frown, Star, Eye } from 'lucide-react';
 
 interface PCDescriptionProps {
     pcData: FullCharacter;
@@ -13,7 +14,10 @@ const PCDescription: React.FC<PCDescriptionProps> = ({ pcData, updatePCData }) =
         <div className="space-y-6">
             {/* Descrição Geral */}
             <CardBorder className="bg-indigo-950/80">
-                <h3 className="text-xl font-bold text-purple-400 mb-4">📝 Descrição do Personagem</h3>
+                <div className="flex items-center gap-2 mb-4">
+                    <FileText className="w-6 h-6 text-purple-400" />
+                    <h3 className="text-xl font-bold text-purple-400">Descrição do Personagem</h3>
+                </div>
 
                 <div>
                     <label className="block text-indigo-200 mb-2 font-medium">
@@ -37,7 +41,10 @@ const PCDescription: React.FC<PCDescriptionProps> = ({ pcData, updatePCData }) =
             {/* Traços de Personalidade */}
             <div className="grid md:grid-cols-2 gap-6">
                 <CardBorder className="bg-indigo-950/80">
-                    <h3 className="text-lg font-bold text-purple-400 mb-4">😄 Traços de Personalidade</h3>
+                    <div className="flex items-center gap-2 mb-4">
+                        <Smile className="w-5 h-5 text-purple-400" />
+                        <h3 className="text-lg font-bold text-purple-400">Traços de Personalidade</h3>
+                    </div>
 
                     <textarea
                         value={pcData.personality_traits}
@@ -54,7 +61,10 @@ const PCDescription: React.FC<PCDescriptionProps> = ({ pcData, updatePCData }) =
                 </CardBorder>
 
                 <CardBorder className="bg-indigo-950/80">
-                    <h3 className="text-lg font-bold text-purple-400 mb-4">💡 Ideais</h3>
+                    <div className="flex items-center gap-2 mb-4">
+                        <Lightbulb className="w-5 h-5 text-purple-400" />
+                        <h3 className="text-lg font-bold text-purple-400">Ideais</h3>
+                    </div>
 
                     <textarea
                         value={pcData.ideals}
@@ -73,7 +83,10 @@ const PCDescription: React.FC<PCDescriptionProps> = ({ pcData, updatePCData }) =
 
             <div className="grid md:grid-cols-2 gap-6">
                 <CardBorder className="bg-indigo-950/80">
-                    <h3 className="text-lg font-bold text-purple-400 mb-4">💝 Laços</h3>
+                    <div className="flex items-center gap-2 mb-4">
+                        <Heart className="w-5 h-5 text-purple-400" />
+                        <h3 className="text-lg font-bold text-purple-400">Laços</h3>
+                    </div>
 
                     <textarea
                         value={pcData.bonds}
@@ -90,7 +103,10 @@ const PCDescription: React.FC<PCDescriptionProps> = ({ pcData, updatePCData }) =
                 </CardBorder>
 
                 <CardBorder className="bg-indigo-950/80">
-                    <h3 className="text-lg font-bold text-purple-400 mb-4">😟 Defeitos</h3>
+                    <div className="flex items-center gap-2 mb-4">
+                        <Frown className="w-5 h-5 text-purple-400" />
+                        <h3 className="text-lg font-bold text-purple-400">Defeitos</h3>
+                    </div>
 
                     <textarea
                         value={pcData.flaws}
@@ -109,7 +125,10 @@ const PCDescription: React.FC<PCDescriptionProps> = ({ pcData, updatePCData }) =
 
             {/* Características e Traços */}
             <CardBorder className="bg-indigo-950/80">
-                <h3 className="text-lg font-bold text-purple-400 mb-4">⭐ Características Especiais</h3>
+                <div className="flex items-center gap-2 mb-4">
+                    <Star className="w-5 h-5 text-purple-400" />
+                    <h3 className="text-lg font-bold text-purple-400">Características Especiais</h3>
+                </div>
 
                 <div>
                     <label className="block text-indigo-200 mb-2 font-medium">
@@ -132,7 +151,10 @@ const PCDescription: React.FC<PCDescriptionProps> = ({ pcData, updatePCData }) =
 
             {/* Preview */}
             <CardBorder className="bg-purple-950/30 border-purple-700">
-                <h3 className="text-lg font-bold text-purple-400 mb-4">👁️ Preview do Personagem</h3>
+                <div className="flex items-center gap-2 mb-4">
+                    <Eye className="w-5 h-5 text-purple-400" />
+                    <h3 className="text-lg font-bold text-purple-400">Preview do Personagem</h3>
+                </div>
 
                 <div className="space-y-4 text-sm">
                     <div>

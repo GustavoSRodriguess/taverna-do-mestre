@@ -8,6 +8,7 @@ import { LootGeneratorForm, LootSheet } from './LootCreation';
 import { useAsyncOperation } from '../../hooks';
 import { LEVEL_RANGE, DIFFICULTY_LEVELS, PLAYER_COUNT_RANGE } from '../../constants';
 import CreatorTabs from './CreatorTabs';
+import { Dice6 } from 'lucide-react';
 
 const IntegratedGenerator: React.FC = () => {
     const [activeTab, setActiveTab] = useState('npc');
@@ -110,7 +111,12 @@ const IntegratedGenerator: React.FC = () => {
                 <div className="flex justify-between mb-4">
                     <h1 className="bold text-xl">Gerador de {activeTab.toUpperCase()}</h1>
                     <Button
-                        buttonLabel="🎲 Aleatório"
+                        buttonLabel={
+                            <div className="flex items-center gap-1">
+                                <Dice6 className="w-4 h-4" />
+                                <span>Aleatório</span>
+                            </div>
+                        }
                         onClick={handleRandomGenerate}
                         classname="bg-purple-600"
                     />

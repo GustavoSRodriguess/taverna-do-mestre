@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Page, Section, Button, CardBorder, Badge, Alert, Loading } from '../../ui';
-import { pcService, PC, PCCampaign } from '../../services/pcService';
+import { pcService, PCCampaign } from '../../services/pcService';
+import { FullCharacter } from '../../types/game';
+import { ArrowLeft, Edit3, User, Sword, Zap, Theater, Search, Eye } from 'lucide-react';
 
 const PCCampaigns: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const [pc, setPC] = useState<PC | null>(null);
+    const [pc, setPC] = useState<FullCharacter | null>(null);
     const [campaigns, setCampaigns] = useState<PCCampaign[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -119,7 +121,10 @@ const PCCampaigns: React.FC = () => {
                                 <div className="grid md:grid-cols-2 gap-6">
                                     {/* Informações básicas */}
                                     <div>
-                                        <h3 className="text-lg font-bold text-purple-400 mb-3">📋 Informações Básicas</h3>
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <User className="w-5 h-5 text-purple-400" />
+                                            <h3 className="text-lg font-bold text-purple-400">Informações Básicas</h3>
+                                        </div>
                                         <div className="space-y-2 text-sm">
                                             <div className="flex justify-between">
                                                 <span className="text-indigo-400">Raça:</span>
@@ -142,7 +147,10 @@ const PCCampaigns: React.FC = () => {
 
                                     {/* Atributos de combate */}
                                     <div>
-                                        <h3 className="text-lg font-bold text-purple-400 mb-3">⚔️ Combate</h3>
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <Sword className="w-5 h-5 text-purple-400" />
+                                            <h3 className="text-lg font-bold text-purple-400">Combate</h3>
+                                        </div>
                                         <div className="grid grid-cols-3 gap-4">
                                             <div className="text-center p-3 bg-red-900/30 rounded">
                                                 <div className="text-red-300 text-xs">HP</div>
@@ -164,10 +172,13 @@ const PCCampaigns: React.FC = () => {
 
                                 {/* Atributos */}
                                 <div className="mt-6">
-                                    <h3 className="text-lg font-bold text-purple-400 mb-3">💪 Atributos</h3>
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <Zap className="w-5 h-5 text-purple-400" />
+                                        <h3 className="text-lg font-bold text-purple-400">Atributos</h3>
+                                    </div>
                                     <div className="grid grid-cols-6 gap-4">
                                         {Object.entries(pc.attributes).map(([attr, value]) => {
-                                            const modifier = getModifier(value);
+                                            const modifier = getModifier(value as number);
                                             const labels = {
                                                 strength: 'FOR',
                                                 dexterity: 'DES',
@@ -182,7 +193,7 @@ const PCCampaigns: React.FC = () => {
                                                     <div className="text-indigo-300 text-xs font-bold">
                                                         {labels[attr as keyof typeof labels]}
                                                     </div>
-                                                    <div className="text-white font-bold text-lg">{value}</div>
+                                                    <div className="text-white font-bold text-lg">{value as number}</div>
                                                     <div className="text-purple-300 text-sm">{formatModifier(modifier)}</div>
                                                 </div>
                                             );
@@ -193,12 +204,22 @@ const PCCampaigns: React.FC = () => {
 
                             <div className="flex gap-2">
                                 <Button
-                                    buttonLabel="← Voltar"
+                                    buttonLabel={
+                                        <div className="flex items-center gap-1">
+                                            <ArrowLeft className="w-4 h-4" />
+                                            <span>Voltar</span>
+                                        </div>
+                                    }
                                     onClick={() => navigate('/characters')}
                                     classname="bg-gray-600 hover:bg-gray-700"
                                 />
                                 <Button
-                                    buttonLabel="✏️ Editar"
+                                    buttonLabel={
+                                        <div className="flex items-center gap-1">
+                                            <Edit3 className="w-4 h-4" />
+                                            <span>Editar</span>
+                                        </div>
+                                    }
                                     onClick={() => navigate(`/pc-editor/${pc.id}`)}
                                 />
                             </div>
@@ -208,11 +229,19 @@ const PCCampaigns: React.FC = () => {
                     {/* Lista de campanhas */}
                     <CardBorder className="bg-indigo-950/80">
                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-bold text-purple-400">
-                                🎭 Campanhas ({campaigns.length})
-                            </h3>
+                            <div className="flex items-center gap-2">
+                                <Theater className="w-6 h-6 text-purple-400" />
+                                <h3 className="text-xl font-bold text-purple-400">
+                                    Campanhas ({campaigns.length})
+                                </h3>
+                            </div>
                             <Button
-                                buttonLabel="Procurar Campanhas"
+                                buttonLabel={
+                                    <div className="flex items-center gap-1">
+                                        <Search className="w-4 h-4" />
+                                        <span>Procurar Campanhas</span>
+                                    </div>
+                                }
                                 onClick={() => navigate('/campaigns')}
                                 classname="bg-green-600 hover:bg-green-700"
                             />
@@ -220,13 +249,18 @@ const PCCampaigns: React.FC = () => {
 
                         {campaigns.length === 0 ? (
                             <div className="text-center py-8 text-indigo-300">
-                                <div className="text-4xl mb-4">🎭</div>
+                                <Theater className="w-16 h-16 mx-auto mb-4 text-indigo-400" />
                                 <h4 className="text-lg font-bold mb-2">Nenhuma campanha ativa</h4>
                                 <p className="mb-4">
                                     Este personagem ainda não está participando de nenhuma campanha.
                                 </p>
                                 <Button
-                                    buttonLabel="Buscar Campanhas"
+                                    buttonLabel={
+                                        <div className="flex items-center gap-1">
+                                            <Search className="w-4 h-4" />
+                                            <span>Buscar Campanhas</span>
+                                        </div>
+                                    }
                                     onClick={() => navigate('/campaigns')}
                                     classname="bg-green-600 hover:bg-green-700"
                                 />
@@ -282,7 +316,12 @@ const PCCampaigns: React.FC = () => {
 
                                         <div className="mt-4 pt-3 border-t border-indigo-700">
                                             <Button
-                                                buttonLabel="Ver Campanha"
+                                                buttonLabel={
+                                                    <div className="flex items-center gap-1">
+                                                        <Eye className="w-3 h-3" />
+                                                        <span>Ver Campanha</span>
+                                                    </div>
+                                                }
                                                 onClick={() => navigate(`/campaigns/${campaign.id}`)}
                                                 classname="w-full text-sm py-2"
                                             />

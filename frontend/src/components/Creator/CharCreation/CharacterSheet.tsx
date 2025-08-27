@@ -1,5 +1,6 @@
 import React from 'react';
-import { CardBorder } from '../../../ui';
+import { CardBorder, IconLabel } from '../../../ui';
+import { User, Users, Heart, Shield, Zap, Sparkles, Package, Scroll } from 'lucide-react';
 
 // Tipos
 type CharacterAttributes = {
@@ -43,7 +44,9 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character }) => 
     return (
         <CardBorder className="bg-indigo-950/80">
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold">Ficha de Personagem</h2>
+                <IconLabel icon={User} iconClassName="text-purple-400" iconSize={8}>
+                    <h2 className="text-2xl font-bold">Ficha de Personagem</h2>
+                </IconLabel>
             </div>
 
             <div className="grid grid-cols-2 gap-4 mb-4">
@@ -74,7 +77,9 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character }) => 
             </div>
 
             <div className="mb-4">
-                <h3 className="text-indigo-300 text-sm mb-2">Atributos</h3>
+                <IconLabel icon={Zap} iconClassName="text-indigo-300" className="mb-2">
+                    <h3 className="text-indigo-300 text-sm">Atributos</h3>
+                </IconLabel>
                 <div className="grid grid-cols-3 gap-2">
                     {Object.entries(character.Atributos).map(([attr, value]) => (
                         <div key={attr} className="bg-indigo-800/50 rounded p-2 text-center">
@@ -90,7 +95,9 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character }) => 
             </div>
 
             <div className="mb-4">
-                <h3 className="text-indigo-300 text-sm mb-2">Habilidades</h3>
+                <IconLabel icon={Sparkles} iconClassName="text-indigo-300" className="mb-2">
+                    <h3 className="text-indigo-300 text-sm">Habilidades</h3>
+                </IconLabel>
                 <ul className="list-disc list-inside space-y-1">
                     {character.Habilidades.map((habilidade, index) => (
                         <li key={index}>{habilidade}</li>
@@ -100,7 +107,9 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character }) => 
 
             {Object.keys(character.Magias).length > 0 && (
                 <div className="mb-4">
-                    <h3 className="text-indigo-300 text-sm mb-2">Magias</h3>
+                    <IconLabel icon={Sparkles} iconClassName="text-indigo-300" className="mb-2">
+                        <h3 className="text-indigo-300 text-sm">Magias</h3>
+                    </IconLabel>
                     {Object.entries(character.Magias).map(([level, spells]) => (
                         <div key={level} className="mb-2">
                             <h4 className="text-indigo-200 text-xs">{level}</h4>
@@ -115,7 +124,9 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character }) => 
             )}
 
             <div className="mb-4">
-                <h3 className="text-indigo-300 text-sm mb-2">Equipamento</h3>
+                <IconLabel icon={Package} iconClassName="text-indigo-300" className="mb-2">
+                    <h3 className="text-indigo-300 text-sm">Equipamento</h3>
+                </IconLabel>
                 <ul className="list-disc list-inside space-y-1">
                     {character.Equipamento.map((item, index) => (
                         <li key={index}>{item}</li>
@@ -124,7 +135,9 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character }) => 
             </div>
 
             <div>
-                <h3 className="text-indigo-300 text-sm mb-2">Traço de Antecedente</h3>
+                <IconLabel icon={Scroll} iconClassName="text-indigo-300" className="mb-2">
+                    <h3 className="text-indigo-300 text-sm">Traço de Antecedente</h3>
+                </IconLabel>
                 <p>{character["Traço de Antecedente"]}</p>
             </div>
         </CardBorder>

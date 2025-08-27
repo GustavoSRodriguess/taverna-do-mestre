@@ -1,9 +1,10 @@
 import React from 'react';
+import { User, Users, Sword, Gem } from 'lucide-react';
 
 interface Tab {
     id: string;
     label: string;
-    icon: string;
+    icon: React.ReactNode;
 }
 
 interface GeneratorTabsProps {
@@ -14,25 +15,24 @@ interface GeneratorTabsProps {
 export const CreatorTabs: React.FC<GeneratorTabsProps> = ({ activeTab, onTabChange }) => {
     const tabs: Tab[] = [
         // {
-        // por hora vou deixar sem, vai ser so na mao mesmo
         //     id: 'character',
         //     label: 'Personagem',
-        //     icon: '👤'
+        //     icon: <User className="w-4 h-4" />
         // },
         {
             id: 'npc',
             label: 'NPC',
-            icon: '🧙'
+            icon: <Users className="w-4 h-4" />
         },
         {
             id: 'encounter',
             label: 'Encontro',
-            icon: '⚔️'
+            icon: <Sword className="w-4 h-4" />
         },
         {
             id: 'loot',
             label: 'Tesouro',
-            icon: '💎'
+            icon: <Gem className="w-4 h-4" />
         }
     ];
 

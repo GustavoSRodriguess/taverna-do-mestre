@@ -1,7 +1,7 @@
 import React from 'react'
 
 interface buttonTypes {
-  buttonLabel: string;
+  buttonLabel: string | React.ReactNode;
   onClick: () => void;
   classname?: string;
   type?: "submit" | "reset" | "button" | undefined;

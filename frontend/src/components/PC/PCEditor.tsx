@@ -5,6 +5,7 @@ import { pcService } from '../../services/pcService';
 import { dndService } from '../../services/dndService';
 import { FullCharacter } from '../../types/game';
 import { validateCharacterName, validateLevel, validateAttributes, validateHP } from '../../utils/gameUtils';
+import { ArrowLeft, Save, User, Zap, Target, Sword, Wand2, Backpack, FileText } from 'lucide-react';
 import PCBasicInfo from './PCBasicInfo';
 import PCAttributes from './PCAttributes';
 import PCSkills from './PCSkills';
@@ -198,13 +199,13 @@ const PCEditor: React.FC = () => {
     };
 
     const tabs = [
-        { id: 'basic', label: 'Básico', icon: '📋' },
-        { id: 'attributes', label: 'Atributos', icon: '💪' },
-        { id: 'skills', label: 'Perícias', icon: '🎯' },
-        { id: 'combat', label: 'Combate', icon: '⚔️' },
-        { id: 'spells', label: 'Magias', icon: '✨' },
-        { id: 'equipment', label: 'Equipamentos', icon: '🎒' },
-        { id: 'description', label: 'Descrição', icon: '📝' }
+        { id: 'basic', label: 'Básico', icon: <User className="w-4 h-4" /> },
+        { id: 'attributes', label: 'Atributos', icon: <Zap className="w-4 h-4" /> },
+        { id: 'skills', label: 'Perícias', icon: <Target className="w-4 h-4" /> },
+        { id: 'combat', label: 'Combate', icon: <Sword className="w-4 h-4" /> },
+        { id: 'spells', label: 'Magias', icon: <Wand2 className="w-4 h-4" /> },
+        { id: 'equipment', label: 'Equipamentos', icon: <Backpack className="w-4 h-4" /> },
+        { id: 'description', label: 'Descrição', icon: <FileText className="w-4 h-4" /> }
     ];
 
     if (loading) {
@@ -240,14 +241,24 @@ const PCEditor: React.FC = () => {
                     {/* Action Bar */}
                     <div className="flex justify-between items-center mb-6 bg-indigo-950/50 p-4 rounded-lg border border-indigo-800">
                         <div className="flex items-center gap-4">
-                            <Button buttonLabel="← Voltar" onClick={() => navigate('/characters')} classname="bg-gray-600 hover:bg-gray-700" />
+                            <Button buttonLabel={
+                                <div className="flex items-center gap-1">
+                                    <ArrowLeft className="w-4 h-4" />
+                                    <span>Voltar</span>
+                                </div>
+                            } onClick={() => navigate('/characters')} classname="bg-gray-600 hover:bg-gray-700" />
                             <div className="text-indigo-200">
                                 <h3 className="font-bold">{pcData.name || 'Novo Personagem'}</h3>
                                 <p className="text-sm">{pcData.race} {pcData.class} - Nível {pcData.level}</p>
                             </div>
                         </div>
                         <Button
-                            buttonLabel={saving ? "Salvando..." : "💾 Salvar"}
+                            buttonLabel={saving ? "Salvando..." : (
+                                <div className="flex items-center gap-1">
+                                    <Save className="w-4 h-4" />
+                                    <span>Salvar</span>
+                                </div>
+                            )}
                             onClick={handleSave}
                             disabled={saving}
                             classname="bg-green-600 hover:bg-green-700"

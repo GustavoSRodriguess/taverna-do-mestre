@@ -13,7 +13,7 @@ import { CampaignDetails, CampaignsList } from './components/Campaign';
 import CampaignCharacterEditor from './components/Campaign/CampaignCharacterEditor';
 import PCList from './components/PC/PCList';
 import { PCEditor } from './components/PC';
-import PCCampaigns from './components/PC/PCCampagins';
+import PCCampaigns from './components/PC/PCCampaigns';
 
 const App: React.FC = () => {
   return (

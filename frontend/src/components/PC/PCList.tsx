@@ -6,6 +6,7 @@ import { pcService } from '../../services/pcService';
 import { FullCharacter } from '../../types/game';
 import { AttributeDisplay, CombatStats, LevelBadge, CharacterCardSkeleton } from '../Generic';
 import { formatDate } from '../../utils/gameUtils';
+import { UserPlus, Dice1, Edit3, BarChart3, Trash2, AlertTriangle, Lightbulb, PenTool } from 'lucide-react';
 
 const PCList: React.FC = () => {
     const navigate = useNavigate();
@@ -54,19 +55,29 @@ const PCList: React.FC = () => {
 
     const EmptyState = () => (
         <CardBorder className="text-center py-12 bg-indigo-950/50">
-            <div className="text-6xl mb-4">🧙‍♂️</div>
+            <UserPlus className="w-24 h-24 mx-auto mb-4 text-indigo-400" />
             <h3 className="text-xl font-bold mb-2">Nenhum personagem encontrado</h3>
             <p className="text-indigo-300 mb-6">
                 Comece criando seu primeiro personagem para usar em campanhas.
             </p>
             <div className="flex justify-center gap-4">
                 <Button
-                    buttonLabel="🎲 Gerar Aleatório"
+                    buttonLabel={
+                        <div className="flex items-center gap-1">
+                            <Dice1 className="w-4 h-4" />
+                            <span>Gerar Aleatório</span>
+                        </div>
+                    }
                     onClick={() => navigate('/generator')}
                     classname="bg-green-600 hover:bg-green-700"
                 />
                 <Button
-                    buttonLabel="✍️ Criar Manual"
+                    buttonLabel={
+                        <div className="flex items-center gap-1">
+                            <PenTool className="w-4 h-4" />
+                            <span>Criar Manual</span>
+                        </div>
+                    }
                     onClick={() => navigate('/pc-editor/new')}
                 />
             </div>
@@ -127,17 +138,27 @@ const PCList: React.FC = () => {
             {/* Actions */}
             <div className="flex gap-2 pt-4 border-t border-indigo-800">
                 <Button
-                    buttonLabel="✏️ Editar"
+                    buttonLabel={
+                        <div className="flex items-center gap-1">
+                            <Edit3 className="w-3 h-3" />
+                            <span>Editar</span>
+                        </div>
+                    }
                     onClick={() => navigate(`/pc-editor/${pc.id}`)}
                     classname="flex-1 text-sm py-2"
                 />
                 <Button
-                    buttonLabel="📊 Campanhas"
+                    buttonLabel={
+                        <div className="flex items-center gap-1">
+                            <BarChart3 className="w-3 h-3" />
+                            <span>Campanhas</span>
+                        </div>
+                    }
                     onClick={() => navigate(`/pc/${pc.id}/campaigns`)}
                     classname="flex-1 text-sm py-2 bg-blue-600 hover:bg-blue-700"
                 />
                 <Button
-                    buttonLabel="🗑️"
+                    buttonLabel={<Trash2 className="w-3 h-3" />}
                     onClick={() => confirmDelete(pc)}
                     classname="text-sm py-2 px-3 bg-red-600 hover:bg-red-700"
                 />
@@ -184,12 +205,22 @@ const PCList: React.FC = () => {
                         </div>
                         <div className="flex gap-4">
                             <Button
-                                buttonLabel="🎲 Gerar Personagem"
+                                buttonLabel={
+                                    <div className="flex items-center gap-1">
+                                        <Dice1 className="w-4 h-4" />
+                                        <span>Gerar Personagem</span>
+                                    </div>
+                                }
                                 onClick={() => navigate('/generator')}
                                 classname="bg-green-600 hover:bg-green-700"
                             />
                             <Button
-                                buttonLabel="✍️ Criar Manualmente"
+                                buttonLabel={
+                                    <div className="flex items-center gap-1">
+                                        <PenTool className="w-4 h-4" />
+                                        <span>Criar Manualmente</span>
+                                    </div>
+                                }
                                 onClick={() => navigate('/pc-editor/new')}
                             />
                         </div>
@@ -212,7 +243,12 @@ const PCList: React.FC = () => {
             <Modal
                 isOpen={showDeleteModal}
                 onClose={() => setShowDeleteModal(false)}
-                title="⚠️ Confirmar Exclusão"
+                title={
+                    <div className="flex items-center gap-2">
+                        <AlertTriangle className="w-5 h-5 text-orange-400" />
+                        <span>Confirmar Exclusão</span>
+                    </div>
+                }
                 size="md"
                 footer={
                     <ModalConfirmFooter
@@ -239,7 +275,10 @@ const PCList: React.FC = () => {
 
                     <div className="bg-indigo-900/30 p-4 rounded border border-indigo-800">
                         <p className="text-indigo-200 text-sm">
-                            💡 <strong>Alternativa:</strong> Considere simplesmente remover o personagem
+                            <div className="flex items-start gap-2">
+                                <Lightbulb className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
+                                <span><strong>Alternativa:</strong> Considere simplesmente remover o personagem</span>
+                            </div>
                             das campanhas ativas em vez de deletá-lo completamente.
                         </p>
                     </div>

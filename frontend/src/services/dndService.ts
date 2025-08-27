@@ -270,7 +270,12 @@ export const dndService = {
         if (params?.class) queryString.append('class', params.class);
 
         const url = `/dnd/spells${queryString.toString() ? `?${queryString}` : ''}`;
-        return await fetchFromAPI(url);
+        const response = await fetchFromAPI(url);
+
+        if (Array.isArray(response)) {
+            return { results: response, limit: params?.limit || 50, offset: params?.offset || 0 };
+        }
+        return response;
     },
 
     getSpellByIndex: async (index: string): Promise<DnDSpell> => {

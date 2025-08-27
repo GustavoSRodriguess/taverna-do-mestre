@@ -3,6 +3,7 @@ import React from 'react';
 import { CardBorder } from '../../ui';
 import { FullCharacter } from '../../types/game';
 import { ALIGNMENTS } from '../../utils/gameUtils';
+import { User, Info, BookOpen, Users, Sword, Scroll, Sparkles } from 'lucide-react';
 
 interface PCBasicInfoProps {
     pcData: FullCharacter;
@@ -48,7 +49,10 @@ const PCBasicInfo: React.FC<PCBasicInfoProps> = ({
         <div className="grid md:grid-cols-2 gap-6">
             {/* Basic Information */}
             <CardBorder className="bg-indigo-950/80">
-                <h3 className="text-xl font-bold mb-4 text-purple-400">Informações Básicas</h3>
+                <div className="flex items-center gap-2 mb-4">
+                    <User className="w-6 h-6 text-purple-400" />
+                    <h3 className="text-xl font-bold text-purple-400">Informações Básicas</h3>
+                </div>
 
                 <div className="space-y-4">
                     <div>
@@ -148,7 +152,10 @@ const PCBasicInfo: React.FC<PCBasicInfoProps> = ({
 
             {/* Additional Details */}
             <CardBorder className="bg-indigo-950/80">
-                <h3 className="text-xl font-bold mb-4 text-purple-400">Detalhes</h3>
+                <div className="flex items-center gap-2 mb-4">
+                    <Info className="w-6 h-6 text-purple-400" />
+                    <h3 className="text-xl font-bold text-purple-400">Detalhes</h3>
+                </div>
 
                 <div className="space-y-4">
                     <div>
@@ -211,18 +218,41 @@ const PCBasicInfo: React.FC<PCBasicInfoProps> = ({
                         <p>Nível {pcData.level} • Proficiência +{pcData.proficiency_bonus}</p>
                         <p>{pcData.background || 'Antecedente não definido'}</p>
                         {pcData.alignment && <p>Alinhamento: {pcData.alignment}</p>}
-                        {pcData.inspiration && <p className="text-yellow-400">✨ Inspirado</p>}
+                        {pcData.inspiration && (
+                            <div className="flex items-center gap-1 text-yellow-400">
+                                <Sparkles className="w-3 h-3" />
+                                <span>Inspirado</span>
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 {/* D&D API Info */}
                 {(pcData.race || pcData.class || pcData.background) && (
                     <div className="mt-4 p-3 bg-purple-900/20 rounded border border-purple-800">
-                        <h5 className="text-sm font-bold text-purple-300 mb-2">📚 Dados do D&D 5e API</h5>
+                        <div className="flex items-center gap-2 mb-2">
+                            <BookOpen className="w-4 h-4 text-purple-300" />
+                            <h5 className="text-sm font-bold text-purple-300">Dados do D&D 5e API</h5>
+                        </div>
                         <div className="text-xs text-purple-200 space-y-1">
-                            {pcData.race && <p>🧝 Modificadores raciais aplicados automaticamente</p>}
-                            {pcData.class && <p>⚔️ Dado de vida e HP calculados pela classe</p>}
-                            {pcData.background && <p>📜 Proficiências do antecedente disponíveis</p>}
+                            {pcData.race && (
+                                <div className="flex items-center gap-1">
+                                    <Users className="w-3 h-3" />
+                                    <span>Modificadores raciais aplicados automaticamente</span>
+                                </div>
+                            )}
+                            {pcData.class && (
+                                <div className="flex items-center gap-1">
+                                    <Sword className="w-3 h-3" />
+                                    <span>Dado de vida e HP calculados pela classe</span>
+                                </div>
+                            )}
+                            {pcData.background && (
+                                <div className="flex items-center gap-1">
+                                    <Scroll className="w-3 h-3" />
+                                    <span>Proficiências do antecedente disponíveis</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}

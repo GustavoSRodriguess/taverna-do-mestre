@@ -13,3 +13,4 @@ export { Tabs, type TabItem } from './Tabs';
 export { Modal, ModalConfirmFooter } from './Modal';
 export { Loading } from './Loading';
 export { Tooltip } from './Tooltip';
+export { default as IconLabel } from './IconLabel';

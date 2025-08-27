@@ -13,7 +13,7 @@ import PCCombat from '../PC/PCCombat';
 import PCSpells from '../PC/PCSpells';
 import PCEquipment from '../PC/PCEquipment';
 import PCDescription from '../PC/PCDescription';
-import { ArrowLeft, Save, RefreshCw, Copy } from 'lucide-react';
+import { ArrowLeft, Save, RefreshCw, Copy, User, Zap, Target, Sword, Sparkles, Backpack, FileText } from 'lucide-react';
 
 const CampaignCharacterEditor: React.FC = () => {
     const { campaignId, characterId } = useParams<{ campaignId: string; characterId: string }>();
@@ -230,13 +230,13 @@ const CampaignCharacterEditor: React.FC = () => {
     };
 
     const tabs = [
-        { id: 'basic', label: 'Básico', icon: 'user' },
-        { id: 'attributes', label: 'Atributos', icon: 'zap' },
-        { id: 'skills', label: 'Perícias', icon: 'target' },
-        { id: 'combat', label: 'Combate', icon: 'sword' },
-        { id: 'spells', label: 'Magias', icon: 'sparkles' },
-        { id: 'equipment', label: 'Equipamentos', icon: 'backpack' },
-        { id: 'description', label: 'Descrição', icon: 'file-text' }
+        { id: 'basic', label: 'Básico', icon: <User className="w-4 h-4" /> },
+        { id: 'attributes', label: 'Atributos', icon: <Zap className="w-4 h-4" /> },
+        { id: 'skills', label: 'Perícias', icon: <Target className="w-4 h-4" /> },
+        { id: 'combat', label: 'Combate', icon: <Sword className="w-4 h-4" /> },
+        { id: 'spells', label: 'Magias', icon: <Sparkles className="w-4 h-4" /> },
+        { id: 'equipment', label: 'Equipamentos', icon: <Backpack className="w-4 h-4" /> },
+        { id: 'description', label: 'Descrição', icon: <FileText className="w-4 h-4" /> }
     ];
 
     if (loading) {
@@ -331,11 +331,12 @@ const CampaignCharacterEditor: React.FC = () => {
                                     <button
                                         key={tab.id}
                                         onClick={() => setActiveTab(tab.id)}
-                                        className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === tab.id
+                                        className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 ${activeTab === tab.id
                                             ? 'border-purple-500 text-purple-400'
                                             : 'border-transparent text-indigo-300 hover:text-indigo-200 hover:border-indigo-700'
                                             }`}
                                     >
+                                        {tab.icon}
                                         {tab.label}
                                     </button>
                                 ))}

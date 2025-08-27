@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Button, SelectField, NumberField, RadioGroup } from '../../../ui';
+import { Button, SelectField, NumberField, RadioGroup, IconLabel } from '../../../ui';
 import { RACES, CLASSES, BACKGROUNDS, ATTRIBUTE_METHODS, LEVEL_RANGE } from '../../../constants';
+import { Wand2 } from 'lucide-react';
 
 type AttributeMethod = 'rolagem' | 'array' | 'compra';
 
@@ -89,7 +90,11 @@ export const CharacterGeneratorForm: React.FC<CharacterGeneratorFormProps> = ({ 
                 />
 
                 <Button
-                    buttonLabel="Gerar Personagem"
+                    buttonLabel={
+                        <IconLabel icon={Wand2} iconClassName="text-white">
+                            <span>Gerar Personagem</span>
+                        </IconLabel>
+                    }
                     onClick={handleGenerateCharacter}
                     classname="w-full mt-4"
                 />

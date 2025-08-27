@@ -79,10 +79,10 @@ export const Page: React.FC<PageType> = ({ children, theme = 'cosmic' }) => {
                 <Header
                     logo="Torre do Mago"
                     menuItems={[
-                        { label: 'Início', href: '/' },
-                        { label: 'Recursos', href: '/features' },
-                        { label: 'Preços', href: '/pricing' },
-                        { label: 'Contato', href: '/contact' },
+                        // { label: 'Início', href: '/' },
+                        // { label: 'Recursos', href: '/features' },
+                        // { label: 'Preços', href: '/pricing' },
+                        // { label: 'Contato', href: '/contact' },
                     ]}
                     ctaButton={{ label: 'Login/Registro', onClick: () => console.log('CTA clicked') }}
                 />
