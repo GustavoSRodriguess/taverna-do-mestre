@@ -41,6 +41,7 @@ services:
           property: connectionString
       - key: AI_SERVICE_URL
         fromService:
+          type: web
           name: taverna-ai-service
           property: host
       - key: JWT_SECRET
@@ -79,10 +80,12 @@ services:
     envVars:
       - key: VITE_API_URL
         fromService:
+          type: web
           name: taverna-backend
           property: host
       - key: VITE_AI_SERVICE_URL
         fromService:
+          type: web
           name: taverna-ai-service
           property: host
     headers:
