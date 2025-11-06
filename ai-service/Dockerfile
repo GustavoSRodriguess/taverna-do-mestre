@@ -15,10 +15,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 ENV FLASK_APP=app.py
-ENV FLASK_ENV=development
 ENV PYTHONPATH=/app
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Install production WSGI server
+RUN pip install --no-cache-dir gunicorn
 
 EXPOSE 5000
 
-# Use a shell script to run debug and then the app
-CMD ["sh", "-c", "python -m flask run --host=0.0.0.0"]
+# Run with gunicorn for production
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--timeout", "120", "app:app"]
