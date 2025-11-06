@@ -73,8 +73,8 @@ services:
   - type: web
     name: taverna-frontend
     runtime: static
-    buildCommand: npm install && npm run build
-    staticPublishPath: ./dist
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/dist
     pullRequestPreviewsEnabled: true
     envVars:
       - key: VITE_API_URL
