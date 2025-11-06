@@ -41,7 +41,6 @@ services:
           property: connectionString
       - key: AI_SERVICE_URL
         fromService:
-          type: render
           name: taverna-ai-service
           property: host
       - key: JWT_SECRET
@@ -59,7 +58,7 @@ services:
     region: oregon
     envVars:
       - key: OPENAI_API_KEY
-        sync: false # Você precisará adicionar manualmente no dashboard
+        sync: false
       - key: DATABASE_URL
         fromDatabase:
           name: taverna-db
@@ -77,16 +76,13 @@ services:
     staticPublishPath: ./dist
     pullRequestPreviewsEnabled: true
     plan: free
-    region: oregon
     envVars:
       - key: VITE_API_URL
         fromService:
-          type: render
           name: taverna-backend
           property: host
       - key: VITE_AI_SERVICE_URL
         fromService:
-          type: render
           name: taverna-ai-service
           property: host
     headers:
