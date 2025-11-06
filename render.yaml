@@ -70,13 +70,11 @@ services:
         value: 5000
 
   # Frontend React
-  - type: web
+  - type: static
     name: taverna-frontend
-    runtime: static
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
     pullRequestPreviewsEnabled: true
-    plan: free
     envVars:
       - key: VITE_API_URL
         fromService:
