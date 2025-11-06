@@ -14,14 +14,21 @@ import (
 
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		allowedOrigin := "http://localhost:5173"
 		origin := r.Header.Get("Origin")
 
-		if origin == allowedOrigin {
-			w.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
+		// Lista de origens permitidas
+		allowedOrigins := map[string]bool{
+			"http://localhost:5173":                 true,
+			"https://taverna-frontend.onrender.com": true,
+		}
+
+		// Se a origem for permitida, inclui cabeçalhos CORS
+		if allowedOrigins[origin] {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Access-Control-Allow-Credentials", "true")
 		}
 
+		// Preflight (OPTIONS)
 		if r.Method == http.MethodOptions {
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 			w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
