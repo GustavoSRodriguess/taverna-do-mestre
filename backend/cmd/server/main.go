@@ -48,14 +48,15 @@ func main() {
 	pythonTimeout := time.Duration(getEnvAsInt("PYTHON_TIMEOUT", 10)) * time.Second
 	aiHost := os.Getenv("AI_SERVICE_URL")
 
-	// Fallback para ambiente local
+	// Local fallback
 	if aiHost == "" {
-		aiHost = "localhost:5000"
+		aiHost = "http://localhost:5000"
 	}
 
-	// Se vier só o host, adiciona o protocolo HTTPS (Render blueprint só manda host)
+	// SE não tiver http, significa que estamos no Render
 	if !strings.HasPrefix(aiHost, "http") {
-		aiHost = fmt.Sprintf("https://%s", aiHost)
+		// Adiciona o domínio correto
+		aiHost = fmt.Sprintf("https://%s.onrender.com", aiHost)
 	}
 
 	pythonClient := python.NewClient(aiHost, pythonTimeout)
