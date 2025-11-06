@@ -1,5 +1,10 @@
 // frontend/src/services/apiService.ts - Versão Refatorada
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const API_BASE_URL =
+    import.meta.env.VITE_API_URL ||
+    (import.meta.env.VITE_BACKEND_HOST
+        ? `https://${import.meta.env.VITE_BACKEND_HOST}.onrender.com/api`
+        : '');
+
 
 // ========================================
 // CORE API SERVICE
@@ -223,7 +228,7 @@ class ApiService {
         return {
             Nome: apiResponse.name || "Personagem Sem Nome",
             Raca: apiResponse.race || "Desconhecida",
-            Classe: apiResponse.class || "Desconhecida", 
+            Classe: apiResponse.class || "Desconhecida",
             HP: apiResponse.hp || 0,
             CA: apiResponse.ca || apiResponse.ac || 0,
             Antecedente: apiResponse.background || "Nenhum",

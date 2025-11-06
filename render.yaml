@@ -77,16 +77,16 @@ services:
     staticPublishPath: frontend/dist
     pullRequestPreviewsEnabled: true
     envVars:
-      - key: VITE_API_URL
+      - key: VITE_BACKEND_HOST
         fromService:
           type: web
           name: taverna-backend
-          property: url
+          property: host
       - key: VITE_AI_SERVICE_URL
         fromService:
           type: web
           name: taverna-ai-service
-          property: url
+          property: host
     headers:
       - path: /*
         name: X-Frame-Options
