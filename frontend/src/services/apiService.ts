@@ -5,7 +5,6 @@ const API_BASE_URL =
         ? `https://${import.meta.env.VITE_BACKEND_HOST}.onrender.com/api`
         : '');
 
-
 // ========================================
 // CORE API SERVICE
 // ========================================
