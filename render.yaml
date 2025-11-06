@@ -81,12 +81,12 @@ services:
         fromService:
           type: web
           name: taverna-backend
-          property: host
+          property: url
       - key: VITE_AI_SERVICE_URL
         fromService:
           type: web
           name: taverna-ai-service
-          property: host
+          property: url
     headers:
       - path: /*
         name: X-Frame-Options
