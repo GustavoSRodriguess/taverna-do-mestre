@@ -29,8 +29,8 @@ export const fetchFromAPI = async (endpoint: string, method: string = 'GET', dat
             throw new Error(errorData?.message || `Error ${response.status}: ${response.statusText}`);
         }
         const responseJson = await response.json();
-        console.log(`Response data from ${endpoint}:`, responseJson.results);
-        return responseJson.results || responseJson;
+        console.log(`Response data from ${endpoint}:`, responseJson);
+        return responseJson.data || responseJson.results || responseJson;
     } catch (error) {
         console.error(`API Error (${endpoint}):`, error);
         throw error;
@@ -64,6 +64,7 @@ export interface GenerationFormData {
     theme?: string;
     coin_type?: string;
     item_categories?: string[];
+    magic_item_categories?: string[];
     quantity?: number;
     gems?: boolean;
     art_objects?: boolean;
@@ -104,9 +105,7 @@ class ApiService {
 
         const response = await this.callGenerationEndpoint('/npcs/generate', payload);
 
-        const result = response.data || {};
-
-        return result;
+        return this.transformToCharacterSheet(response);
     }
 
     // Encounter Generation
@@ -140,7 +139,7 @@ class ApiService {
             level: parseInt(formData.level || '1'),
             quantity: formData.quantity || 1,
             coin_type: formData.coin_type || 'standard',
-            item_categories: formData.item_categories || [],
+            magic_item_categories: formData.magic_item_categories || formData.item_categories || [],
             gems: formData.gems || false,
             art_objects: formData.art_objects || false,
             magic_items: formData.magic_items || false,
@@ -223,18 +222,18 @@ class ApiService {
 
         return {
             Nome: apiResponse.name || "Personagem Sem Nome",
-            Raça: apiResponse.race || "Desconhecida",
-            Classe: apiResponse.class || "Desconhecida",
+            Raca: apiResponse.race || "Desconhecida",
+            Classe: apiResponse.class || "Desconhecida", 
             HP: apiResponse.hp || 0,
-            CA: apiResponse.ca || 0,
+            CA: apiResponse.ca || apiResponse.ac || 0,
             Antecedente: apiResponse.background || "Nenhum",
             Nível: apiResponse.level || 1,
             Atributos: attributes,
             Modificadores: modifiers,
-            Habilidades: apiResponse.abilities?.abilities || [],
-            Magias: apiResponse.abilities?.spells || {},
-            Equipamento: apiResponse.equipment?.items || [],
-            "Traço de Antecedente": apiResponse.description || "Sem descrição detalhada.",
+            Habilidades: Array.isArray(apiResponse.abilities) ? apiResponse.abilities : (apiResponse.abilities?.abilities || []),
+            Magias: apiResponse.spells || apiResponse.abilities?.spells || {},
+            Equipamento: Array.isArray(apiResponse.equipment) ? apiResponse.equipment : (apiResponse.equipment?.items || []),
+            "Traco de Antecedente": apiResponse.description || "Sem descrição detalhada.",
         };
     }
 

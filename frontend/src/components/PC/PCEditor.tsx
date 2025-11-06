@@ -13,6 +13,7 @@ import PCCombat from './PCCombat';
 import PCSpells from './PCSpells';
 import PCEquipment from './PCEquipment';
 import PCDescription from './PCDescription';
+import { AIChatbot } from '../Chatbot/AIChatbot';
 
 const PCEditor: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -298,6 +299,7 @@ const PCEditor: React.FC = () => {
                     </div>
                 </div>
             </Section>
+            <AIChatbot />
         </Page>
     );
 };

@@ -406,7 +406,7 @@ def generate_npc(level=1, attribute_method="standard_array",
             "equipment": equipment,
             "hp": hp,
             "ac": ac,
-            "spells": spells if spells else "No spells"
+            "spells": spells if spells else {}
         }
         return npc
 
@@ -454,9 +454,60 @@ def handle_generate_npc(request_data):
     if raw_attributes_method not in attribute_method_map and raw_attributes_method != "standard_array":
         print(f"Método de atributos \'{request_data.get('attributes_method')}\' não reconhecido. Usando \'{attributes_method}\'.")
 
+    # Mapeamento de nomes em português para inglês
+    class_pt_to_en = {
+        "bárbaro": "barbarian", "barbaro": "barbarian",
+        "bardo": "bard",
+        "clérigo": "cleric", "clerigo": "cleric",
+        "druida": "druid",
+        "guerreiro": "fighter",
+        "monge": "monk",
+        "paladino": "paladin",
+        "patrulheiro": "ranger",
+        "ladino": "rogue", "ladião": "rogue",
+        "feiticeiro": "sorcerer",
+        "bruxo": "warlock",
+        "mago": "wizard"
+    }
+    
+    race_pt_to_en = {
+        "humano": "human", "humana": "human",
+        "anão": "dwarf", "anao": "dwarf", "anã": "dwarf",
+        "elfo": "elf", "elfa": "elf",
+        "halfling": "halfling",
+        "meio-elfo": "half-elf", "meio elfo": "half-elf",
+        "meio-orc": "half-orc", "meio orc": "half-orc",
+        "tiefling": "tiefling",
+        "gnomo": "gnome"
+    }
+    
+    background_pt_to_en = {
+        "acólito": "acolyte", "acolito": "acolyte",
+        "charlatão": "charlatan", "charlatao": "charlatan",
+        "criminoso": "criminal",
+        "artista": "entertainer",
+        "herói do povo": "folk-hero", "heroi do povo": "folk-hero",
+        "artesão da guilda": "guild-artisan", "artesao da guilda": "guild-artisan",
+        "eremita": "hermit",
+        "nobre": "noble",
+        "forasteiro": "outlander",
+        "sábio": "sage", "sabio": "sage",
+        "marinheiro": "sailor",
+        "soldado": "soldier",
+        "órfão": "urchin", "orfao": "urchin"
+    }
+
     manual_race = request_data.get("race")
-    manual_class = request_data.get("character_class")
+    manual_class = request_data.get("class") or request_data.get("character_class") 
     manual_background = request_data.get("background")
+    
+    # Converter nomes em português para inglês
+    if manual_race:
+        manual_race = race_pt_to_en.get(manual_race.lower(), manual_race)
+    if manual_class:
+        manual_class = class_pt_to_en.get(manual_class.lower(), manual_class)
+    if manual_background:
+        manual_background = background_pt_to_en.get(manual_background.lower(), manual_background)
     
     return generate_npc(level, attributes_method,
                         manual_race_index=manual_race,

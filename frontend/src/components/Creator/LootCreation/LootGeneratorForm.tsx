@@ -89,7 +89,7 @@ export const LootGeneratorForm: React.FC<LootGeneratorFormProps> = ({ onGenerate
             ranks: itemRanks,
             more_random_coins: moreRandomCoins // CORREÇÃO: usar o estado real
         });
-        
+
         onGenerateLoot({
             // Mapeamento correto para o backend
             level: level,
@@ -100,10 +100,10 @@ export const LootGeneratorForm: React.FC<LootGeneratorFormProps> = ({ onGenerate
             art_objects: includeArtObjects,
             magic_items: includeMagicItems,
             ranks: itemRanks,
-            
+
             // Campos adicionais que podem ser necessários
             valuable_type: "standard",
-            item_type: "standard", 
+            item_type: "standard",
             more_random_coins: moreRandomCoins, // CORREÇÃO: usar o estado real
             trade: "none",
             psionic_items: false,

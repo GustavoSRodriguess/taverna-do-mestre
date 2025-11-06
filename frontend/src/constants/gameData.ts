@@ -11,30 +11,33 @@ export const RACES = [
 ];
 
 export const CLASSES = [
-  { value: "guerreiro", label: "Guerreiro" },
-  { value: "mago", label: "Mago" },
-  { value: "ladino", label: "Ladino" },
-  { value: "clerigo", label: "Clérigo" },
-  { value: "bardo", label: "Bardo" },
-  { value: "druida", label: "Druida" },
-  { value: "monge", label: "Monge" },
-  { value: "paladino", label: "Paladino" },
-  { value: "patrulheiro", label: "Patrulheiro" },
-  { value: "feiticeiro", label: "Feiticeiro" },
-  { value: "bruxo", label: "Bruxo" }
+  { value: "fighter", label: "Guerreiro" },
+  { value: "wizard", label: "Mago" },
+  { value: "rogue", label: "Ladino" },
+  { value: "cleric", label: "Clérigo" },
+  { value: "bard", label: "Bardo" },
+  { value: "druid", label: "Druida" },
+  { value: "monk", label: "Monge" },
+  { value: "paladin", label: "Paladino" },
+  { value: "ranger", label: "Patrulheiro" },
+  { value: "sorcerer", label: "Feiticeiro" },
+  { value: "warlock", label: "Bruxo" },
+  { value: "barbarian", label: "Bárbaro" }
 ];
 
 export const BACKGROUNDS = [
-  { value: "nobre", label: "Nobre" },
-  { value: "eremita", label: "Eremita" },
-  { value: "soldado", label: "Soldado" },
-  { value: "criminoso", label: "Criminoso" },
-  { value: "sabio", label: "Sábio" },
-  { value: "charlatao", label: "Charlatão" },
-  { value: "artifice", label: "Artífice" },
-  { value: "forasteiro", label: "Forasteiro" },
-  { value: "heroi", label: "Herói" },
-  { value: "mercenario", label: "Mercenário" }
+  { value: "noble", label: "Nobre" },
+  { value: "hermit", label: "Eremita" },
+  { value: "soldier", label: "Soldado" },
+  { value: "criminal", label: "Criminoso" },
+  { value: "sage", label: "Sábio" },
+  { value: "charlatan", label: "Charlatão" },
+  { value: "guild-artisan", label: "Artífice" },
+  { value: "outlander", label: "Forasteiro" },
+  { value: "folk-hero", label: "Herói" },
+  { value: "acolyte", label: "Acólito" },
+  { value: "entertainer", label: "Artista" },
+  { value: "urchin", label: "Órfão" }
 ];
 
 export const ATTRIBUTE_METHODS = [

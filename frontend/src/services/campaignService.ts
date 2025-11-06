@@ -92,7 +92,7 @@ export interface UpdateCampaignData {
 }
 
 export interface AddCharacterData {
-    pc_id: number;
+    source_pc_id: number;
 }
 
 export interface UpdateCharacterData {
