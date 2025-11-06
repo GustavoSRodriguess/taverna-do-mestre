@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -45,7 +46,19 @@ func main() {
 	// Configura cliente Python
 	//pythonBaseURL := getEnv("PYTHON_SERVICE_URL", "http://127.0.0.1:5000")
 	pythonTimeout := time.Duration(getEnvAsInt("PYTHON_TIMEOUT", 10)) * time.Second
-	pythonClient := python.NewClient("http://host.docker.internal:5000", pythonTimeout)
+	aiHost := os.Getenv("AI_SERVICE_URL")
+
+	// Fallback para ambiente local
+	if aiHost == "" {
+		aiHost = "localhost:5000"
+	}
+
+	// Se vier só o host, adiciona o protocolo HTTPS (Render blueprint só manda host)
+	if !strings.HasPrefix(aiHost, "http") {
+		aiHost = fmt.Sprintf("https://%s", aiHost)
+	}
+
+	pythonClient := python.NewClient(aiHost, pythonTimeout)
 
 	// Verifica se o serviço Python está ativo
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
