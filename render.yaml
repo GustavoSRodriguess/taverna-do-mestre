@@ -70,8 +70,9 @@ services:
         value: 5000
 
   # Frontend React
-  - type: static
+  - type: web
     name: taverna-frontend
+    runtime: static
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
     pullRequestPreviewsEnabled: true
