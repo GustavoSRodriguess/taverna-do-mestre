@@ -1,0 +1,32 @@
+FROM golang:1.23 AS builder
+
+WORKDIR /app
+
+# Copiar arquivos de dependências
+COPY go.mod go.sum* ./
+RUN go mod download
+
+# Copiar código fonte
+COPY . .
+
+# Corrigir imports se necessário
+RUN find . -name "*.go" -type f -exec sed -i 's|github.com/seu-usuario/rpg-saas-go|rpg-saas-backend|g' {} \; && \
+    find . -name "*.go" -type f -exec sed -i 's|github.com/GustavoSRodrigues/taverna-do-mestre|rpg-saas-backend|g' {} \;
+
+# Compilar binário estático
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/server
+
+# Imagem final
+FROM alpine:latest
+RUN apk --no-cache add ca-certificates
+
+WORKDIR /app
+
+# Copiar binário compilado
+COPY --from=builder /app/main .
+
+# Render usa a variável PORT
+ENV PORT=8080
+EXPOSE 8080
+
+CMD ["./main"]
