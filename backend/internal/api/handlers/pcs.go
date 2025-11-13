@@ -305,6 +305,67 @@ func (h *PCHandler) GetPCCampaigns(w http.ResponseWriter, r *http.Request) {
 	}, http.StatusOK)
 }
 
+// CheckUniquePCAvailability verifica se um PC único pode ser adicionado a uma campanha
+func (h *PCHandler) CheckUniquePCAvailability(w http.ResponseWriter, r *http.Request) {
+	// Extract user ID using utility
+	userID, err := utils.ExtractUserID(r)
+	if err != nil {
+		h.Response.SendInternalError(w, "User ID not found in context")
+		return
+	}
+
+	// Extract ID using utility
+	pcID, err := utils.ExtractID(r)
+	if err != nil {
+		h.Response.SendBadRequest(w, err.Error())
+		return
+	}
+
+	// Verificar se o PC pertence ao usuário e é único
+	pc, err := h.DB.GetPCByIDAndPlayer(r.Context(), pcID, userID)
+	if err != nil {
+		h.Response.HandleDBError(w, err, "verify PC ownership")
+		return
+	}
+
+	// Se não for único, sempre disponível
+	if !pc.IsUnique {
+		h.Response.SendJSON(w, map[string]any{
+			"available":    true,
+			"is_unique":    false,
+			"campaign_id":  nil,
+			"campaign_count": 0,
+		}, http.StatusOK)
+		return
+	}
+
+	// Verificar se já está em alguma campanha
+	inCampaign, campaignID, err := h.DB.CheckUniquePCInCampaign(r.Context(), pcID)
+	if err != nil {
+		h.Response.HandleDBError(w, err, "check unique PC availability")
+		return
+	}
+
+	// Contar total de campanhas
+	campaignCount, err := h.DB.CountPCCampaigns(r.Context(), pcID)
+	if err != nil {
+		h.Response.HandleDBError(w, err, "count PC campaigns")
+		return
+	}
+
+	var campaignIDPtr *int
+	if inCampaign {
+		campaignIDPtr = &campaignID
+	}
+
+	h.Response.SendJSON(w, map[string]any{
+		"available":      !inCampaign,
+		"is_unique":      true,
+		"campaign_id":    campaignIDPtr,
+		"campaign_count": campaignCount,
+	}, http.StatusOK)
+}
+
 // GenerateRandomPC gera um PC usando o serviço Python
 // func (h *PCHandler) GenerateRandomPC(w http.ResponseWriter, r *http.Request) {
 // 	userID, ok := r.Context().Value(middleware.UserIDKey).(int)

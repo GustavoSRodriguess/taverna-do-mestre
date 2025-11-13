@@ -77,6 +77,7 @@ export interface FullCharacter extends BaseCharacter {
     player_name?: string;
     player_id?: number;
     is_homebrew?: boolean;
+    is_unique?: boolean;
 }
 
 export type StatusType = 'planning' | 'active' | 'paused' | 'completed' | 'inactive' | 'dead' | 'retired';

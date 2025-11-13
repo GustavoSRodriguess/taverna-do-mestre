@@ -18,7 +18,7 @@ func (p *PostgresDB) GetPCsByPlayer(ctx context.Context, playerID int, limit, of
 		SELECT id, name, description, level, race, class, background, alignment,
 		       attributes, abilities, equipment, hp, current_hp, ca, proficiency_bonus,
 		       inspiration, skills, attacks, spells, personality_traits, ideals, bonds,
-		       flaws, features, player_name, player_id, is_homebrew, created_at
+		       flaws, features, player_name, player_id, is_homebrew, is_unique, created_at
 		FROM pcs
 		WHERE player_id = $1
 		ORDER BY created_at DESC
@@ -42,7 +42,7 @@ func (p *PostgresDB) GetPCByIDAndPlayer(ctx context.Context, id, playerID int) (
 		SELECT id, name, description, level, race, class, background, alignment,
 		       attributes, abilities, equipment, hp, current_hp, ca, proficiency_bonus,
 		       inspiration, skills, attacks, spells, personality_traits, ideals, bonds,
-		       flaws, features, player_name, player_id, is_homebrew, created_at
+		       flaws, features, player_name, player_id, is_homebrew, is_unique, created_at
 		FROM pcs
 		WHERE id = $1 AND player_id = $2
 	`
@@ -59,9 +59,9 @@ func (p *PostgresDB) GetPCByIDAndPlayer(ctx context.Context, id, playerID int) (
 func (p *PostgresDB) CreatePC(ctx context.Context, pc *models.PC) error {
 	query := `
 		INSERT INTO pcs
-		(name, description, level, race, class, background, alignment, attributes, abilities, equipment, hp, ca, player_name, player_id, is_homebrew, created_at)
+		(name, description, level, race, class, background, alignment, attributes, abilities, equipment, hp, ca, player_name, player_id, is_homebrew, is_unique, created_at)
 		VALUES
-		($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+		($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
 		RETURNING id
 	`
 
@@ -70,7 +70,7 @@ func (p *PostgresDB) CreatePC(ctx context.Context, pc *models.PC) error {
 
 	row := p.DB.QueryRowContext(ctx, query,
 		pc.Name, pc.Description, pc.Level, pc.Race, pc.Class, pc.Background, pc.Alignment,
-		pc.Attributes, pc.Abilities, pc.Equipment, pc.HP, pc.CA, pc.PlayerName, pc.PlayerID, pc.IsHomebrew, pc.CreatedAt,
+		pc.Attributes, pc.Abilities, pc.Equipment, pc.HP, pc.CA, pc.PlayerName, pc.PlayerID, pc.IsHomebrew, pc.IsUnique, pc.CreatedAt,
 	)
 
 	return row.Scan(&pc.ID)
@@ -84,8 +84,8 @@ func (p *PostgresDB) UpdatePC(ctx context.Context, pc *models.PC) error {
 		attributes = $8, abilities = $9, equipment = $10, hp = $11, current_hp = $12, ca = $13,
 		proficiency_bonus = $14, inspiration = $15, skills = $16, attacks = $17, spells = $18,
 		personality_traits = $19, ideals = $20, bonds = $21, flaws = $22, features = $23, player_name = $24,
-		is_homebrew = $25
-		WHERE id = $26 AND player_id = $27
+		is_homebrew = $25, is_unique = $26
+		WHERE id = $27 AND player_id = $28
 	`
 
 	log.Printf("Executando UPDATE para PC ID: %d", pc.ID)
@@ -96,7 +96,7 @@ func (p *PostgresDB) UpdatePC(ctx context.Context, pc *models.PC) error {
 		pc.Attributes, pc.Abilities, pc.Equipment, pc.HP, pc.CurrentHP, pc.CA,
 		pc.ProficiencyBonus, pc.Inspiration, pc.Skills, pc.Attacks, pc.Spells,
 		pc.PersonalityTraits, pc.Ideals, pc.Bonds, pc.Flaws, pc.Features, pc.PlayerName,
-		pc.IsHomebrew,
+		pc.IsHomebrew, pc.IsUnique,
 		pc.ID, pc.PlayerID,
 	)
 
@@ -200,4 +200,45 @@ func (p *PostgresDB) GetPCCampaigns(ctx context.Context, pcID, playerID int) ([]
 	}
 
 	return campaigns, nil
+}
+
+// CheckUniquePCInCampaign verifica se um PC único já está em alguma campanha ativa
+func (p *PostgresDB) CheckUniquePCInCampaign(ctx context.Context, pcID int) (bool, int, error) {
+	var campaignID int
+	query := `
+		SELECT cc.campaign_id
+		FROM campaign_characters cc
+		JOIN pcs p ON p.id = cc.source_pc_id
+		WHERE cc.source_pc_id = $1
+		  AND p.is_unique = true
+		  AND cc.status IN ('active', 'inactive')
+		LIMIT 1
+	`
+
+	err := p.DB.GetContext(ctx, &campaignID, query, pcID)
+	if err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			return false, 0, nil
+		}
+		return false, 0, fmt.Errorf("failed to check unique PC in campaign: %w", err)
+	}
+
+	return true, campaignID, nil
+}
+
+// CountPCCampaigns retorna o número de campanhas em que um PC está participando
+func (p *PostgresDB) CountPCCampaigns(ctx context.Context, pcID int) (int, error) {
+	var count int
+	query := `
+		SELECT COUNT(*)
+		FROM campaign_characters
+		WHERE source_pc_id = $1 AND status IN ('active', 'inactive')
+	`
+
+	err := p.DB.GetContext(ctx, &count, query, pcID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count PC campaigns: %w", err)
+	}
+
+	return count, nil
 }

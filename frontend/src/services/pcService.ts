@@ -41,6 +41,13 @@ export interface PCCampaignsResponse {
     count: number;
 }
 
+export interface PCAvailabilityResponse {
+    available: boolean;
+    is_unique: boolean;
+    campaign_id: number | null;
+    campaign_count: number;
+}
+
 export interface GeneratePCRequest {
     level: number;
     attributes_method?: string;
@@ -78,6 +85,10 @@ class PCService {
 
     async getPCCampaigns(id: number): Promise<PCCampaignsResponse> {
         return fetchFromAPI(`/pcs/${id}/campaigns`);
+    }
+
+    async checkPCAvailability(id: number): Promise<PCAvailabilityResponse> {
+        return fetchFromAPI(`/pcs/${id}/check-availability`);
     }
 
     async generatePC(request: GeneratePCRequest): Promise<FullCharacter> {

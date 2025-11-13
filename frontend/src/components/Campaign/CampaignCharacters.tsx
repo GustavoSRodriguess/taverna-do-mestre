@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Button, CardBorder, Badge, Modal, ModalConfirmFooter, Alert } from '../../ui';
 import { campaignService, CampaignCharacter, UpdateCharacterData } from '../../services/campaignService';
-import { Edit, Settings, Trash2, Users } from 'lucide-react';
+import { pcService } from '../../services/pcService';
+import { Edit, Settings, Trash2, Users, AlertTriangle, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface CampaignCharactersProps {
@@ -72,6 +73,15 @@ const CampaignCharacters: React.FC<CampaignCharactersProps> = ({
         try {
             setLoading(true);
             setError(null);
+
+            // Verificar se o PC é único e se está disponível
+            const availability = await pcService.checkPCAvailability(selectedPCId);
+
+            if (!availability.available) {
+                setError(`Este personagem único já está na campanha ID ${availability.campaign_id}. Personagens únicos só podem estar em uma campanha por vez.`);
+                setLoading(false);
+                return;
+            }
 
             console.log('Adicionando personagem com ID:', selectedPCId, 'à campanha:', campaignId);
 
@@ -315,13 +325,27 @@ const CampaignCharacters: React.FC<CampaignCharactersProps> = ({
                                             }`}
                                         onClick={() => setSelectedPCId(pc.id)}
                                     >
-                                        <div className="font-medium text-white">{pc.name}</div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="font-medium text-white">{pc.name}</div>
+                                            {pc.is_unique && (
+                                                <div className="flex items-center gap-1 bg-yellow-900/30 text-yellow-400 px-2 py-0.5 rounded border border-yellow-600/50 text-xs">
+                                                    <Star className="w-3 h-3 fill-yellow-400" />
+                                                    <span>Único</span>
+                                                </div>
+                                            )}
+                                        </div>
                                         <div className="text-sm text-indigo-300">
                                             {pc.race} {pc.class} - Nível {pc.level}
                                         </div>
                                         <div className="text-xs text-indigo-400">
                                             HP: {pc.hp} | CA: {pc.ca}
                                         </div>
+                                        {pc.is_unique && (
+                                            <div className="text-xs text-yellow-400 mt-1 flex items-center gap-1">
+                                                <AlertTriangle className="w-3 h-3" />
+                                                <span>Este personagem só pode estar em uma campanha</span>
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>

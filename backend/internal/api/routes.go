@@ -87,6 +87,7 @@ func SetupRoutes(dbClient *db.PostgresDB, pythonClient *python.Client) *chi.Mux 
 		// r.Post("/generate", pcHandler.GenerateRandomPC)
 
 		r.Get("/{id}/campaigns", pcHandler.GetPCCampaigns)
+		r.Get("/{id}/check-availability", pcHandler.CheckUniquePCAvailability)
 	})
 
 	router.Route("/api/encounters", func(r chi.Router) {

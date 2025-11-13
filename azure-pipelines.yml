@@ -1,0 +1,171 @@
+# Azure DevOps Pipeline para Taverna do Mestre
+# Deploy automático com Docker Compose
+
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+
+variables:
+  # Container Registry (configure nas variáveis do pipeline)
+  dockerRegistryServiceConnection: 'TavernaACR'
+  imageRepository: 'taverna'
+  containerRegistry: '$(ACR_NAME).azurecr.io'
+  dockerComposeFile: 'docker-compose.azure.yml'
+
+  # Tags
+  tag: '$(Build.BuildId)'
+
+  # Azure Resources
+  azureSubscription: 'TavernaSubscription'
+  resourceGroup: 'taverna-rg'
+  location: 'brazilsouth'
+
+stages:
+  - stage: Build
+    displayName: 'Build and Push Images'
+    jobs:
+      - job: BuildImages
+        displayName: 'Build Docker Images'
+        pool:
+          vmImage: 'ubuntu-latest'
+
+        steps:
+          # Checkout code
+          - checkout: self
+            fetchDepth: 1
+
+          # Login to Azure Container Registry
+          - task: Docker@2
+            displayName: 'Login to ACR'
+            inputs:
+              command: login
+              containerRegistry: $(dockerRegistryServiceConnection)
+
+          # Build and Push Backend
+          - task: Docker@2
+            displayName: 'Build Backend Image'
+            inputs:
+              command: buildAndPush
+              repository: '$(imageRepository)-backend'
+              dockerfile: 'backend/Dockerfile'
+              containerRegistry: $(dockerRegistryServiceConnection)
+              tags: |
+                $(tag)
+                latest
+
+          # Build and Push AI Service
+          - task: Docker@2
+            displayName: 'Build AI Service Image'
+            inputs:
+              command: buildAndPush
+              repository: '$(imageRepository)-ai'
+              dockerfile: 'ai-service/Dockerfile'
+              containerRegistry: $(dockerRegistryServiceConnection)
+              tags: |
+                $(tag)
+                latest
+
+          # Build and Push Frontend
+          - task: Docker@2
+            displayName: 'Build Frontend Image'
+            inputs:
+              command: buildAndPush
+              repository: '$(imageRepository)-frontend'
+              dockerfile: 'frontend/Dockerfile'
+              containerRegistry: $(dockerRegistryServiceConnection)
+              buildContext: 'frontend'
+              arguments: '--build-arg VITE_API_URL=$(VITE_API_URL)'
+              tags: |
+                $(tag)
+                latest
+
+  - stage: DeployDev
+    displayName: 'Deploy to Development'
+    dependsOn: Build
+    condition: eq(variables['Build.SourceBranch'], 'refs/heads/develop')
+    jobs:
+      - deployment: DeployDevelopment
+        displayName: 'Deploy to Dev Environment'
+        pool:
+          vmImage: 'ubuntu-latest'
+        environment: 'development'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                # Azure CLI - Deploy to Container Instances or App Service
+                - task: AzureCLI@2
+                  displayName: 'Deploy with Docker Compose'
+                  inputs:
+                    azureSubscription: $(azureSubscription)
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      # Option 1: Deploy to Azure Container Instances
+                      az container create \
+                        --resource-group $(resourceGroup) \
+                        --file $(dockerComposeFile) \
+                        --registry-login-server $(containerRegistry) \
+                        --registry-username $(ACR_USERNAME) \
+                        --registry-password $(ACR_PASSWORD)
+
+  - stage: DeployProd
+    displayName: 'Deploy to Production'
+    dependsOn: Build
+    condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
+    jobs:
+      - deployment: DeployProduction
+        displayName: 'Deploy to Prod Environment'
+        pool:
+          vmImage: 'ubuntu-latest'
+        environment: 'production'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                # Database Migration
+                - task: AzureCLI@2
+                  displayName: 'Run Database Migrations'
+                  inputs:
+                    azureSubscription: $(azureSubscription)
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      echo "Running database migrations..."
+                      # Connect to Azure PostgreSQL and run migrations
+                      psql "$(DB_CONNECTION_STRING)" -f db/init.sql
+                      psql "$(DB_CONNECTION_STRING)" -f db/migration_add_is_homebrew.sql
+                      psql "$(DB_CONNECTION_STRING)" -f db/migration_add_is_unique_to_pcs.sql
+                      psql "$(DB_CONNECTION_STRING)" -f db/homebrew_tables.sql
+                      psql "$(DB_CONNECTION_STRING)" -f db/homebrew_favorites_ratings.sql
+
+                # Deploy to Azure Web App for Containers
+                - task: AzureWebAppContainer@1
+                  displayName: 'Deploy to Azure App Service'
+                  inputs:
+                    azureSubscription: $(azureSubscription)
+                    appName: 'taverna-do-mestre'
+                    containers: |
+                      $(containerRegistry)/$(imageRepository)-backend:$(tag)
+                      $(containerRegistry)/$(imageRepository)-ai:$(tag)
+                      $(containerRegistry)/$(imageRepository)-frontend:$(tag)
+                    multicontainerConfigFile: $(dockerComposeFile)
+
+                # Health Check
+                - task: AzureCLI@2
+                  displayName: 'Health Check'
+                  inputs:
+                    azureSubscription: $(azureSubscription)
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      echo "Checking application health..."
+                      response=$(curl -s -o /dev/null -w "%{http_code}" https://taverna-do-mestre.azurewebsites.net/health)
+                      if [ $response -eq 200 ]; then
+                        echo "✅ Application is healthy!"
+                      else
+                        echo "❌ Health check failed with status: $response"
+                        exit 1
+                      fi

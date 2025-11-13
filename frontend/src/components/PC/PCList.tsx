@@ -6,7 +6,7 @@ import { pcService } from '../../services/pcService';
 import { FullCharacter } from '../../types/game';
 import { AttributeDisplay, CombatStats, LevelBadge, CharacterCardSkeleton } from '../Generic';
 import { formatDate } from '../../utils/gameUtils';
-import { UserPlus, Dice1, Edit3, BarChart3, Trash2, AlertTriangle, Lightbulb, PenTool } from 'lucide-react';
+import { UserPlus, Dice1, Edit3, BarChart3, Trash2, AlertTriangle, Lightbulb, PenTool, Star, Wand2 } from 'lucide-react';
 
 const PCList: React.FC = () => {
     const navigate = useNavigate();
@@ -87,8 +87,22 @@ const PCList: React.FC = () => {
     const CharacterCard: React.FC<{ pc: FullCharacter }> = ({ pc }) => (
         <CardBorder className="bg-indigo-950/80 hover:bg-indigo-900/80 transition-colors">
             <div className="flex justify-between items-start mb-4">
-                <div>
-                    <h3 className="font-bold text-lg text-white">{pc.name}</h3>
+                <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                        <h3 className="font-bold text-lg text-white">{pc.name}</h3>
+                        {pc.is_unique && (
+                            <div className="flex items-center mb-1 gap-1 bg-yellow-900/30 text-yellow-400 px-2 py-0.5 rounded border border-yellow-600/50 text-xs">
+                                <Star className="w-3 h-3 fill-yellow-400" />
+                                <span className='mt-1'>Único</span>
+                            </div>
+                        )}
+                        {pc.is_homebrew && (
+                            <div className="flex items-center mb-1 gap-1 bg-purple-900/30 text-purple-400 px-2 py-0.5 rounded border border-purple-600/50 text-xs">
+                                <Wand2 className="w-3 h-3" />
+                                <span className='mt-1'>HB</span>
+                            </div>
+                        )}
+                    </div>
                     <p className="text-indigo-300 text-sm">{pc.race} {pc.class}</p>
                 </div>
                 <LevelBadge level={pc.level} />

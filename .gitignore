@@ -57,7 +57,7 @@ htmlcov/
 /vendor/
 /go.sum
 /import-dnd
-/tmp/
+backend/tmp
 
 # Banco de dados
 *.db

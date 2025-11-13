@@ -35,6 +35,7 @@ type PC struct {
 	PlayerName        string         `json:"player_name" db:"player_name"`
 	PlayerID          int            `json:"player_id" db:"player_id"`
 	IsHomebrew        bool           `json:"is_homebrew" db:"is_homebrew"`
+	IsUnique          bool           `json:"is_unique" db:"is_unique"`
 	CreatedAt         time.Time      `json:"created_at" db:"created_at"`
 }
 
@@ -81,6 +82,7 @@ type CreatePCRequest struct {
 	Features          []string      `json:"features"`
 	PlayerName        string        `json:"player_name"`
 	IsHomebrew        bool          `json:"is_homebrew"`
+	IsUnique          bool          `json:"is_unique"`
 }
 
 type UpdatePCRequest struct {
@@ -109,6 +111,7 @@ type UpdatePCRequest struct {
 	Features          []string      `json:"features"`
 	PlayerName        string        `json:"player_name"`
 	IsHomebrew        bool          `json:"is_homebrew"`
+	IsUnique          bool          `json:"is_unique"`
 }
 
 type GeneratePCRequest struct {

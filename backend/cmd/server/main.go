@@ -50,7 +50,7 @@ func main() {
 
 	// Local fallback
 	if aiHost == "" {
-		aiHost = "http://localhost:5000"
+		aiHost = "http://host.docker.internal:5000"
 	}
 
 	// SE não tiver http, significa que estamos no Render

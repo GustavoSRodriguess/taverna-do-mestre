@@ -1,10 +1,11 @@
 // frontend/src/components/PC/PCBasicInfo.tsx - Versão Refatorada
-import React from 'react';
-import { CardBorder } from '../../ui';
+import React, { useState } from 'react';
+import { CardBorder, Modal, ModalConfirmFooter } from '../../ui';
 import { FullCharacter } from '../../types/game';
 import { HomebrewRace, HomebrewClass, HomebrewBackground } from '../../services/homebrewService';
 import { ALIGNMENTS } from '../../utils/gameUtils';
-import { User, Info, BookOpen, Users, Sword, Scroll, Sparkles, Wand2 } from 'lucide-react';
+import { pcService } from '../../services/pcService';
+import { User, Info, BookOpen, Users, Sword, Scroll, Sparkles, Wand2, AlertTriangle } from 'lucide-react';
 
 interface PCBasicInfoProps {
     pcData: FullCharacter;
@@ -31,6 +32,9 @@ const PCBasicInfo: React.FC<PCBasicInfoProps> = ({
     useHomebrew,
     setUseHomebrew
 }) => {
+    const [showUniqueWarning, setShowUniqueWarning] = useState(false);
+    const [campaignCount, setCampaignCount] = useState(0);
+
     console.log('races2, classes2, backgrounds2');
     console.log(races, classes, backgrounds);
 
@@ -38,6 +42,33 @@ const PCBasicInfo: React.FC<PCBasicInfoProps> = ({
     const availableRaces = useHomebrew ? [...(races || []), ...(homebrewRaces || [])] : races;
     const availableClasses = useHomebrew ? [...(classes || []), ...(homebrewClasses || [])] : classes;
     const availableBackgrounds = useHomebrew ? [...(backgrounds || []), ...(homebrewBackgrounds || [])] : backgrounds;
+
+    const handleUniqueCheckboxChange = async (checked: boolean) => {
+        // Se está marcando como único
+        if (checked && pcData.id) {
+            try {
+                // Verificar quantas campanhas o PC está
+                const availability = await pcService.checkPCAvailability(pcData.id);
+
+                if (availability.campaign_count > 1) {
+                    // Mostrar aviso se está em mais de uma campanha
+                    setCampaignCount(availability.campaign_count);
+                    setShowUniqueWarning(true);
+                    return; // Não marca ainda
+                }
+            } catch (err) {
+                console.error('Erro ao verificar disponibilidade:', err);
+            }
+        }
+
+        // Se está desmarcando ou se não há problema, atualiza normalmente
+        updatePCData({ is_unique: checked });
+    };
+
+    const confirmUniqueChange = () => {
+        updatePCData({ is_unique: true });
+        setShowUniqueWarning(false);
+    };
 
     const handleRaceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         // Try to find in homebrew first, then in official races
@@ -306,10 +337,25 @@ const PCBasicInfo: React.FC<PCBasicInfoProps> = ({
                             id="inspiration"
                             checked={pcData.inspiration}
                             onChange={(e) => updatePCData({ inspiration: e.target.checked })}
-                            className="mr-3 w-4 h-4 text-purple-600 focus:ring-purple-500 
+                            className="mr-3 w-4 h-4 text-purple-600 focus:ring-purple-500
                              border-indigo-600 rounded bg-indigo-900/50"
                         />
                         <label htmlFor="inspiration" className="text-white font-medium">Inspiração</label>
+                    </div>
+
+                    <div className="flex items-center">
+                        <input
+                            type="checkbox"
+                            id="is_unique"
+                            checked={pcData.is_unique || false}
+                            onChange={(e) => handleUniqueCheckboxChange(e.target.checked)}
+                            className="mr-3 w-4 h-4 text-purple-600 focus:ring-purple-500
+                             border-indigo-600 rounded bg-indigo-900/50"
+                        />
+                        <label htmlFor="is_unique" className="text-white font-medium">Personagem Único</label>
+                    </div>
+                    <div className="text-xs text-indigo-300 -mt-2 ml-7">
+                        Personagens únicos podem estar em apenas uma campanha por vez
                     </div>
                 </div>
 
@@ -381,6 +427,60 @@ const PCBasicInfo: React.FC<PCBasicInfoProps> = ({
                     </div>
                 )}
             </CardBorder>
+
+            {/* Modal de Aviso - Múltiplas Campanhas */}
+            <Modal
+                isOpen={showUniqueWarning}
+                onClose={() => setShowUniqueWarning(false)}
+                title={
+                    <div className="flex items-center gap-2">
+                        <AlertTriangle className="w-5 h-5 text-yellow-400" />
+                        <span>Atenção: Personagem em Múltiplas Campanhas</span>
+                    </div>
+                }
+                size="md"
+                footer={
+                    <ModalConfirmFooter
+                        onConfirm={confirmUniqueChange}
+                        onCancel={() => setShowUniqueWarning(false)}
+                        confirmLabel="Marcar como Único Mesmo Assim"
+                        cancelLabel="Cancelar"
+                        confirmVariant="bg-yellow-600 hover:bg-yellow-700"
+                    />
+                }
+            >
+                <div className="space-y-4">
+                    <div className="bg-yellow-900/20 p-4 rounded border border-yellow-600/30">
+                        <h4 className="font-bold text-yellow-200 mb-2">Personagem em {campaignCount} campanhas</h4>
+                        <p className="text-yellow-300 text-sm">
+                            Este personagem está atualmente em <strong>{campaignCount} campanhas ativas</strong>.
+                        </p>
+                    </div>
+
+                    <div className="bg-indigo-900/30 p-4 rounded border border-indigo-800">
+                        <p className="text-indigo-200 text-sm mb-3">
+                            <strong>Personagens únicos</strong> só podem estar em <strong>uma campanha por vez</strong>.
+                        </p>
+                        <p className="text-indigo-300 text-sm">
+                            Se você marcar este personagem como único:
+                        </p>
+                        <ul className="text-indigo-300 text-sm mt-2 space-y-1 ml-4">
+                            <li>• Você precisará removê-lo de todas as campanhas exceto uma</li>
+                            <li>• Não poderá adicioná-lo a outras campanhas sem removê-lo da atual</li>
+                            <li>• Esta configuração pode ser alterada a qualquer momento</li>
+                        </ul>
+                    </div>
+
+                    <div className="text-center">
+                        <p className="text-white font-medium">
+                            Deseja marcar <strong>{pcData.name}</strong> como personagem único?
+                        </p>
+                        <p className="text-indigo-300 text-sm mt-1">
+                            Você terá que removê-lo de {campaignCount - 1} campanha{campaignCount - 1 > 1 ? 's' : ''} manualmente.
+                        </p>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 };
