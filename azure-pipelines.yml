@@ -11,7 +11,7 @@ variables:
   # Container Registry (configure nas variáveis do pipeline)
   dockerRegistryServiceConnection: 'TavernaACR'
   imageRepository: 'taverna'
-  containerRegistry: '$(ACR_NAME).azurecr.io'
+  containerRegistry: 'tavernaacr.azurecr.io'
   dockerComposeFile: 'docker-compose.azure.yml'
 
   # Tags
