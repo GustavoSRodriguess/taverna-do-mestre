@@ -356,7 +356,7 @@ const CampaignCharacterEditor: React.FC = () => {
                             />
                         )}
                         {activeTab === 'attributes' && (
-                            <PCAttributes pcData={pcData} updatePCData={updatePCData} />
+                            <PCAttributes pcData={pcData} updatePCData={updatePCData} fromCampaign />
                         )}
                         {activeTab === 'skills' && (
                             <PCSkills pcData={pcData} updatePCData={updatePCData} />

@@ -6,6 +6,7 @@ import { HPBar } from '../Generic';
 import { calculateModifier, formatModifier, DAMAGE_TYPES } from '../../utils/gameUtils';
 import useGameCalculations from '../../hooks/useGameCalculations';
 import { Heart, Shield, Zap, Sword, Plus, Dice6, Trash2, Skull } from 'lucide-react';
+import { useDice } from '../../context/DiceContext';
 
 interface PCCombatProps {
     pcData: FullCharacter;
@@ -14,6 +15,7 @@ interface PCCombatProps {
 
 const PCCombat: React.FC<PCCombatProps> = ({ pcData, updatePCData }) => {
     const { modifiers } = useGameCalculations(pcData.attributes, pcData.level);
+    const { roll } = useDice();
 
     const addAttack = () => {
         const newAttack: GameAttack = {
@@ -37,29 +39,34 @@ const PCCombat: React.FC<PCCombatProps> = ({ pcData, updatePCData }) => {
         updatePCData({ attacks: newAttacks });
     };
 
-    const rollAttack = (attack: GameAttack) => {
-        const attackRoll = Math.floor(Math.random() * 20) + 1;
-        const damageRoll = Math.floor(Math.random() * 6) + 1; // Simplified
-        alert(`${attack.name}\nAtaque: ${attackRoll} + ${attack.bonus} = ${attackRoll + attack.bonus}\nDano: ${damageRoll} (${attack.damage})`);
+    const rollAttack = async (attack: GameAttack) => {
+        // Rolar 1d20 + bônus de ataque
+        const notation = attack.bonus >= 0 ? `1d20+${attack.bonus}` : `1d20${attack.bonus}`;
+        await roll(notation, `${attack.name} - Ataque`);
     };
 
-    const rollInitiative = () => {
-        const roll = Math.floor(Math.random() * 20) + 1;
+    const rollDamage = async (attack: GameAttack) => {
+        // Rolar dano do ataque
+        await roll(attack.damage, `${attack.name} - Dano (${attack.type})`);
+    };
+
+    const rollInitiative = async () => {
         const dexMod = modifiers.dexterity;
-        const total = roll + dexMod;
-        alert(`Iniciativa\nRolagem: ${roll} + ${dexMod} = ${total}`);
+        const notation = dexMod >= 0 ? `1d20+${dexMod}` : `1d20${dexMod}`;
+        await roll(notation, 'Iniciativa');
     };
 
     const CombatStatCard: React.FC<{
         title: string;
-        icon: string;
-        value: number;
+        icon: React.ReactNode;
         color: string;
         children?: React.ReactNode;
-    }> = ({ title, icon, value, color, children }) => (
-        <CardBorder className={`${color} text-center`}>
-            <h3 className="text-lg font-bold mb-4">{icon} {title}</h3>
-            <div className="text-3xl font-bold text-white mb-2">{value}</div>
+    }> = ({ title, icon, color, children }) => (
+        <CardBorder className={`${color}`}>
+            <div className="flex items-center justify-center gap-2 mb-4">
+                {icon}
+                <h3 className="text-lg font-bold">{title}</h3>
+            </div>
             {children}
         </CardBorder>
     );
@@ -117,9 +124,24 @@ const PCCombat: React.FC<PCCombatProps> = ({ pcData, updatePCData }) => {
 
                 <div className="flex gap-2 mt-4">
                     <Button
-                        buttonLabel={<Dice6 className="w-4 h-4" />}
+                        buttonLabel={
+                            <div className="flex items-center gap-1">
+                                <Dice6 className="w-4 h-4" />
+                                <span className="hidden sm:inline">Ataque</span>
+                            </div>
+                        }
                         onClick={() => rollAttack(attack)}
                         classname="flex-1 bg-purple-600 hover:bg-purple-700 text-sm"
+                    />
+                    <Button
+                        buttonLabel={
+                            <div className="flex items-center gap-1">
+                                <Sword className="w-4 h-4" />
+                                <span className="hidden sm:inline">Dano</span>
+                            </div>
+                        }
+                        onClick={() => rollDamage(attack)}
+                        classname="flex-1 bg-orange-600 hover:bg-orange-700 text-sm"
                     />
                     <Button
                         buttonLabel={<Trash2 className="w-4 h-4" />}
@@ -136,11 +158,11 @@ const PCCombat: React.FC<PCCombatProps> = ({ pcData, updatePCData }) => {
             {/* Combat Statistics */}
             <div className="grid md:grid-cols-3 gap-6">
                 {/* HP */}
-                <CardBorder className="bg-red-950/50 border-red-700">
-                    <div className="flex items-center justify-center gap-2 mb-4">
-                        <Heart className="w-5 h-5 text-red-300" />
-                        <h3 className="text-lg font-bold text-red-300">Pontos de Vida</h3>
-                    </div>
+                <CombatStatCard
+                    title="Pontos de Vida"
+                    icon={<Heart className="w-5 h-5 text-red-300" />}
+                    color="bg-red-950/50 border-red-700"
+                >
                     <div className="space-y-4">
                         <div>
                             <label className="block text-red-200 mb-2">HP Máximo</label>
@@ -181,14 +203,14 @@ const PCCombat: React.FC<PCCombatProps> = ({ pcData, updatePCData }) => {
                             </div>
                         )}
                     </div>
-                </CardBorder>
+                </CombatStatCard>
 
                 {/* AC */}
-                <CardBorder className="bg-blue-950/50 border-blue-700">
-                    <div className="flex items-center justify-center gap-2 mb-4">
-                        <Shield className="w-5 h-5 text-blue-300" />
-                        <h3 className="text-lg font-bold text-blue-300">Defesa</h3>
-                    </div>
+                <CombatStatCard
+                    title="Defesa"
+                    icon={<Shield className="w-5 h-5 text-blue-300" />}
+                    color="bg-blue-950/50 border-blue-700"
+                >
                     <div className="space-y-4">
                         <div>
                             <label className="block text-blue-200 mb-2">Classe de Armadura</label>
@@ -207,14 +229,14 @@ const PCCombat: React.FC<PCCombatProps> = ({ pcData, updatePCData }) => {
                             <p>Base sugerida: {10 + modifiers.dexterity}</p>
                         </div>
                     </div>
-                </CardBorder>
+                </CombatStatCard>
 
                 {/* Initiative */}
-                <CardBorder className="bg-purple-950/50 border-purple-700">
-                    <div className="flex items-center justify-center gap-2 mb-4">
-                        <Zap className="w-5 h-5 text-purple-300" />
-                        <h3 className="text-lg font-bold text-purple-300">Iniciativa</h3>
-                    </div>
+                <CombatStatCard
+                    title="Iniciativa"
+                    icon={<Zap className="w-5 h-5 text-purple-300" />}
+                    color="bg-purple-950/50 border-purple-700"
+                >
                     <div className="space-y-4">
                         <div className="text-center">
                             <div className="text-3xl font-bold text-white">
@@ -233,7 +255,7 @@ const PCCombat: React.FC<PCCombatProps> = ({ pcData, updatePCData }) => {
                             classname="w-full bg-purple-600 hover:bg-purple-700"
                         />
                     </div>
-                </CardBorder>
+                </CombatStatCard>
             </div>
 
             {/* Attacks */}

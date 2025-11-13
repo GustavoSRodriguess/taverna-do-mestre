@@ -2,8 +2,9 @@
 import React from 'react';
 import { CardBorder } from '../../ui';
 import { FullCharacter } from '../../types/game';
+import { HomebrewRace, HomebrewClass, HomebrewBackground } from '../../services/homebrewService';
 import { ALIGNMENTS } from '../../utils/gameUtils';
-import { User, Info, BookOpen, Users, Sword, Scroll, Sparkles } from 'lucide-react';
+import { User, Info, BookOpen, Users, Sword, Scroll, Sparkles, Wand2 } from 'lucide-react';
 
 interface PCBasicInfoProps {
     pcData: FullCharacter;
@@ -11,6 +12,11 @@ interface PCBasicInfoProps {
     races: any[];
     classes: any[];
     backgrounds: any[];
+    homebrewRaces: HomebrewRace[];
+    homebrewClasses: HomebrewClass[];
+    homebrewBackgrounds: HomebrewBackground[];
+    useHomebrew: boolean;
+    setUseHomebrew: (value: boolean) => void;
 }
 
 const PCBasicInfo: React.FC<PCBasicInfoProps> = ({
@@ -18,22 +24,41 @@ const PCBasicInfo: React.FC<PCBasicInfoProps> = ({
     updatePCData,
     races,
     classes,
-    backgrounds
+    backgrounds,
+    homebrewRaces,
+    homebrewClasses,
+    homebrewBackgrounds,
+    useHomebrew,
+    setUseHomebrew
 }) => {
     console.log('races2, classes2, backgrounds2');
     console.log(races, classes, backgrounds);
+
+    // Combine official and homebrew data based on toggle
+    const availableRaces = useHomebrew ? [...(races || []), ...(homebrewRaces || [])] : races;
+    const availableClasses = useHomebrew ? [...(classes || []), ...(homebrewClasses || [])] : classes;
+    const availableBackgrounds = useHomebrew ? [...(backgrounds || []), ...(homebrewBackgrounds || [])] : backgrounds;
+
     const handleRaceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const selectedRace = races && races.find(r => r.name === e.target.value);
+        // Try to find in homebrew first, then in official races
+        let selectedRace = homebrewRaces?.find(r => r.name === e.target.value);
+        if (!selectedRace) {
+            selectedRace = races?.find(r => r.name === e.target.value);
+        }
+
         if (selectedRace) {
-            // Apply racial modifiers logic would go here
             updatePCData({ race: selectedRace.name });
         }
     };
 
     const handleClassChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const selectedClass = classes && classes.find(c => c.name === e.target.value);
+        // Try to find in homebrew first, then in official classes
+        let selectedClass = homebrewClasses?.find(c => c.name === e.target.value);
+        if (!selectedClass) {
+            selectedClass = classes?.find(c => c.name === e.target.value);
+        }
+
         if (selectedClass) {
-            // Apply class-based HP calculation would go here
             const hitDie = selectedClass.hit_die || 8;
             const conMod = Math.floor((pcData.attributes.constitution - 10) / 2);
             const newHP = hitDie + conMod + (pcData.level - 1) * (Math.floor(hitDie / 2) + 1 + conMod);
@@ -49,9 +74,30 @@ const PCBasicInfo: React.FC<PCBasicInfoProps> = ({
         <div className="grid md:grid-cols-2 gap-6">
             {/* Basic Information */}
             <CardBorder className="bg-indigo-950/80">
-                <div className="flex items-center gap-2 mb-4">
-                    <User className="w-6 h-6 text-purple-400" />
-                    <h3 className="text-xl font-bold text-purple-400">Informações Básicas</h3>
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                        <User className="w-6 h-6 text-purple-400" />
+                        <h3 className="text-xl font-bold text-purple-400">Informações Básicas</h3>
+                    </div>
+
+                    {/* Homebrew Toggle */}
+                    <div className="flex items-center gap-2 bg-indigo-900/50 px-3 py-2 rounded border border-indigo-700">
+                        <Wand2 className={`w-4 h-4 ${useHomebrew ? 'text-purple-400' : 'text-gray-400'}`} />
+                        <label className="flex items-center cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={useHomebrew}
+                                onChange={(e) => {
+                                    const newValue = e.target.checked;
+                                    setUseHomebrew(newValue);
+                                    updatePCData({ is_homebrew: newValue });
+                                }}
+                                className="mr-2 w-4 h-4 text-purple-600 focus:ring-purple-500
+                                 border-indigo-600 rounded bg-indigo-900/50"
+                            />
+                            <span className="text-sm text-indigo-200 font-medium">Homebrew</span>
+                        </label>
+                    </div>
                 </div>
 
                 <div className="space-y-4">
@@ -87,16 +133,37 @@ const PCBasicInfo: React.FC<PCBasicInfoProps> = ({
                             <select
                                 value={pcData.race}
                                 onChange={handleRaceChange}
-                                className="w-full px-3 py-2 border border-indigo-700 rounded-md 
+                                className="w-full px-3 py-2 border border-indigo-700 rounded-md
                                  bg-indigo-900/50 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                             >
                                 <option value="">Selecione uma raça</option>
-                                {races && races.map((race) => (
-                                    <option key={race.api_index || race.index} value={race.name}>{race.name}</option>
-                                ))}
+                                {useHomebrew ? (
+                                    <>
+                                        {races && races.length > 0 && (
+                                            <optgroup label="📖 Oficial D&D 5e">
+                                                {races.map((race) => (
+                                                    <option key={race.api_index || race.index} value={race.name}>{race.name}</option>
+                                                ))}
+                                            </optgroup>
+                                        )}
+                                        {homebrewRaces && homebrewRaces.length > 0 && (
+                                            <optgroup label="✨ Homebrew">
+                                                {homebrewRaces.map((race) => (
+                                                    <option key={race.id} value={race.name}>{race.name}</option>
+                                                ))}
+                                            </optgroup>
+                                        )}
+                                    </>
+                                ) : (
+                                    availableRaces && availableRaces.map((race) => (
+                                        <option key={race.api_index || race.id || race.index} value={race.name}>{race.name}</option>
+                                    ))
+                                )}
                             </select>
-                            {(!races || races.length === 0) && (
-                                <div className="text-xs text-yellow-400 mt-1">Carregando raças...</div>
+                            {(!availableRaces || availableRaces.length === 0) && (
+                                <div className="text-xs text-yellow-400 mt-1">
+                                    Carregando raças...
+                                </div>
                             )}
                         </div>
 
@@ -105,16 +172,37 @@ const PCBasicInfo: React.FC<PCBasicInfoProps> = ({
                             <select
                                 value={pcData.class}
                                 onChange={handleClassChange}
-                                className="w-full px-3 py-2 border border-indigo-700 rounded-md 
+                                className="w-full px-3 py-2 border border-indigo-700 rounded-md
                                  bg-indigo-900/50 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                             >
                                 <option value="">Selecione uma classe</option>
-                                {classes && classes.map((cls) => (
-                                    <option key={cls.api_index} value={cls.name}>{cls.name}</option>
-                                ))}
+                                {useHomebrew ? (
+                                    <>
+                                        {classes && classes.length > 0 && (
+                                            <optgroup label="📖 Oficial D&D 5e">
+                                                {classes.map((cls) => (
+                                                    <option key={cls.api_index} value={cls.name}>{cls.name}</option>
+                                                ))}
+                                            </optgroup>
+                                        )}
+                                        {homebrewClasses && homebrewClasses.length > 0 && (
+                                            <optgroup label="✨ Homebrew">
+                                                {homebrewClasses.map((cls) => (
+                                                    <option key={cls.id} value={cls.name}>{cls.name}</option>
+                                                ))}
+                                            </optgroup>
+                                        )}
+                                    </>
+                                ) : (
+                                    availableClasses && availableClasses.map((cls) => (
+                                        <option key={cls.api_index || cls.id} value={cls.name}>{cls.name}</option>
+                                    ))
+                                )}
                             </select>
-                            {(!classes || classes.length === 0) && (
-                                <div className="text-xs text-yellow-400 mt-1">Carregando classes...</div>
+                            {(!availableClasses || availableClasses.length === 0) && (
+                                <div className="text-xs text-yellow-400 mt-1">
+                                    Carregando classes...
+                                </div>
                             )}
                         </div>
                     </div>
@@ -163,16 +251,37 @@ const PCBasicInfo: React.FC<PCBasicInfoProps> = ({
                         <select
                             value={pcData.background}
                             onChange={(e) => updatePCData({ background: e.target.value })}
-                            className="w-full px-3 py-2 border border-indigo-700 rounded-md 
+                            className="w-full px-3 py-2 border border-indigo-700 rounded-md
                              bg-indigo-900/50 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                         >
                             <option value="">Selecione um antecedente</option>
-                            {backgrounds && backgrounds.map((bg) => (
-                                <option key={bg.api_index} value={bg.name}>{bg.name}</option>
-                            ))}
+                            {useHomebrew ? (
+                                <>
+                                    {backgrounds && backgrounds.length > 0 && (
+                                        <optgroup label="📖 Oficial D&D 5e">
+                                            {backgrounds.map((bg) => (
+                                                <option key={bg.api_index} value={bg.name}>{bg.name}</option>
+                                            ))}
+                                        </optgroup>
+                                    )}
+                                    {homebrewBackgrounds && homebrewBackgrounds.length > 0 && (
+                                        <optgroup label="✨ Homebrew">
+                                            {homebrewBackgrounds.map((bg) => (
+                                                <option key={bg.id} value={bg.name}>{bg.name}</option>
+                                            ))}
+                                        </optgroup>
+                                    )}
+                                </>
+                            ) : (
+                                availableBackgrounds && availableBackgrounds.map((bg) => (
+                                    <option key={bg.api_index || bg.id} value={bg.name}>{bg.name}</option>
+                                ))
+                            )}
                         </select>
-                        {(!backgrounds || backgrounds.length === 0) && (
-                            <div className="text-xs text-yellow-400 mt-1">Carregando antecedentes...</div>
+                        {(!availableBackgrounds || availableBackgrounds.length === 0) && (
+                            <div className="text-xs text-yellow-400 mt-1">
+                                Carregando antecedentes...
+                            </div>
                         )}
                     </div>
 
@@ -229,29 +338,44 @@ const PCBasicInfo: React.FC<PCBasicInfoProps> = ({
 
                 {/* D&D API Info */}
                 {(pcData.race || pcData.class || pcData.background) && (
-                    <div className="mt-4 p-3 bg-purple-900/20 rounded border border-purple-800">
+                    <div className="mt-4 p-3 rounded border bg-purple-900/20 border-purple-800">
                         <div className="flex items-center gap-2 mb-2">
-                            <BookOpen className="w-4 h-4 text-purple-300" />
-                            <h5 className="text-sm font-bold text-purple-300">Dados do D&D 5e API</h5>
+                            {useHomebrew ? (
+                                <>
+                                    <BookOpen className="w-4 h-4 text-purple-300" />
+                                    <Wand2 className="w-4 h-4 text-purple-300" />
+                                </>
+                            ) : (
+                                <BookOpen className="w-4 h-4 text-purple-300" />
+                            )}
+                            <h5 className="text-sm font-bold text-purple-300">
+                                {useHomebrew ? 'Modo Homebrew (Oficial + Customizado)' : 'Dados do D&D 5e API'}
+                            </h5>
                         </div>
                         <div className="text-xs text-purple-200 space-y-1">
-                            {pcData.race && (
-                                <div className="flex items-center gap-1">
-                                    <Users className="w-3 h-3" />
-                                    <span>Modificadores raciais aplicados automaticamente</span>
-                                </div>
-                            )}
-                            {pcData.class && (
-                                <div className="flex items-center gap-1">
-                                    <Sword className="w-3 h-3" />
-                                    <span>Dado de vida e HP calculados pela classe</span>
-                                </div>
-                            )}
-                            {pcData.background && (
-                                <div className="flex items-center gap-1">
-                                    <Scroll className="w-3 h-3" />
-                                    <span>Proficiências do antecedente disponíveis</span>
-                                </div>
+                            {useHomebrew ? (
+                                <p>Com Homebrew ativado, você pode escolher entre conteúdo oficial do D&D 5e e suas criações customizadas.</p>
+                            ) : (
+                                <>
+                                    {pcData.race && (
+                                        <div className="flex items-center gap-1">
+                                            <Users className="w-3 h-3" />
+                                            <span>Modificadores raciais aplicados automaticamente</span>
+                                        </div>
+                                    )}
+                                    {pcData.class && (
+                                        <div className="flex items-center gap-1">
+                                            <Sword className="w-3 h-3" />
+                                            <span>Dado de vida e HP calculados pela classe</span>
+                                        </div>
+                                    )}
+                                    {pcData.background && (
+                                        <div className="flex items-center gap-1">
+                                            <Scroll className="w-3 h-3" />
+                                            <span>Proficiências do antecedente disponíveis</span>
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </div>
                     </div>

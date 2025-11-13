@@ -4,6 +4,7 @@ import { CardBorder, Button } from '../../ui';
 import { FullCharacter, GameAttributes, GameSkill } from '../../types/game';
 import { ATTRIBUTE_SHORT_LABELS, formatModifier } from '../../utils/gameUtils';
 import useGameCalculations from '../../hooks/useGameCalculations';
+import { useDice } from '../../context/DiceContext';
 
 interface PCSkillsProps {
     pcData: FullCharacter;
@@ -38,11 +39,12 @@ const SKILLS: SkillInfo[] = [
 ];
 
 const PCSkills: React.FC<PCSkillsProps> = ({ pcData, updatePCData }) => {
-    const { modifiers, skillBonuses } = useGameCalculations(
+    const { modifiers } = useGameCalculations(
         pcData.attributes,
         pcData.level,
         pcData.skills
     );
+    const { roll } = useDice();
 
     const updateSkill = (skillName: string, updates: Partial<GameSkill>) => {
         const currentSkill = pcData.skills[skillName] || { proficient: false, expertise: false, bonus: 0 };
@@ -53,11 +55,10 @@ const PCSkills: React.FC<PCSkillsProps> = ({ pcData, updatePCData }) => {
         updatePCData({ skills: newSkills });
     };
 
-    const rollSkill = (skill: SkillInfo) => {
-        const roll = Math.floor(Math.random() * 20) + 1;
-        const bonus = skillBonuses[skill.name] || modifiers[skill.attribute];
-        const total = roll + bonus;
-        alert(`🎲 ${skill.name}\nRolagem: ${roll} + ${bonus} = ${total}`);
+    const rollSkill = async (skill: SkillInfo) => {
+        const bonus = getSkillBonus(skill);
+        const notation = bonus >= 0 ? `1d20+${bonus}` : `1d20${bonus}`;
+        await roll(notation, `Perícia: ${skill.name}`);
     };
 
     const getSkillBonus = (skill: SkillInfo): number => {

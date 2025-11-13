@@ -3,7 +3,8 @@ import { CardBorder, Button, Modal, IconLabel } from '../../ui';
 import { dndService, getAbilityModifier } from '../../services/dndService';
 import { formatModifier } from '../../utils';
 import { FullCharacter } from '../../types';
-import { BarChart3, Target, BookOpen, Wand2, Plus, Search, Trash2, Check, BookMarked } from 'lucide-react';
+import { BarChart3, Target, BookOpen, Wand2, Plus, Search, Trash2, Check, BookMarked, Dice6 } from 'lucide-react';
+import { useDice } from '../../context/DiceContext';
 
 interface PCSpellsProps {
     pcData: FullCharacter;
@@ -15,12 +16,18 @@ const PCSpells: React.FC<PCSpellsProps> = ({ pcData, updatePCData }) => {
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedLevel, setSelectedLevel] = useState<number | undefined>();
+    const { roll } = useDice();
 
     const spellcastingModifier = pcData.spells.spellcasting_ability ?
         getAbilityModifier(pcData.attributes[pcData.spells.spellcasting_ability as keyof FullCharacter['attributes']]) : 0;
 
     const spellAttackBonus = spellcastingModifier + pcData.proficiency_bonus;
     const spellSaveDC = 8 + spellcastingModifier + pcData.proficiency_bonus;
+
+    const rollSpellAttack = async () => {
+        const notation = spellAttackBonus >= 0 ? `1d20+${spellAttackBonus}` : `1d20${spellAttackBonus}`;
+        await roll(notation, 'Ataque de Magia');
+    };
 
     const searchSpells = async () => {
         try {
@@ -122,7 +129,17 @@ const PCSpells: React.FC<PCSpellsProps> = ({ pcData, updatePCData }) => {
                                 <div className="text-2xl font-bold text-white">
                                     {formatModifier(spellAttackBonus)}
                                 </div>
-                                <div className="text-sm text-indigo-300">Bônus de Ataque</div>
+                                <div className="text-sm text-indigo-300 mb-2">Bônus de Ataque</div>
+                                <Button
+                                    buttonLabel={
+                                        <div className="flex items-center justify-center gap-1">
+                                            <Dice6 className="w-4 h-4" />
+                                            <span>Rolar</span>
+                                        </div>
+                                    }
+                                    onClick={rollSpellAttack}
+                                    classname="w-full bg-purple-600 hover:bg-purple-700 text-xs py-1"
+                                />
                             </div>
                             <div>
                                 <div className="text-2xl font-bold text-white">{spellSaveDC}</div>

@@ -2,7 +2,7 @@ import React from 'react'
 
 interface buttonTypes {
   buttonLabel: string | React.ReactNode;
-  onClick: () => void;
+  onClick: (e: React.FormEvent) => void | Promise<void>;
   classname?: string;
   type?: "submit" | "reset" | "button" | undefined;
   disabled?: boolean;

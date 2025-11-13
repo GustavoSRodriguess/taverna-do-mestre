@@ -2,7 +2,7 @@
 import React from 'react';
 import { CardBorder, Button } from '../../ui';
 import { FullCharacter, GameAttributes } from '../../types/game';
-import { Dice1, BarChart3, ShoppingCart, Lightbulb } from 'lucide-react';
+import { Dice1, BarChart3, ShoppingCart, Lightbulb, Dice6 } from 'lucide-react';
 import {
     STANDARD_ARRAY,
     POINT_BUY_DEFAULTS,
@@ -14,22 +14,49 @@ import {
 } from '../../utils/gameUtils';
 import { AttributeDisplay } from '../Generic';
 import useGameCalculations from '../../hooks/useGameCalculations';
+import { useDice } from '../../context/DiceContext';
 
 interface PCAttributesProps {
     pcData: FullCharacter;
     updatePCData: (updates: Partial<FullCharacter>) => void;
+    fromCampaign?: boolean;
 }
 
-const PCAttributes: React.FC<PCAttributesProps> = ({ pcData, updatePCData }) => {
+const PCAttributes: React.FC<PCAttributesProps> = ({ pcData, updatePCData, fromCampaign = false }) => {
     useGameCalculations(
         pcData.attributes,
         pcData.level
     );
+    const { roll } = useDice();
+    const [savingThrowProficiencies, setSavingThrowProficiencies] = React.useState<{[key in keyof GameAttributes]?: boolean}>({});
 
     const updateAttribute = (attr: keyof GameAttributes, value: number) => {
         const clampedValue = Math.min(Math.max(value, 1), 30);
         const newAttributes = { ...pcData.attributes, [attr]: clampedValue };
         updatePCData({ attributes: newAttributes });
+    };
+
+    const toggleSavingThrowProficiency = (attrKey: keyof GameAttributes) => {
+        setSavingThrowProficiencies(prev => ({
+            ...prev,
+            [attrKey]: !prev[attrKey]
+        }));
+    };
+
+    const rollAttributeCheck = async (attrKey: keyof GameAttributes) => {
+        const value = pcData.attributes[attrKey];
+        const modifier = calculateModifier(value);
+        const notation = modifier >= 0 ? `1d20+${modifier}` : `1d20${modifier}`;
+        await roll(notation, `Teste: ${ATTRIBUTE_LABELS[attrKey]}`);
+    };
+
+    const rollSavingThrow = async (attrKey: keyof GameAttributes) => {
+        const value = pcData.attributes[attrKey];
+        const modifier = calculateModifier(value);
+        const isProficient = savingThrowProficiencies[attrKey] || false;
+        const total = isProficient ? modifier + pcData.proficiency_bonus : modifier;
+        const notation = total >= 0 ? `1d20+${total}` : `1d20${total}`;
+        await roll(notation, `Resistência: ${ATTRIBUTE_LABELS[attrKey]}`);
     };
 
     const rollAttributes = () => {
@@ -149,6 +176,11 @@ const PCAttributes: React.FC<PCAttributesProps> = ({ pcData, updatePCData }) => 
                                     <span className="text-purple-300 font-bold min-w-[2rem] text-center">
                                         {formatModifier(modifier)}
                                     </span>
+                                    <Button
+                                        buttonLabel={<Dice6 className="w-4 h-4" />}
+                                        onClick={() => rollAttributeCheck(attrKey)}
+                                        classname="text-xs px-2 py-1 bg-purple-600 hover:bg-purple-700"
+                                    />
                                 </div>
                             </div>
 
@@ -172,22 +204,32 @@ const PCAttributes: React.FC<PCAttributesProps> = ({ pcData, updatePCData }) => 
                 {Object.entries(pcData.attributes).map(([key, value]) => {
                     const attrKey = key as keyof GameAttributes;
                     const modifier = calculateModifier(value);
-                    const total = modifier + pcData.proficiency_bonus;
+                    const isProficient = savingThrowProficiencies[attrKey] || false;
+                    const total = isProficient ? modifier + pcData.proficiency_bonus : modifier;
 
                     return (
-                        <div key={key} className="flex justify-between items-center p-3 
+                        <div key={key} className="flex justify-between items-center p-3
                              bg-indigo-900/30 rounded border border-indigo-700">
                             <span className="text-white font-medium">{ATTRIBUTE_LABELS[attrKey]}</span>
                             <div className="flex items-center gap-2">
                                 <input
                                     type="checkbox"
+                                    checked={isProficient}
+                                    onChange={() => toggleSavingThrowProficiency(attrKey)}
                                     className="w-4 h-4 text-purple-600 bg-indigo-800 border-indigo-600 rounded
                                      focus:ring-purple-500"
                                     title="Proficiente"
                                 />
-                                <span className="text-purple-300 font-bold min-w-[2rem] text-center">
+                                <span className={`font-bold min-w-[2rem] text-center ${
+                                    isProficient ? 'text-green-400' : 'text-purple-300'
+                                }`}>
                                     {formatModifier(total)}
                                 </span>
+                                <Button
+                                    buttonLabel={<Dice6 className="w-4 h-4" />}
+                                    onClick={() => rollSavingThrow(attrKey)}
+                                    classname="text-xs px-2 py-1 bg-purple-600 hover:bg-purple-700"
+                                />
                             </div>
                         </div>
                     );
@@ -199,46 +241,48 @@ const PCAttributes: React.FC<PCAttributesProps> = ({ pcData, updatePCData }) => 
     return (
         <div className="space-y-6">
             {/* Generation Methods */}
-            <CardBorder className="bg-indigo-950/80">
-                <h3 className="text-xl font-bold mb-4 text-purple-400">Métodos de Geração</h3>
-                <div className="flex align-center justify-center gap-4">
-                    <Button
-                        buttonLabel={
-                            <div className="flex items-center gap-1">
-                                <Dice1 className="w-4 h-4" />
-                                <span>Rolar Atributos</span>
-                            </div>
-                        }
-                        onClick={rollAttributes}
-                        classname="bg-purple-600 hover:bg-purple-700"
-                    />
-                    <Button
-                        buttonLabel={
-                            <div className="flex items-center gap-1">
-                                <BarChart3 className="w-4 h-4" />
-                                <span>Array Padrão</span>
-                            </div>
-                        }
-                        onClick={useStandardArray}
-                        classname="bg-blue-600 hover:bg-blue-700"
-                    />
-                    <Button
-                        buttonLabel={
-                            <div className="flex items-center gap-1">
-                                <ShoppingCart className="w-4 h-4" />
-                                <span>Point Buy</span>
-                            </div>
-                        }
-                        onClick={usePointBuy}
-                        classname="bg-green-600 hover:bg-green-700"
-                    />
-                </div>
-                <div className="mt-4 text-sm text-indigo-300">
-                    <p><strong>Rolar:</strong> 4d6, descartar menor (clássico)</p>
-                    <p><strong>Array Padrão:</strong> {STANDARD_ARRAY.join(', ')}</p>
-                    <p><strong>Point Buy:</strong> Distribuição equilibrada</p>
-                </div>
-            </CardBorder>
+            {!fromCampaign && (
+                <CardBorder className="bg-indigo-950/80">
+                    <h3 className="text-xl font-bold mb-4 text-purple-400">Métodos de Geração</h3>
+                    <div className="flex align-center justify-center gap-4">
+                        <Button
+                            buttonLabel={
+                                <div className="flex items-center gap-1">
+                                    <Dice1 className="w-4 h-4" />
+                                    <span>Rolar Atributos</span>
+                                </div>
+                            }
+                            onClick={rollAttributes}
+                            classname="bg-purple-600 hover:bg-purple-700"
+                        />
+                        <Button
+                            buttonLabel={
+                                <div className="flex items-center gap-1">
+                                    <BarChart3 className="w-4 h-4" />
+                                    <span>Array Padrão</span>
+                                </div>
+                            }
+                            onClick={useStandardArray}
+                            classname="bg-blue-600 hover:bg-blue-700"
+                        />
+                        <Button
+                            buttonLabel={
+                                <div className="flex items-center gap-1">
+                                    <ShoppingCart className="w-4 h-4" />
+                                    <span>Point Buy</span>
+                                </div>
+                            }
+                            onClick={usePointBuy}
+                            classname="bg-green-600 hover:bg-green-700"
+                        />
+                    </div>
+                    <div className="mt-4 text-sm text-indigo-300">
+                        <p><strong>Rolar:</strong> 4d6, descartar menor (clássico)</p>
+                        <p><strong>Array Padrão:</strong> {STANDARD_ARRAY.join(', ')}</p>
+                        <p><strong>Point Buy:</strong> Distribuição equilibrada</p>
+                    </div>
+                </CardBorder>
+            )}
 
             {/* Attribute Circle */}
             <CardBorder className="bg-indigo-950/80">

@@ -69,6 +69,12 @@ const Header: React.FC<HeaderProps> = ({ logo, menuItems }) => {
                                 >
                                     Meus Personagens
                                 </Link>
+                                <Link
+                                    to="/homebrew"
+                                    className="text-white hover:text-indigo-300 transition-colors"
+                                >
+                                    Homebrew
+                                </Link>
                             </>
                         )}
                     </nav>
@@ -110,6 +116,13 @@ const Header: React.FC<HeaderProps> = ({ logo, menuItems }) => {
                                             onClick={() => setUserMenuOpen(false)}
                                         >
                                             Criar Personagem
+                                        </Link>
+                                        <Link
+                                            to="/homebrew"
+                                            className="block px-4 py-2 text-sm text-indigo-100 hover:bg-indigo-700"
+                                            onClick={() => setUserMenuOpen(false)}
+                                        >
+                                            Homebrew
                                         </Link>
                                         <div className="border-t border-indigo-700 my-1"></div>
                                         <button
@@ -192,6 +205,13 @@ const Header: React.FC<HeaderProps> = ({ logo, menuItems }) => {
                                         onClick={() => setMobileMenuOpen(false)}
                                     >
                                         Gerador
+                                    </Link>
+                                    <Link
+                                        to="/homebrew"
+                                        className="text-white hover:text-indigo-300"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                    >
+                                        Homebrew
                                     </Link>
                                     <div className="border-t border-indigo-800 pt-4"></div>
                                     <Link

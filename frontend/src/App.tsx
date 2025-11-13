@@ -2,6 +2,7 @@
 import React from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { DiceProvider } from './context/DiceContext';
 
 import HomePage from './components/Home';
 import Login from './components/Login/Login';
@@ -14,12 +15,16 @@ import CampaignCharacterEditor from './components/Campaign/CampaignCharacterEdit
 import PCList from './components/PC/PCList';
 import { PCEditor } from './components/PC';
 import PCCampaigns from './components/PC/PCCampaigns';
+import { HomebrewManager } from './components/Homebrew';
+import { DiceRoller } from './components/Dice/DiceRoller';
 
 const App: React.FC = () => {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
+      <DiceProvider>
+        <BrowserRouter>
+          <DiceRoller />
+          <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<Login />} />
 
@@ -37,6 +42,9 @@ const App: React.FC = () => {
             <Route path="/characters" element={<PCList />} />
             <Route path="/pc-editor/:id" element={<PCEditor />} />
             <Route path="/pc/:id/campaigns" element={<PCCampaigns />} />
+
+            {/* Homebrew Routes */}
+            <Route path="/homebrew" element={<HomebrewManager />} />
           </Route>
 
           <Route path="*" element={
@@ -49,7 +57,8 @@ const App: React.FC = () => {
             </div>
           } />
         </Routes>
-      </BrowserRouter>
+        </BrowserRouter>
+      </DiceProvider>
     </AuthProvider>
   );
 };

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Page, Section, Button, Tabs, Alert, Loading } from '../../ui';
 import { pcService } from '../../services/pcService';
 import { dndService } from '../../services/dndService';
+import { homebrewService, HomebrewRace, HomebrewClass, HomebrewBackground } from '../../services/homebrewService';
 import { FullCharacter } from '../../types/game';
 import { validateCharacterName, validateLevel, validateAttributes, validateHP } from '../../utils/gameUtils';
 import { ArrowLeft, Save, User, Zap, Target, Sword, Wand2, Backpack, FileText } from 'lucide-react';
@@ -30,10 +31,17 @@ const PCEditor: React.FC = () => {
     const [dndClasses, setDndClasses] = useState<any[]>([]);
     const [dndBackgrounds, setDndBackgrounds] = useState<any[]>([]);
 
+    // Homebrew Data
+    const [homebrewRaces, setHomebrewRaces] = useState<HomebrewRace[]>([]);
+    const [homebrewClasses, setHomebrewClasses] = useState<HomebrewClass[]>([]);
+    const [homebrewBackgrounds, setHomebrewBackgrounds] = useState<HomebrewBackground[]>([]);
+    const [useHomebrew, setUseHomebrew] = useState(false);
+
     const isNew = !id || id === 'new';
 
     useEffect(() => {
         loadDnDData();
+        loadHomebrewData();
         if (!isNew) {
             loadPC();
         } else {
@@ -58,6 +66,21 @@ const PCEditor: React.FC = () => {
         }
     };
 
+    const loadHomebrewData = async () => {
+        try {
+            const [races, classes, backgrounds] = await Promise.all([
+                homebrewService.getRaces(100, 0),
+                homebrewService.getClasses(100, 0),
+                homebrewService.getBackgrounds(100, 0)
+            ]);
+            setHomebrewRaces(races.races || []);
+            setHomebrewClasses(classes.classes || []);
+            setHomebrewBackgrounds(backgrounds.backgrounds || []);
+        } catch (err) {
+            console.error('Erro ao carregar dados homebrew:', err);
+        }
+    };
+
     const loadPC = async () => {
         try {
             setLoading(true);
@@ -79,8 +102,11 @@ const PCEditor: React.FC = () => {
                 ideals: pc.ideals || '',
                 bonds: pc.bonds || '',
                 flaws: pc.flaws || '',
-                features: pc.features || []
+                features: pc.features || [],
+                is_homebrew: pc.is_homebrew || false
             });
+            // Carregar o estado do checkbox homebrew baseado no PC
+            setUseHomebrew(pc.is_homebrew || false);
         } catch (err: any) {
             setError('Erro ao carregar personagem: ' + err.message);
         } finally {
@@ -276,6 +302,11 @@ const PCEditor: React.FC = () => {
                                 races={dndRaces}
                                 classes={dndClasses}
                                 backgrounds={dndBackgrounds}
+                                homebrewRaces={homebrewRaces}
+                                homebrewClasses={homebrewClasses}
+                                homebrewBackgrounds={homebrewBackgrounds}
+                                useHomebrew={useHomebrew}
+                                setUseHomebrew={setUseHomebrew}
                             />
                         )}
                         {activeTab === 'attributes' && (

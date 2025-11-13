@@ -15,13 +15,13 @@ func (p *PostgresDB) GetPCsByPlayer(ctx context.Context, playerID int, limit, of
 	log.Printf("Fetching PCs for player ID: %d with limit: %d and offset: %d", playerID, limit, offset)
 
 	query := `
-		SELECT id, name, description, level, race, class, background, alignment, 
+		SELECT id, name, description, level, race, class, background, alignment,
 		       attributes, abilities, equipment, hp, current_hp, ca, proficiency_bonus,
-		       inspiration, skills, attacks, spells, personality_traits, ideals, bonds, 
-		       flaws, features, player_name, player_id, created_at
-		FROM pcs 
-		WHERE player_id = $1 
-		ORDER BY created_at DESC 
+		       inspiration, skills, attacks, spells, personality_traits, ideals, bonds,
+		       flaws, features, player_name, player_id, is_homebrew, created_at
+		FROM pcs
+		WHERE player_id = $1
+		ORDER BY created_at DESC
 		LIMIT $2 OFFSET $3
 	`
 
@@ -39,11 +39,11 @@ func (p *PostgresDB) GetPCsByPlayer(ctx context.Context, playerID int, limit, of
 func (p *PostgresDB) GetPCByIDAndPlayer(ctx context.Context, id, playerID int) (*models.PC, error) {
 	var pc models.PC
 	query := `
-		SELECT id, name, description, level, race, class, background, alignment, 
+		SELECT id, name, description, level, race, class, background, alignment,
 		       attributes, abilities, equipment, hp, current_hp, ca, proficiency_bonus,
-		       inspiration, skills, attacks, spells, personality_traits, ideals, bonds, 
-		       flaws, features, player_name, player_id, created_at
-		FROM pcs 
+		       inspiration, skills, attacks, spells, personality_traits, ideals, bonds,
+		       flaws, features, player_name, player_id, is_homebrew, created_at
+		FROM pcs
 		WHERE id = $1 AND player_id = $2
 	`
 
@@ -58,10 +58,10 @@ func (p *PostgresDB) GetPCByIDAndPlayer(ctx context.Context, id, playerID int) (
 // CreatePC cria um novo PC para um jogador
 func (p *PostgresDB) CreatePC(ctx context.Context, pc *models.PC) error {
 	query := `
-		INSERT INTO pcs 
-		(name, description, level, race, class, background, alignment, attributes, abilities, equipment, hp, ca, player_name, player_id, created_at) 
-		VALUES 
-		($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+		INSERT INTO pcs
+		(name, description, level, race, class, background, alignment, attributes, abilities, equipment, hp, ca, player_name, player_id, is_homebrew, created_at)
+		VALUES
+		($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
 		RETURNING id
 	`
 
@@ -70,7 +70,7 @@ func (p *PostgresDB) CreatePC(ctx context.Context, pc *models.PC) error {
 
 	row := p.DB.QueryRowContext(ctx, query,
 		pc.Name, pc.Description, pc.Level, pc.Race, pc.Class, pc.Background, pc.Alignment,
-		pc.Attributes, pc.Abilities, pc.Equipment, pc.HP, pc.CA, pc.PlayerName, pc.PlayerID, pc.CreatedAt,
+		pc.Attributes, pc.Abilities, pc.Equipment, pc.HP, pc.CA, pc.PlayerName, pc.PlayerID, pc.IsHomebrew, pc.CreatedAt,
 	)
 
 	return row.Scan(&pc.ID)
@@ -81,20 +81,22 @@ func (p *PostgresDB) UpdatePC(ctx context.Context, pc *models.PC) error {
 	query := `
 		UPDATE pcs SET
 		name = $1, description = $2, level = $3, race = $4, class = $5, background = $6, alignment = $7,
-		attributes = $8, abilities = $9, equipment = $10, hp = $11, current_hp = $12, ca = $13, 
+		attributes = $8, abilities = $9, equipment = $10, hp = $11, current_hp = $12, ca = $13,
 		proficiency_bonus = $14, inspiration = $15, skills = $16, attacks = $17, spells = $18,
-		personality_traits = $19, ideals = $20, bonds = $21, flaws = $22, features = $23, player_name = $24
-		WHERE id = $25 AND player_id = $26
+		personality_traits = $19, ideals = $20, bonds = $21, flaws = $22, features = $23, player_name = $24,
+		is_homebrew = $25
+		WHERE id = $26 AND player_id = $27
 	`
 
 	log.Printf("Executando UPDATE para PC ID: %d", pc.ID)
 	log.Printf("Spells being saved: %+v", pc.Spells)
-	
+
 	result, err := p.DB.ExecContext(ctx, query,
 		pc.Name, pc.Description, pc.Level, pc.Race, pc.Class, pc.Background, pc.Alignment,
-		pc.Attributes, pc.Abilities, pc.Equipment, pc.HP, pc.CurrentHP, pc.CA, 
+		pc.Attributes, pc.Abilities, pc.Equipment, pc.HP, pc.CurrentHP, pc.CA,
 		pc.ProficiencyBonus, pc.Inspiration, pc.Skills, pc.Attacks, pc.Spells,
-		pc.PersonalityTraits, pc.Ideals, pc.Bonds, pc.Flaws, pc.Features, pc.PlayerName, 
+		pc.PersonalityTraits, pc.Ideals, pc.Bonds, pc.Flaws, pc.Features, pc.PlayerName,
+		pc.IsHomebrew,
 		pc.ID, pc.PlayerID,
 	)
 

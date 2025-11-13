@@ -51,7 +51,8 @@ CREATE TABLE npcs (
     equipment JSONB,
     hp INTEGER,
     ca INTEGER,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_homebrew BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE pcs (

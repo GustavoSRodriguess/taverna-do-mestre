@@ -62,6 +62,8 @@ func SetupRoutes(dbClient *db.PostgresDB, pythonClient *python.Client) *chi.Mux 
 	userHandler := handlers.NewUserHandler(dbClient)
 	campaignHandler := handlers.NewCampaignHandler(dbClient)
 	dndHandler := handlers.NewDnDHandler(dbClient)
+	homebrewHandler := handlers.NewHomebrewHandler(dbClient)
+	diceHandler := handlers.NewDiceHandler()
 
 	router.Route("/api/npcs", func(r chi.Router) {
 		r.Use(customMiddleware.AuthMiddleware)
@@ -196,6 +198,49 @@ func SetupRoutes(dbClient *db.PostgresDB, pythonClient *python.Client) *chi.Mux 
 
 		// Conditions (novo!)
 		r.Get("/conditions", dndHandler.GetConditions)
+	})
+
+	// ========================================
+	// ROTAS HOMEBREW
+	// ========================================
+	router.Route("/api/homebrew", func(r chi.Router) {
+		r.Use(customMiddleware.AuthMiddleware)
+
+		// Homebrew Races
+		r.Route("/races", func(r chi.Router) {
+			r.Get("/", homebrewHandler.GetHomebrewRaces)
+			r.Post("/", homebrewHandler.CreateHomebrewRace)
+			r.Get("/{id}", homebrewHandler.GetHomebrewRaceByID)
+			r.Put("/{id}", homebrewHandler.UpdateHomebrewRace)
+			r.Delete("/{id}", homebrewHandler.DeleteHomebrewRace)
+		})
+
+		// Homebrew Classes
+		r.Route("/classes", func(r chi.Router) {
+			r.Get("/", homebrewHandler.GetHomebrewClasses)
+			r.Post("/", homebrewHandler.CreateHomebrewClass)
+			r.Get("/{id}", homebrewHandler.GetHomebrewClassByID)
+			r.Put("/{id}", homebrewHandler.UpdateHomebrewClass)
+			r.Delete("/{id}", homebrewHandler.DeleteHomebrewClass)
+		})
+
+		// Homebrew Backgrounds
+		r.Route("/backgrounds", func(r chi.Router) {
+			r.Get("/", homebrewHandler.GetHomebrewBackgrounds)
+			r.Post("/", homebrewHandler.CreateHomebrewBackground)
+			r.Get("/{id}", homebrewHandler.GetHomebrewBackgroundByID)
+			r.Put("/{id}", homebrewHandler.UpdateHomebrewBackground)
+			r.Delete("/{id}", homebrewHandler.DeleteHomebrewBackground)
+		})
+	})
+
+	// ========================================
+	// ROTAS DE ROLAGEM DE DADOS
+	// ========================================
+	router.Route("/api/dice", func(r chi.Router) {
+		r.Use(customMiddleware.AuthMiddleware)
+		r.Post("/roll", diceHandler.RollDice)
+		r.Post("/roll-multiple", diceHandler.RollMultiple)
 	})
 
 	return router
