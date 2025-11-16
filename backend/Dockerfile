@@ -15,9 +15,11 @@ RUN find . -name "*.go" -type f -exec sed -i 's|github.com/seu-usuario/rpg-saas-
 RUN CGO_ENABLED=0 GOOS=linux go build -o rpg-saas-backend ./cmd/server
 
 # Imagem final
-FROM alpine:latest
+FROM debian:bookworm-slim
+
 WORKDIR /app
 COPY --from=builder /app/rpg-saas-backend .
 
 EXPOSE 8080
 CMD ["./rpg-saas-backend"]
+
