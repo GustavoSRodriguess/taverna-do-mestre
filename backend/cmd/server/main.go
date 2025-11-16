@@ -77,7 +77,7 @@ func main() {
 
 	// Configura o servidor HTTP
 	port := getEnv("PORT", "8080")
-	addr := fmt.Sprintf(":%s", port)
+	addr := fmt.Sprintf("0.0.0.0:%s", port)
 
 	srv := &http.Server{
 		Addr:         addr,
@@ -86,6 +86,8 @@ func main() {
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
+
+	log.Printf("Server starting on %s (binding to all interfaces)", addr)
 
 	// Inicia o servidor em uma goroutine
 	go func() {
