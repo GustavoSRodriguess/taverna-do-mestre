@@ -1,4 +1,3 @@
-// cmd/server/main.go
 package main
 
 import (
@@ -21,10 +20,26 @@ import (
 )
 
 func main() {
+	// Configurar log com timestamp
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+
+	log.Println("Starting RPG SaaS Backend...")
+
 	// Carrega variáveis de ambiente do arquivo .env
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, using environment variables")
 	}
+
+	// Log das variáveis de ambiente importantes (sem senhas)
+	log.Printf("Environment check:")
+	log.Printf("- PORT: %s", getEnv("PORT", "8080"))
+	log.Printf("- DB_HOST: %s", getEnv("DB_HOST", "not set"))
+	log.Printf("- DB_PORT: %s", getEnv("DB_PORT", "5432"))
+	log.Printf("- DB_USER: %s", getEnv("DB_USER", "not set"))
+	log.Printf("- DB_NAME: %s", getEnv("DB_NAME", "not set"))
+	log.Printf("- DB_SSLMODE: %s", getEnv("DB_SSLMODE", "disable"))
+	log.Printf("- AI_SERVICE_URL: %s", getEnv("AI_SERVICE_URL", "not set"))
+	log.Printf("- JWT_SECRET configured: %v", os.Getenv("JWT_SECRET") != "")
 
 	// Configuração do banco de dados
 	dbConfig := db.Config{
@@ -36,32 +51,50 @@ func main() {
 		SSLMode:  getEnv("DB_SSLMODE", "disable"),
 	}
 
-	// Conecta ao banco de dados
-	dbClient, err := db.NewPostgresDB(dbConfig)
+	log.Printf("Attempting to connect to database at %s:%s...", dbConfig.Host, dbConfig.Port)
+
+	// Conecta ao banco de dados com retry
+	var dbClient *db.PostgresDB
+	var err error
+
+	for i := 0; i < 5; i++ {
+		dbClient, err = db.NewPostgresDB(dbConfig)
+		if err == nil {
+			log.Println("Successfully connected to PostgreSQL")
+			break
+		}
+		log.Printf("Failed to connect to database (attempt %d/5): %v", i+1, err)
+		if i < 4 {
+			log.Printf("Retrying in 5 seconds...")
+			time.Sleep(5 * time.Second)
+		}
+	}
+
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		log.Fatalf("Failed to connect to database after 5 attempts: %v", err)
 	}
 	defer dbClient.Close()
 
 	// Configura cliente Python
-	//pythonBaseURL := getEnv("PYTHON_SERVICE_URL", "http://127.0.0.1:5000")
 	pythonTimeout := time.Duration(getEnvAsInt("PYTHON_TIMEOUT", 10)) * time.Second
 	aiHost := os.Getenv("AI_SERVICE_URL")
 
 	// Local fallback
 	if aiHost == "" {
 		aiHost = "http://host.docker.internal:5000"
+		log.Printf("AI_SERVICE_URL not set, using default: %s", aiHost)
 	}
 
 	// SE não tiver http, significa que estamos no Render
 	if !strings.HasPrefix(aiHost, "http") {
-		// Adiciona o domínio correto
 		aiHost = fmt.Sprintf("https://%s.onrender.com", aiHost)
+		log.Printf("Formatted AI service URL: %s", aiHost)
 	}
 
 	pythonClient := python.NewClient(aiHost, pythonTimeout)
 
-	// Verifica se o serviço Python está ativo
+	// Verifica se o serviço Python está ativo (não falhar se não estiver)
+	log.Printf("Checking Python service at %s...", aiHost)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -73,37 +106,44 @@ func main() {
 	}
 
 	// Configura as rotas
+	log.Println("Setting up routes...")
 	router := api.SetupRoutes(dbClient, pythonClient)
 
 	// Configura o servidor HTTP
 	port := getEnv("PORT", "8080")
+
+	// IMPORTANTE: Bind em 0.0.0.0 para Azure Container Instances
 	addr := fmt.Sprintf("0.0.0.0:%s", port)
 
 	srv := &http.Server{
 		Addr:         addr,
 		Handler:      router,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		IdleTimeout:  120 * time.Second,
 	}
-
-	log.Printf("Server starting on %s (binding to all interfaces)", addr)
 
 	// Inicia o servidor em uma goroutine
 	go func() {
-		log.Printf("Server starting on port %s", port)
+		log.Printf("🚀 Server starting on %s (binding to all interfaces)", addr)
+		log.Printf("Health check available at: http://%s/health", addr)
+
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Failed to start server: %v", err)
 		}
 	}()
+
+	// Dar tempo para o servidor iniciar
+	time.Sleep(2 * time.Second)
+	log.Println("Server is running. Press Ctrl+C to stop.")
 
 	// Configura o canal para capturar sinais de término
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 	// Bloqueia até receber um sinal
-	<-quit
-	log.Println("Shutting down server...")
+	sig := <-quit
+	log.Printf("Received signal: %v. Shutting down server...", sig)
 
 	// Encerra o servidor graciosamente
 	ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
@@ -113,7 +153,7 @@ func main() {
 		log.Fatalf("Server forced to shutdown: %v", err)
 	}
 
-	log.Println("Server exiting")
+	log.Println("Server exiting gracefully")
 }
 
 // getEnv retorna o valor da variável de ambiente ou um valor padrão
