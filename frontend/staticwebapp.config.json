@@ -3,6 +3,10 @@
         {
             "route": "/api/*",
             "proxy": "http://4.228.157.36:8080/api/*"
+        },
+        {
+            "route": "/*",
+            "serve": "/index.html"
         }
     ]
 }
