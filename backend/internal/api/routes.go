@@ -18,8 +18,8 @@ func corsMiddleware(next http.Handler) http.Handler {
 
 		// Lista de origens permitidas
 		allowedOrigins := map[string]bool{
-			"http://localhost:5173":                 true,
-			"https://taverna-frontend.onrender.com": true,
+			"http://localhost:5173":                                  true,
+			"https://thankful-smoke-04fff0210.3.azurestaticapps.net": true,
 		}
 
 		// Se a origem for permitida, inclui cabeçalhos CORS
