@@ -1,0 +1,9 @@
+{
+  "routes": [
+    {
+      "route": "/api/*",
+      "allowedRoles": [ "anonymous" ],
+      "rewrite": "http://20.226.160.82:8080/api"
+    }
+  ]
+}

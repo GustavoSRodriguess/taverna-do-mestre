@@ -16,8 +16,9 @@ type User = {
 };
 
 const API_BASE_URL =
-    import.meta.env.VITE_API_URL ||
-    "http://localhost:8080/api";
+  import.meta.env.DEV
+    ? "http://localhost:8080/api" // desenvolvimento
+    : "/api";                     // produção (SWA vai fazer o proxy)
 
 export const login = async (credentials: LoginCredentials): Promise<User> => {
     try {
