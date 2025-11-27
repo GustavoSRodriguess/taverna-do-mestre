@@ -19,6 +19,14 @@ import (
 	"rpg-saas-backend/internal/testhelpers"
 )
 
+const (
+	testPassword       = "pass123"
+	testPasswordStrong = "Pass123"
+	testPasswordWrong  = "wrongpass"
+	testPasswordCorrect = "correctpass"
+	testPasswordWeak   = "weak"
+)
+
 func newMockUserDB(t *testing.T) (*db.PostgresDB, sqlmock.Sqlmock, func()) {
 	t.Helper()
 	rawDB, mock, err := sqlmock.New()
@@ -77,14 +85,14 @@ func TestUserHandler_Login(t *testing.T) {
 	pdb, mock, cleanup := newMockUserDB(t)
 	defer cleanup()
 
-	hash, _ := bcrypt.GenerateFromPassword([]byte("pass123"), bcrypt.DefaultCost)
+	hash, _ := bcrypt.GenerateFromPassword([]byte(testPassword), bcrypt.DefaultCost)
 	now := time.Now()
 	rows := sqlmock.NewRows([]string{"id", "username", "email", "password", "created_at", "updated_at", "admin", "plan"}).
 		AddRow(1, "tester", "user@example.com", string(hash), now, now, false, 0)
 	mock.ExpectQuery(`SELECT \* FROM users WHERE email = \$1`).WithArgs("user@example.com").WillReturnRows(rows)
 
 	h := NewUserHandler(pdb)
-	body, _ := json.Marshal(map[string]string{"email": "user@example.com", "password": "pass123"})
+	body, _ := json.Marshal(map[string]string{"email": "user@example.com", "password": testPassword})
 	req := httptest.NewRequest(http.MethodPost, "/api/users/login", bytes.NewBuffer(body))
 	rr := httptest.NewRecorder()
 
@@ -123,7 +131,7 @@ func TestUserHandler_Login_Errors(t *testing.T) {
 			WillReturnError(fmt.Errorf("user not found"))
 
 		h := NewUserHandler(pdb)
-		body, _ := json.Marshal(map[string]string{"email": "notfound@example.com", "password": "pass123"})
+		body, _ := json.Marshal(map[string]string{"email": "notfound@example.com", "password": testPassword})
 		req := httptest.NewRequest(http.MethodPost, "/api/users/login", bytes.NewBuffer(body))
 		rr := httptest.NewRecorder()
 
@@ -137,7 +145,7 @@ func TestUserHandler_Login_Errors(t *testing.T) {
 		pdb, mock, cleanup := newMockUserDB(t)
 		defer cleanup()
 
-		hash, _ := bcrypt.GenerateFromPassword([]byte("correctpass"), bcrypt.DefaultCost)
+		hash, _ := bcrypt.GenerateFromPassword([]byte(testPasswordCorrect), bcrypt.DefaultCost)
 		now := time.Now()
 		rows := sqlmock.NewRows([]string{"id", "username", "email", "password", "created_at", "updated_at", "admin", "plan"}).
 			AddRow(1, "tester", "user@example.com", string(hash), now, now, false, 0)
@@ -146,7 +154,7 @@ func TestUserHandler_Login_Errors(t *testing.T) {
 			WillReturnRows(rows)
 
 		h := NewUserHandler(pdb)
-		body, _ := json.Marshal(map[string]string{"email": "user@example.com", "password": "wrongpass"})
+		body, _ := json.Marshal(map[string]string{"email": "user@example.com", "password": testPasswordWrong})
 		req := httptest.NewRequest(http.MethodPost, "/api/users/login", bytes.NewBuffer(body))
 		rr := httptest.NewRecorder()
 
@@ -172,7 +180,7 @@ func TestUserHandler_CreateUser(t *testing.T) {
 	mock.ExpectQuery(`SELECT \* FROM users WHERE email = \$1`).WithArgs("new@example.com").WillReturnRows(createdRows)
 
 	h := NewUserHandler(pdb)
-	payload := map[string]string{"username": "new", "email": "new@example.com", "password": "Pass123"}
+	payload := map[string]string{"username": "new", "email": "new@example.com", "password": testPasswordStrong}
 	body, _ := json.Marshal(payload)
 	req := httptest.NewRequest(http.MethodPost, "/api/users", bytes.NewBuffer(body))
 	rr := httptest.NewRecorder()
@@ -224,7 +232,7 @@ func TestUserHandler_CreateUser_Errors(t *testing.T) {
 		defer cleanup()
 
 		h := NewUserHandler(pdb)
-		payload := map[string]string{"username": "test", "email": "invalid-email", "password": "Pass123"}
+		payload := map[string]string{"username": "test", "email": "invalid-email", "password": testPasswordStrong}
 		body, _ := json.Marshal(payload)
 		req := httptest.NewRequest(http.MethodPost, "/api/users", bytes.NewBuffer(body))
 		rr := httptest.NewRecorder()
@@ -240,7 +248,7 @@ func TestUserHandler_CreateUser_Errors(t *testing.T) {
 		defer cleanup()
 
 		h := NewUserHandler(pdb)
-		payload := map[string]string{"username": "test", "email": "test@example.com", "password": "weak"}
+		payload := map[string]string{"username": "test", "email": "test@example.com", "password": testPasswordWeak}
 		body, _ := json.Marshal(payload)
 		req := httptest.NewRequest(http.MethodPost, "/api/users", bytes.NewBuffer(body))
 		rr := httptest.NewRecorder()
@@ -258,7 +266,7 @@ func TestUserHandler_CreateUser_Errors(t *testing.T) {
 		mock.ExpectExec(`INSERT INTO users`).WillReturnError(fmt.Errorf("db error"))
 
 		h := NewUserHandler(pdb)
-		payload := map[string]string{"username": "test", "email": "test@example.com", "password": "Pass123"}
+		payload := map[string]string{"username": "test", "email": "test@example.com", "password": testPasswordStrong}
 		body, _ := json.Marshal(payload)
 		req := httptest.NewRequest(http.MethodPost, "/api/users", bytes.NewBuffer(body))
 		rr := httptest.NewRecorder()
@@ -279,7 +287,7 @@ func TestUserHandler_CreateUser_Errors(t *testing.T) {
 			WillReturnError(fmt.Errorf("user not found"))
 
 		h := NewUserHandler(pdb)
-		payload := map[string]string{"username": "test", "email": "test@example.com", "password": "Pass123"}
+		payload := map[string]string{"username": "test", "email": "test@example.com", "password": testPasswordStrong}
 		body, _ := json.Marshal(payload)
 		req := httptest.NewRequest(http.MethodPost, "/api/users", bytes.NewBuffer(body))
 		rr := httptest.NewRecorder()

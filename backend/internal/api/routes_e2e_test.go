@@ -20,6 +20,8 @@ import (
 	"rpg-saas-backend/internal/testhelpers"
 )
 
+const testE2EPassword = "Pass123!"
+
 func newE2EServer(t *testing.T) (*httptest.Server, sqlmock.Sqlmock, func()) {
 	t.Helper()
 
@@ -55,7 +57,7 @@ func TestE2E_UserRegisterLoginAndMe(t *testing.T) {
 	server, mock, cleanup := newE2EServer(t)
 	defer cleanup()
 
-	hashed, err := bcrypt.GenerateFromPassword([]byte("Pass123!"), bcrypt.DefaultCost)
+	hashed, err := bcrypt.GenerateFromPassword([]byte(testE2EPassword), bcrypt.DefaultCost)
 	if err != nil {
 		t.Fatalf("failed to hash password: %v", err)
 	}
@@ -69,7 +71,7 @@ func TestE2E_UserRegisterLoginAndMe(t *testing.T) {
 		AddRow(7, "newbie", "new@example.com", string(hashed), now, now, false, 0)
 	mock.ExpectQuery(`SELECT \* FROM users WHERE email = \$1`).WithArgs("new@example.com").WillReturnRows(userRow)
 
-	registerBody := bytes.NewBufferString(`{"username":"newbie","email":"new@example.com","password":"Pass123!"}`)
+	registerBody := bytes.NewBuffer([]byte(`{"username":"newbie","email":"new@example.com","password":"` + testE2EPassword + `"}`))
 	registerResp, err := http.Post(server.URL+"/api/users/register", "application/json", registerBody)
 	if err != nil {
 		t.Fatalf("register request failed: %v", err)
@@ -95,7 +97,7 @@ func TestE2E_UserRegisterLoginAndMe(t *testing.T) {
 		AddRow(7, "newbie", "new@example.com", string(hashed), now, now, false, 0)
 	mock.ExpectQuery(`SELECT \* FROM users WHERE email = \$1`).WithArgs("new@example.com").WillReturnRows(loginRows)
 
-	loginBody := bytes.NewBufferString(`{"email":"new@example.com","password":"Pass123!"}`)
+	loginBody := bytes.NewBuffer([]byte(`{"email":"new@example.com","password":"` + testE2EPassword + `"}`))
 	loginResp, err := http.Post(server.URL+"/api/users/login", "application/json", loginBody)
 	if err != nil {
 		t.Fatalf("login request failed: %v", err)
