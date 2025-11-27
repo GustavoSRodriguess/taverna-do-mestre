@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"bytes"
-	"encoding/json"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -15,8 +15,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"rpg-saas-backend/internal/api/middleware"
-	"rpg-saas-backend/internal/auth"
 	"rpg-saas-backend/internal/db"
+	"rpg-saas-backend/internal/testhelpers"
 )
 
 func newMockUserDB(t *testing.T) (*db.PostgresDB, sqlmock.Sqlmock, func()) {
@@ -72,7 +72,7 @@ func TestUserHandler_GetUsers_Error(t *testing.T) {
 }
 
 func TestUserHandler_Login(t *testing.T) {
-	auth.SetJWTSecretForTests("login-secret")
+	testhelpers.SetRandomJWTSecret(t)
 
 	pdb, mock, cleanup := newMockUserDB(t)
 	defer cleanup()
@@ -98,7 +98,7 @@ func TestUserHandler_Login(t *testing.T) {
 }
 
 func TestUserHandler_Login_Errors(t *testing.T) {
-	auth.SetJWTSecretForTests("login-secret")
+	testhelpers.SetRandomJWTSecret(t)
 
 	t.Run("invalid JSON body", func(t *testing.T) {
 		pdb, _, cleanup := newMockUserDB(t)
@@ -158,7 +158,7 @@ func TestUserHandler_Login_Errors(t *testing.T) {
 }
 
 func TestUserHandler_CreateUser(t *testing.T) {
-	auth.SetJWTSecretForTests("create-secret")
+	testhelpers.SetRandomJWTSecret(t)
 
 	pdb, mock, cleanup := newMockUserDB(t)
 	defer cleanup()
@@ -187,7 +187,7 @@ func TestUserHandler_CreateUser(t *testing.T) {
 }
 
 func TestUserHandler_CreateUser_Errors(t *testing.T) {
-	auth.SetJWTSecretForTests("create-secret")
+	testhelpers.SetRandomJWTSecret(t)
 
 	t.Run("invalid JSON body", func(t *testing.T) {
 		pdb, _, cleanup := newMockUserDB(t)

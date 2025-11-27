@@ -1,10 +1,21 @@
 package auth
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"testing"
 
 	"rpg-saas-backend/internal/models"
 )
+
+func randomSecret(t *testing.T) string {
+	t.Helper()
+	buf := make([]byte, 32)
+	if _, err := rand.Read(buf); err != nil {
+		t.Fatalf("failed to generate random secret: %v", err)
+	}
+	return hex.EncodeToString(buf)
+}
 
 func setJWTSecret(t *testing.T, secret string) {
 	t.Helper()
@@ -12,13 +23,13 @@ func setJWTSecret(t *testing.T, secret string) {
 }
 
 func TestGenerateAndValidateToken(t *testing.T) {
-	setJWTSecret(t, "test-secret")
+	setJWTSecret(t, randomSecret(t))
 
 	user := &models.User{
-		ID:     1,
-		Email:  "user@example.com",
-		Admin:  true,
-		Plan:   1,
+		ID:    1,
+		Email: "user@example.com",
+		Admin: true,
+		Plan:  1,
 	}
 
 	token, err := GenerateToken(user)
@@ -45,7 +56,7 @@ func TestGenerateTokenMissingSecret(t *testing.T) {
 }
 
 func TestValidateTokenInvalid(t *testing.T) {
-	setJWTSecret(t, "another-secret")
+	setJWTSecret(t, randomSecret(t))
 
 	if _, err := ValidateToken("invalid"); err == nil {
 		t.Fatal("expected validation error for invalid token")
@@ -53,11 +64,8 @@ func TestValidateTokenInvalid(t *testing.T) {
 }
 
 func TestValidateTokenExpired(t *testing.T) {
-	setJWTSecret(t, "test-secret-expired")
-
-	// Generate a token with past expiration (this would need modification to jwt.go to support,
-	// but we can test with a token signed with different secret)
-	setJWTSecret(t, "secret1")
+	secret1 := randomSecret(t)
+	setJWTSecret(t, secret1)
 	user := &models.User{ID: 1, Email: "test@example.com"}
 	token, err := GenerateToken(user)
 	if err != nil {
@@ -65,7 +73,11 @@ func TestValidateTokenExpired(t *testing.T) {
 	}
 
 	// Change secret and try to validate
-	setJWTSecret(t, "secret2")
+	secret2 := randomSecret(t)
+	if secret2 == secret1 {
+		secret2 = randomSecret(t)
+	}
+	setJWTSecret(t, secret2)
 	if _, err := ValidateToken(token); err == nil {
 		t.Fatal("expected validation error for token with different secret")
 	}
@@ -73,7 +85,8 @@ func TestValidateTokenExpired(t *testing.T) {
 
 func TestSetJWTSecretForTests(t *testing.T) {
 	// Test the exported testing function
-	SetJWTSecretForTests("new-test-secret")
+	secret := randomSecret(t)
+	SetJWTSecretForTests(secret)
 
 	user := &models.User{ID: 99, Email: "exported@example.com", Admin: false, Plan: 2}
 	token, err := GenerateToken(user)
@@ -100,7 +113,7 @@ func TestValidateTokenMissingSecret(t *testing.T) {
 }
 
 func TestValidateTokenEmpty(t *testing.T) {
-	setJWTSecret(t, "test-secret")
+	setJWTSecret(t, randomSecret(t))
 
 	if _, err := ValidateToken(""); err == nil {
 		t.Fatal("expected error for empty token")

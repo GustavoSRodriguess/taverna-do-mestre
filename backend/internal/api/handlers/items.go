@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"rpg-saas-backend/internal/db"
@@ -127,10 +126,6 @@ func (h *ItemHandler) GenerateRandomTreasure(w http.ResponseWriter, r *http.Requ
 	if len(request.Ranks) == 0 {
 		request.Ranks = []string{"minor", "medium", "major"}
 	}
-
-	// Log para debug (remover em produção)
-	fmt.Printf("Generating treasure with: Level=%d, Gems=%t, ArtObjects=%t, MagicItems=%t, Categories=%v, Ranks=%v\n",
-		request.Level, request.Gems, request.ArtObjects, request.MagicItems, request.MagicItemCategories, request.Ranks)
 
 	treasure, err := h.Python.GenerateTreasure(r.Context(), request)
 	if err != nil {

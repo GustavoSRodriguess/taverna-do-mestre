@@ -8,6 +8,7 @@ import (
 
 	"rpg-saas-backend/internal/auth"
 	"rpg-saas-backend/internal/models"
+	"rpg-saas-backend/internal/testhelpers"
 )
 
 func TestAuthMiddlewareMissingHeader(t *testing.T) {
@@ -25,7 +26,7 @@ func TestAuthMiddlewareMissingHeader(t *testing.T) {
 }
 
 func TestAuthMiddlewareInvalidToken(t *testing.T) {
-	auth.SetJWTSecretForTests("middleware-secret")
+	testhelpers.SetRandomJWTSecret(t)
 
 	handler := AuthMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 
@@ -49,7 +50,7 @@ func TestAuthMiddlewareInvalidToken(t *testing.T) {
 }
 
 func TestAuthMiddlewareValidToken(t *testing.T) {
-	auth.SetJWTSecretForTests("middleware-secret")
+	testhelpers.SetRandomJWTSecret(t)
 	token, err := auth.GenerateToken(&models.User{ID: 99, Email: "user@example.com"})
 	if err != nil {
 		t.Fatalf("failed to generate token: %v", err)

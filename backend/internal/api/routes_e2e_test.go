@@ -17,6 +17,7 @@ import (
 	"rpg-saas-backend/internal/db"
 	"rpg-saas-backend/internal/models"
 	"rpg-saas-backend/internal/python"
+	"rpg-saas-backend/internal/testhelpers"
 )
 
 func newE2EServer(t *testing.T) (*httptest.Server, sqlmock.Sqlmock, func()) {
@@ -39,9 +40,9 @@ func newE2EServer(t *testing.T) (*httptest.Server, sqlmock.Sqlmock, func()) {
 	return server, mock, cleanup
 }
 
-func bearerToken(t *testing.T, userID int, email string) string {
+func bearerToken(t *testing.T, secret string, userID int, email string) string {
 	t.Helper()
-	auth.SetJWTSecretForTests("e2e-secret")
+	auth.SetJWTSecretForTests(secret)
 	token, err := auth.GenerateToken(&models.User{ID: userID, Email: email})
 	if err != nil {
 		t.Fatalf("failed to generate token: %v", err)
@@ -50,10 +51,9 @@ func bearerToken(t *testing.T, userID int, email string) string {
 }
 
 func TestE2E_UserRegisterLoginAndMe(t *testing.T) {
+	secret := testhelpers.SetRandomJWTSecret(t)
 	server, mock, cleanup := newE2EServer(t)
 	defer cleanup()
-
-	auth.SetJWTSecretForTests("e2e-secret")
 
 	hashed, err := bcrypt.GenerateFromPassword([]byte("Pass123!"), bcrypt.DefaultCost)
 	if err != nil {
@@ -112,7 +112,7 @@ func TestE2E_UserRegisterLoginAndMe(t *testing.T) {
 		t.Fatalf("failed to decode login response: %v", err)
 	}
 
-	token := bearerToken(t, 7, "new@example.com")
+	token := bearerToken(t, secret, 7, "new@example.com")
 
 	meRows := sqlmock.NewRows([]string{"id", "username", "email", "password", "created_at", "updated_at", "admin", "plan"}).
 		AddRow(7, "newbie", "new@example.com", string(hashed), now, now, false, 0)
@@ -148,10 +148,11 @@ func TestE2E_UserRegisterLoginAndMe(t *testing.T) {
 }
 
 func TestE2E_DnDRacesEndpoints(t *testing.T) {
+	secret := testhelpers.SetRandomJWTSecret(t)
 	server, mock, cleanup := newE2EServer(t)
 	defer cleanup()
 
-	token := bearerToken(t, 1, "racer@example.com")
+	token := bearerToken(t, secret, 1, "racer@example.com")
 	now := time.Now()
 
 	raceRow := sqlmock.NewRows([]string{
@@ -222,10 +223,11 @@ func TestE2E_DnDRacesEndpoints(t *testing.T) {
 }
 
 func TestE2E_CampaignCreateAndList(t *testing.T) {
+	secret := testhelpers.SetRandomJWTSecret(t)
 	server, mock, cleanup := newE2EServer(t)
 	defer cleanup()
 
-	token := bearerToken(t, 42, "dm@example.com")
+	token := bearerToken(t, secret, 42, "dm@example.com")
 	now := time.Now()
 
 	mock.ExpectQuery(`INSERT INTO campaigns`).

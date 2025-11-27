@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"log" // Adicionado import para log
 	"net/http"
 	"strconv"
 	"time"
@@ -10,7 +9,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"golang.org/x/crypto/bcrypt"
 
-	"rpg-saas-backend/internal/auth" // Adicionado import para o pacote auth
+	"rpg-saas-backend/internal/auth"
 	"rpg-saas-backend/internal/db"
 	"rpg-saas-backend/internal/models"
 	"rpg-saas-backend/internal/utils"
@@ -86,7 +85,6 @@ func (h *userHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Tentando login com email: [%s]", req.Email) // Adicionando log do email recebido
 	user, err := h.DB.GetUserByEmail(r.Context(), req.Email)
 	if err != nil {
 		http.Error(w, "usuário não encontrado", http.StatusUnauthorized)
@@ -101,7 +99,6 @@ func (h *userHandler) Login(w http.ResponseWriter, r *http.Request) {
 	// Gerar token JWT
 	tokenString, err := auth.GenerateToken(user)
 	if err != nil {
-		log.Printf("Erro ao gerar token JWT para o usuário %s: %v", user.Email, err)
 		http.Error(w, "erro ao gerar token de autenticação", http.StatusInternalServerError)
 		return
 	}
@@ -152,7 +149,6 @@ func (h *userHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	// É importante buscar o usuário recém-criado para obter o ID populado pelo banco
 	createdUser, err := h.DB.GetUserByEmail(r.Context(), user.Email)
 	if err != nil {
-		log.Printf("Erro ao buscar usuário recém-criado %s para gerar token: %v", user.Email, err)
 		// Decide-se por retornar sucesso no registro mesmo que o token não seja gerado aqui,
 		// o usuário pode logar para obter um token.
 		w.WriteHeader(http.StatusCreated)
@@ -162,7 +158,6 @@ func (h *userHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	tokenString, err := auth.GenerateToken(createdUser)
 	if err != nil {
-		log.Printf("Erro ao gerar token JWT para o novo usuário %s: %v", createdUser.Email, err)
 		// Decide-se por retornar sucesso no registro mesmo que o token não seja gerado aqui.
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(createdUser) // Retorna o usuário sem token neste caso de erro

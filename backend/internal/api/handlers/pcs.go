@@ -2,8 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
-	"log"
 	"net/http"
 
 	"rpg-saas-backend/internal/db"
@@ -41,13 +39,10 @@ func (h *PCHandler) GetPCs(w http.ResponseWriter, r *http.Request) {
 	pagination := utils.ExtractPagination(r, 20)
 
 	pcs, err := h.DB.GetPCsByPlayer(r.Context(), userID, pagination.Limit, pagination.Offset)
-	log.Printf("Fetching PCs for user ID: %d with limit: %d and offset: %d", userID, pagination.Limit, pagination.Offset)
 	if err != nil {
 		h.Response.HandleDBError(w, err, "fetch PCs")
 		return
 	}
-
-	log.Printf("Total PCs found: %d", len(pcs))
 
 	// Send paginated response using utility
 	h.Response.SendPaginated(w, map[string]any{"pcs": pcs}, pagination, len(pcs), nil)
@@ -88,13 +83,9 @@ func (h *PCHandler) CreatePC(w http.ResponseWriter, r *http.Request) {
 
 	var pc models.PC
 	if err := json.NewDecoder(r.Body).Decode(&pc); err != nil {
-		fmt.Printf("Erro ao decodificar JSON: %v", err)
 		h.Response.SendBadRequest(w, "Invalid request body: "+err.Error())
 		return
 	}
-
-	// fmt do JSON recebido para debug
-	fmt.Printf("JSON recebido para criação: %+v", pc)
 
 	// Validate using centralized validator
 	validationErrors := h.Validator.BatchValidate(
@@ -158,12 +149,9 @@ func (h *PCHandler) CreatePC(w http.ResponseWriter, r *http.Request) {
 
 	err = h.DB.CreatePC(r.Context(), &pc)
 	if err != nil {
-		fmt.Printf("Erro ao criar PC no banco: %v", err)
 		h.Response.HandleDBError(w, err, "create PC")
 		return
 	}
-
-	fmt.Printf("PC criado com sucesso: ID=%d", pc.ID)
 
 	h.Response.SendCreated(w, "PC created successfully", pc)
 }
@@ -186,13 +174,9 @@ func (h *PCHandler) UpdatePC(w http.ResponseWriter, r *http.Request) {
 
 	var pc models.PC
 	if err := json.NewDecoder(r.Body).Decode(&pc); err != nil {
-		fmt.Printf("Erro ao decodificar JSON para update: %v", err)
 		h.Response.SendBadRequest(w, "Invalid request body: "+err.Error())
 		return
 	}
-
-	// fmt do JSON recebido para debug
-	fmt.Printf("JSON recebido para atualização: %+v", pc)
 
 	// Validate using centralized validator
 	validationErrors := h.Validator.BatchValidate(
@@ -235,12 +219,9 @@ func (h *PCHandler) UpdatePC(w http.ResponseWriter, r *http.Request) {
 
 	err = h.DB.UpdatePC(r.Context(), &pc)
 	if err != nil {
-		fmt.Printf("Erro ao atualizar PC no banco: %v", err)
 		h.Response.HandleDBError(w, err, "update PC")
 		return
 	}
-
-	fmt.Printf("PC atualizado com sucesso: ID=%d", pc.ID)
 
 	h.Response.SendJSON(w, pc, http.StatusOK)
 }
