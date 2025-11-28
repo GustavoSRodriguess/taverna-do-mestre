@@ -11,8 +11,8 @@ import (
 func (p *PostgresDB) GetCampaigns(ctx context.Context, userID int, limit, offset int) ([]models.CampaignSummary, error) {
 	campaigns := []models.CampaignSummary{}
 	query := `
-		SELECT 
-			c.id, c.name, c.description, c.status, c.max_players, 
+		SELECT
+			c.id, c.name, c.description, c.status, c.allow_homebrew, c.max_players,
 			c.current_session, c.invite_code, c.created_at, c.updated_at,
 			u.username as dm_name,
 			COUNT(cp.user_id) as player_count
@@ -20,10 +20,10 @@ func (p *PostgresDB) GetCampaigns(ctx context.Context, userID int, limit, offset
 		LEFT JOIN users u ON c.dm_id = u.id
 		LEFT JOIN campaign_players cp ON c.id = cp.campaign_id AND cp.status = 'active'
 		WHERE c.dm_id = $1 OR c.id IN (
-			SELECT campaign_id FROM campaign_players 
+			SELECT campaign_id FROM campaign_players
 			WHERE user_id = $1 AND status = 'active'
 		)
-		GROUP BY c.id, u.username, c.name, c.description, c.status, c.max_players, 
+		GROUP BY c.id, u.username, c.name, c.description, c.status, c.allow_homebrew, c.max_players,
 		         c.current_session, c.invite_code, c.created_at, c.updated_at
 		ORDER BY c.updated_at DESC
 		LIMIT $2 OFFSET $3
@@ -40,12 +40,12 @@ func (p *PostgresDB) GetCampaigns(ctx context.Context, userID int, limit, offset
 func (p *PostgresDB) GetCampaignByID(ctx context.Context, id, userID int) (*models.Campaign, error) {
 	var campaign models.Campaign
 	query := `
-		SELECT c.id, c.name, c.description, c.dm_id, c.max_players, c.current_session, 
-		       c.status, c.invite_code, c.created_at, c.updated_at
+		SELECT c.id, c.name, c.description, c.dm_id, c.max_players, c.current_session,
+		       c.status, c.allow_homebrew, c.invite_code, c.created_at, c.updated_at
 		FROM campaigns c
 		WHERE c.id = $1 AND (
 			c.dm_id = $2 OR c.id IN (
-				SELECT campaign_id FROM campaign_players 
+				SELECT campaign_id FROM campaign_players
 				WHERE user_id = $2 AND status = 'active'
 			)
 		)
@@ -73,8 +73,8 @@ func (p *PostgresDB) GetCampaignByID(ctx context.Context, id, userID int) (*mode
 
 func (p *PostgresDB) CreateCampaign(ctx context.Context, campaign *models.Campaign) error {
 	query := `
-		INSERT INTO campaigns (name, description, dm_id, max_players, status, invite_code, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		INSERT INTO campaigns (name, description, dm_id, max_players, status, allow_homebrew, invite_code, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id
 	`
 
@@ -91,7 +91,7 @@ func (p *PostgresDB) CreateCampaign(ctx context.Context, campaign *models.Campai
 
 	row := p.DB.QueryRowContext(ctx, query,
 		campaign.Name, campaign.Description, campaign.DMID,
-		campaign.MaxPlayers, campaign.Status, campaign.InviteCode,
+		campaign.MaxPlayers, campaign.Status, campaign.AllowHomebrew, campaign.InviteCode,
 		campaign.CreatedAt, campaign.UpdatedAt,
 	)
 
@@ -101,16 +101,16 @@ func (p *PostgresDB) CreateCampaign(ctx context.Context, campaign *models.Campai
 func (p *PostgresDB) UpdateCampaign(ctx context.Context, campaign *models.Campaign) error {
 	query := `
 		UPDATE campaigns SET
-		name = $1, description = $2, max_players = $3, 
-		current_session = $4, status = $5, updated_at = $6
-		WHERE id = $7 AND dm_id = $8
+		name = $1, description = $2, max_players = $3,
+		current_session = $4, status = $5, allow_homebrew = $6, updated_at = $7
+		WHERE id = $8 AND dm_id = $9
 	`
 
 	campaign.UpdatedAt = time.Now()
 
 	result, err := p.DB.ExecContext(ctx, query,
 		campaign.Name, campaign.Description, campaign.MaxPlayers,
-		campaign.CurrentSession, campaign.Status, campaign.UpdatedAt,
+		campaign.CurrentSession, campaign.Status, campaign.AllowHomebrew, campaign.UpdatedAt,
 		campaign.ID, campaign.DMID,
 	)
 
@@ -190,8 +190,8 @@ func (p *PostgresDB) GetCampaignPlayers(ctx context.Context, campaignID int) ([]
 func (p *PostgresDB) GetCampaignByInviteCode(ctx context.Context, inviteCode string) (*models.Campaign, error) {
 	var campaign models.Campaign
 	query := `
-		SELECT id, name, description, dm_id, max_players, current_session, status, invite_code, created_at, updated_at
-		FROM campaigns 
+		SELECT id, name, description, dm_id, max_players, current_session, status, allow_homebrew, invite_code, created_at, updated_at
+		FROM campaigns
 		WHERE invite_code = $1
 	`
 

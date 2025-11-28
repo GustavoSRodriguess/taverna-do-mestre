@@ -8,7 +8,7 @@ import { StatusBadge } from '../Generic';
 import { formatDate } from '../../utils/gameUtils';
 import CampaignCharacters from './CampaignCharacters';
 import CampaignSettings from './CampaignSettings';
-import { ClipboardList, Users, Settings } from 'lucide-react';
+import { ClipboardList, Users, Settings, Sparkles } from 'lucide-react';
 
 const CampaignDetails: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -169,6 +169,13 @@ const CampaignDetails: React.FC = () => {
                                         <span className="text-white ml-2">{formatDate(campaign.created_at)}</span>
                                     </div>
                                 </div>
+
+                                {campaign.allow_homebrew && (
+                                    <div className="mt-4 inline-flex items-center gap-2 bg-purple-900/30 px-3 py-1.5 rounded-full border border-purple-700">
+                                        <Sparkles className="w-4 h-4 text-purple-300" />
+                                        <span className="text-purple-300 text-sm">Homebrew Permitido</span>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="flex gap-2">
@@ -213,6 +220,13 @@ const CampaignDetails: React.FC = () => {
                                         <div className="flex justify-between">
                                             <span className="text-indigo-400">Sessão atual:</span>
                                             <span className="text-white">{campaign.current_session || 1}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-indigo-400">Conteúdo Homebrew:</span>
+                                            <span className={campaign.allow_homebrew ? "text-purple-400 flex items-center gap-1" : "text-gray-400"}>
+                                                {campaign.allow_homebrew && <Sparkles className="w-3 h-3" />}
+                                                {campaign.allow_homebrew ? "Permitido" : "Não permitido"}
+                                            </span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-indigo-400">Última atualização:</span>

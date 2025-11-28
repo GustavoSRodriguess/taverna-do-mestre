@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Modal, ModalConfirmFooter, Alert } from '../../ui';
 import { campaignService, CreateCampaignData } from '../../services/campaignService';
 import { CAMPAIGN_SETTINGS } from '../../constants';
+import { Sparkles } from 'lucide-react';
 
 interface CreateCampaignModalProps {
     isOpen: boolean;
@@ -17,7 +18,8 @@ const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
     const [formData, setFormData] = useState<CreateCampaignData>({
         name: '',
         description: '',
-        max_players: 4
+        max_players: 4,
+        allow_homebrew: true
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -44,7 +46,8 @@ const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
             setFormData({
                 name: '',
                 description: '',
-                max_players: 4
+                max_players: 4,
+                allow_homebrew: true
             });
 
             onSuccess();
@@ -61,7 +64,8 @@ const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
             setFormData({
                 name: '',
                 description: '',
-                max_players: 4
+                max_players: 4,
+                allow_homebrew: true
             });
             setError(null);
             onClose();
@@ -139,8 +143,8 @@ const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
                         type="number"
                         value={formData.max_players}
                         onChange={(e) => setFormData({ ...formData, max_players: parseInt(e.target.value) || 1 })}
-                        className="w-full px-3 py-2 border border-indigo-700 rounded-md 
-                     focus:outline-none focus:ring-2 focus:ring-purple-500 
+                        className="w-full px-3 py-2 border border-indigo-700 rounded-md
+                     focus:outline-none focus:ring-2 focus:ring-purple-500
                      bg-indigo-900/50 text-white"
                         min={CAMPAIGN_SETTINGS.MIN_PLAYERS}
                         max={CAMPAIGN_SETTINGS.MAX_PLAYERS}
@@ -148,6 +152,29 @@ const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
                     />
                     <div className="text-xs text-indigo-400 mt-1">
                         Recomendado: 3-6 jogadores para melhor experiência
+                    </div>
+                </div>
+
+                <div>
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={formData.allow_homebrew}
+                            onChange={(e) => setFormData({ ...formData, allow_homebrew: e.target.checked })}
+                            className="w-5 h-5 rounded border-indigo-700 bg-indigo-900/50
+                                     text-purple-600 focus:ring-2 focus:ring-purple-500
+                                     focus:ring-offset-0 cursor-pointer"
+                            disabled={loading}
+                        />
+                        <div className="flex items-center gap-2">
+                            <Sparkles className="w-4 h-4 text-purple-400" />
+                            <span className="text-indigo-200 font-medium">
+                                Permitir Conteúdo Homebrew
+                            </span>
+                        </div>
+                    </label>
+                    <div className="text-xs text-indigo-400 mt-2 ml-8">
+                        Permite que jogadores usem raças, classes e backgrounds personalizados
                     </div>
                 </div>
 

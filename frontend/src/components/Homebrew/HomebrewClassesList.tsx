@@ -4,6 +4,9 @@ import { homebrewService, HomebrewClass } from '../../services/homebrewService';
 import { Plus, Edit3, Trash2, Eye, Globe, Lock, AlertTriangle, Swords } from 'lucide-react';
 import HomebrewClassEditor from './HomebrewClassEditor';
 import { CharacterCardSkeleton } from '../Generic';
+import { useHomebrewFilters } from '../../hooks/useHomebrewFilters';
+import HomebrewFilterBar from './HomebrewFilterBar';
+import HomebrewEmptyState from './HomebrewEmptyState';
 
 const HomebrewClassesList: React.FC = () => {
     const [classes, setClasses] = useState<HomebrewClass[]>([]);
@@ -14,6 +17,30 @@ const HomebrewClassesList: React.FC = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [classToDelete, setClassToDelete] = useState<HomebrewClass | null>(null);
     const [viewingClass, setViewingClass] = useState<HomebrewClass | null>(null);
+
+    // Use the generic filter hook
+    const {
+        searchTerm,
+        setSearchTerm,
+        filterVisibility,
+        setFilterVisibility,
+        customFilterValues,
+        setCustomFilterValue,
+        filteredItems: filteredClasses,
+        clearFilters,
+        hasActiveFilters,
+        totalCount,
+        filteredCount,
+    } = useHomebrewFilters<HomebrewClass>(classes, {
+        searchFields: ['name', 'description'],
+        customFilters: {
+            spellcaster: (classData, value) => {
+                if (value === 'caster') return !!classData.spellcasting;
+                if (value === 'non-caster') return !classData.spellcasting;
+                return true;
+            },
+        },
+    });
 
     useEffect(() => {
         loadClasses();
@@ -147,25 +174,6 @@ const HomebrewClassesList: React.FC = () => {
         </CardBorder>
     );
 
-    const EmptyState = () => (
-        <CardBorder className="text-center py-12 bg-indigo-950/50">
-            <Swords className="w-24 h-24 mx-auto mb-4 text-indigo-400" />
-            <h3 className="text-xl font-bold mb-2">Nenhuma classe homebrew criada</h3>
-            <p className="text-indigo-300 mb-6">
-                Crie classes customizadas para usar em suas campanhas.
-            </p>
-            <Button
-                buttonLabel={
-                    <div className="flex items-center gap-2">
-                        <Plus className="w-4 h-4" />
-                        <span>Criar Primeira Classe</span>
-                    </div>
-                }
-                onClick={handleCreate}
-                classname="bg-green-600 hover:bg-green-700"
-            />
-        </CardBorder>
-    );
 
     if (loading) {
         return (
@@ -189,14 +197,40 @@ const HomebrewClassesList: React.FC = () => {
                     />
                 )}
 
+                {/* Search and Filters */}
+                <HomebrewFilterBar
+                    searchTerm={searchTerm}
+                    onSearchChange={setSearchTerm}
+                    searchPlaceholder="Buscar classes por nome ou descrição..."
+                    filterVisibility={filterVisibility}
+                    onVisibilityChange={setFilterVisibility}
+                    customFilters={[
+                        {
+                            key: 'spellcaster',
+                            label: 'Tipo de Classe',
+                            options: [
+                                { value: 'caster', label: 'Conjurador' },
+                                { value: 'non-caster', label: 'Não-Conjurador' },
+                            ],
+                        },
+                    ]}
+                    customFilterValues={customFilterValues}
+                    onCustomFilterChange={setCustomFilterValue}
+                    onClearFilters={clearFilters}
+                    hasActiveFilters={hasActiveFilters}
+                />
+
                 {/* Header */}
                 <div className="flex justify-between items-center mb-6">
                     <div>
                         <h3 className="text-lg text-indigo-200">
-                            {classes.length === 0
+                            {filteredCount === 0
                                 ? 'Nenhuma classe encontrada'
-                                : `${classes.length} classe${classes.length !== 1 ? 's' : ''} homebrew`
+                                : `${filteredCount} classe${filteredCount !== 1 ? 's' : ''} encontrada${filteredCount !== 1 ? 's' : ''}`
                             }
+                            {totalCount !== filteredCount && (
+                                <span className="text-sm text-indigo-400"> (de {totalCount} total)</span>
+                            )}
                         </h3>
                     </div>
                     <Button
@@ -212,11 +246,25 @@ const HomebrewClassesList: React.FC = () => {
                 </div>
 
                 {/* Class List */}
-                {classes.length === 0 ? (
-                    <EmptyState />
+                {totalCount === 0 ? (
+                    <HomebrewEmptyState
+                        icon={Swords}
+                        title="Nenhuma classe homebrew criada"
+                        description="Crie classes customizadas para usar em suas campanhas."
+                        buttonLabel="Criar Primeira Classe"
+                        onButtonClick={handleCreate}
+                    />
+                ) : filteredCount === 0 ? (
+                    <HomebrewEmptyState
+                        icon={Swords}
+                        title="Nenhuma classe encontrada"
+                        description="Tente ajustar os filtros ou buscar por outros termos."
+                        variant="no-results"
+                        onClearFilters={clearFilters}
+                    />
                 ) : (
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {classes.map((classData) => (
+                        {filteredClasses.map((classData) => (
                             <ClassCard key={classData.id} classData={classData} />
                         ))}
                     </div>

@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	chitrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/go-chi/chi.v5"
 
 	"rpg-saas-backend/internal/api/handlers"
 	customMiddleware "rpg-saas-backend/internal/api/middleware"
@@ -43,6 +44,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 func SetupRoutes(dbClient *db.PostgresDB, pythonClient *python.Client) *chi.Mux {
 	router := chi.NewRouter()
 
+	router.Use(chitrace.Middleware(chitrace.WithServiceName("rpg-saas-backend")))
 	router.Use(middleware.Logger)
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.RequestID)

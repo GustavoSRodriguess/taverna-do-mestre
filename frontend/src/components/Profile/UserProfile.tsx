@@ -5,12 +5,15 @@ import { Button } from '../../ui/Button';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { pcService } from '../../services/pcService';
+import { campaignService } from '../../services/campaignService';
+import { homebrewService } from '../../services/homebrewService';
 import { FullCharacter } from '../../types/game';
 
 interface UserStats {
     totalPCs: number;
-    totalNPCs: number;
-    totalEncounters: number;
+    totalCampaignsCreated: number;
+    totalCampaignsJoined: number;
+    totalHomebrews: number;
 }
 
 const UserProfile: React.FC = () => {
@@ -19,8 +22,9 @@ const UserProfile: React.FC = () => {
     const [recentPCs, setRecentPCs] = useState<FullCharacter[]>([]);
     const [stats, setStats] = useState<UserStats>({
         totalPCs: 0,
-        totalNPCs: 0,
-        totalEncounters: 0
+        totalCampaignsCreated: 0,
+        totalCampaignsJoined: 0,
+        totalHomebrews: 0
     });
     const [loading, setLoading] = useState(true);
 
@@ -34,25 +38,40 @@ const UserProfile: React.FC = () => {
             try {
                 setLoading(true);
 
-                // Buscar todos os PCs do usuário
-                const pcsResponse = await pcService.getPCs(100, 0);
-                const allPCs = pcsResponse.results?.pcs || pcsResponse.pcs || [];
+                // Buscar dados em paralelo
+                const [pcsResponse, campaignsResponse, racesResponse, classesResponse, backgroundsResponse] = await Promise.all([
+                    pcService.getPCs(100, 0),
+                    campaignService.getCampaigns(),
+                    homebrewService.getRaces(100, 0),
+                    homebrewService.getClasses(100, 0),
+                    homebrewService.getBackgrounds(100, 0)
+                ]);
 
-                // Ordenar por data de criação (mais recentes primeiro)
+                // PCs
+                const allPCs = pcsResponse.results?.pcs || pcsResponse.pcs || [];
                 const sortedPCs = allPCs.sort((a: FullCharacter, b: FullCharacter) => {
                     const dateA = new Date(a.created_at || 0).getTime();
                     const dateB = new Date(b.created_at || 0).getTime();
                     return dateB - dateA;
                 });
-
-                // Pegar os 3 mais recentes
                 setRecentPCs(sortedPCs.slice(0, 3));
+
+                // Campanhas
+                const allCampaigns = campaignsResponse.campaigns || [];
+                const campaignsCreated = allCampaigns.filter(c => c.dm_id === user?.id);
+                const campaignsJoined = allCampaigns.length;
+
+                // Homebrews
+                const totalRaces = racesResponse.races?.length || 0;
+                const totalClasses = classesResponse.classes?.length || 0;
+                const totalBackgrounds = backgroundsResponse.backgrounds?.length || 0;
 
                 // Atualizar estatísticas
                 setStats({
                     totalPCs: allPCs.length,
-                    totalNPCs: 0, // Será implementado quando houver endpoint de NPCs
-                    totalEncounters: 0 // Será implementado quando houver endpoint de Encounters
+                    totalCampaignsCreated: campaignsCreated.length,
+                    totalCampaignsJoined: campaignsJoined,
+                    totalHomebrews: totalRaces + totalClasses + totalBackgrounds
                 });
             } catch (error) {
                 console.error('Erro ao carregar dados do usuário:', error);
@@ -62,7 +81,7 @@ const UserProfile: React.FC = () => {
         };
 
         fetchUserData();
-    }, []);
+    }, [user?.id]);
 
     const formatDate = (dateString?: string) => {
         if (!dateString) return 'Sem data';
@@ -136,13 +155,18 @@ const UserProfile: React.FC = () => {
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-indigo-300 mb-1">NPCs Gerados</label>
-                                        <div className="text-2xl font-bold text-white">{stats.totalNPCs}</div>
+                                        <label className="block text-sm font-medium text-indigo-300 mb-1">Campanhas Criadas</label>
+                                        <div className="text-2xl font-bold text-white">{stats.totalCampaignsCreated}</div>
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-indigo-300 mb-1">Encontros Preparados</label>
-                                        <div className="text-2xl font-bold text-white">{stats.totalEncounters}</div>
+                                        <label className="block text-sm font-medium text-indigo-300 mb-1">Campanhas Participando</label>
+                                        <div className="text-2xl font-bold text-white">{stats.totalCampaignsJoined}</div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-indigo-300 mb-1">Homebrews Criados</label>
+                                        <div className="text-2xl font-bold text-white">{stats.totalHomebrews}</div>
                                     </div>
 
                                     <div className="pt-4">
@@ -210,13 +234,13 @@ const UserProfile: React.FC = () => {
                                     />
 
                                     <Button
-                                        buttonLabel="Gerar NPC"
-                                        onClick={() => navigate('/npc-creation')}
+                                        buttonLabel="Ver Campanhas"
+                                        onClick={() => navigate('/campaigns')}
                                     />
 
                                     <Button
-                                        buttonLabel="Preparar Encontro"
-                                        onClick={() => navigate('/encounter-creation')}
+                                        buttonLabel="Criar Homebrew"
+                                        onClick={() => navigate('/homebrew')}
                                     />
                                 </div>
                             )}

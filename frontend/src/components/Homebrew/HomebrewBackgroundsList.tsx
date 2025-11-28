@@ -4,6 +4,9 @@ import { homebrewService, HomebrewBackground } from '../../services/homebrewServ
 import { Plus, Edit3, Trash2, Eye, Globe, Lock, AlertTriangle, Scroll } from 'lucide-react';
 import HomebrewBackgroundEditor from './HomebrewBackgroundEditor';
 import { CharacterCardSkeleton } from '../Generic';
+import { useHomebrewFilters } from '../../hooks/useHomebrewFilters';
+import HomebrewFilterBar from './HomebrewFilterBar';
+import HomebrewEmptyState from './HomebrewEmptyState';
 
 const HomebrewBackgroundsList: React.FC = () => {
     const [backgrounds, setBackgrounds] = useState<HomebrewBackground[]>([]);
@@ -14,6 +17,21 @@ const HomebrewBackgroundsList: React.FC = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [backgroundToDelete, setBackgroundToDelete] = useState<HomebrewBackground | null>(null);
     const [viewingBackground, setViewingBackground] = useState<HomebrewBackground | null>(null);
+
+    // Use the generic filter hook
+    const {
+        searchTerm,
+        setSearchTerm,
+        filterVisibility,
+        setFilterVisibility,
+        filteredItems: filteredBackgrounds,
+        clearFilters,
+        hasActiveFilters,
+        totalCount,
+        filteredCount,
+    } = useHomebrewFilters<HomebrewBackground>(backgrounds, {
+        searchFields: ['name', 'description'],
+    });
 
     useEffect(() => {
         loadBackgrounds();
@@ -143,25 +161,6 @@ const HomebrewBackgroundsList: React.FC = () => {
         </CardBorder>
     );
 
-    const EmptyState = () => (
-        <CardBorder className="text-center py-12 bg-indigo-950/50">
-            <Scroll className="w-24 h-24 mx-auto mb-4 text-indigo-400" />
-            <h3 className="text-xl font-bold mb-2">Nenhum antecedente homebrew criado</h3>
-            <p className="text-indigo-300 mb-6">
-                Crie antecedentes customizados para usar em suas campanhas.
-            </p>
-            <Button
-                buttonLabel={
-                    <div className="flex items-center gap-2">
-                        <Plus className="w-4 h-4" />
-                        <span>Criar Primeiro Antecedente</span>
-                    </div>
-                }
-                onClick={handleCreate}
-                classname="bg-green-600 hover:bg-green-700"
-            />
-        </CardBorder>
-    );
 
     if (loading) {
         return (
@@ -185,14 +184,28 @@ const HomebrewBackgroundsList: React.FC = () => {
                     />
                 )}
 
+                {/* Search and Filters */}
+                <HomebrewFilterBar
+                    searchTerm={searchTerm}
+                    onSearchChange={setSearchTerm}
+                    searchPlaceholder="Buscar antecedentes por nome ou descrição..."
+                    filterVisibility={filterVisibility}
+                    onVisibilityChange={setFilterVisibility}
+                    onClearFilters={clearFilters}
+                    hasActiveFilters={hasActiveFilters}
+                />
+
                 {/* Header */}
                 <div className="flex justify-between items-center mb-6">
                     <div>
                         <h3 className="text-lg text-indigo-200">
-                            {backgrounds.length === 0
+                            {filteredCount === 0
                                 ? 'Nenhum antecedente encontrado'
-                                : `${backgrounds.length} antecedente${backgrounds.length !== 1 ? 's' : ''} homebrew`
+                                : `${filteredCount} antecedente${filteredCount !== 1 ? 's' : ''} encontrado${filteredCount !== 1 ? 's' : ''}`
                             }
+                            {totalCount !== filteredCount && (
+                                <span className="text-sm text-indigo-400"> (de {totalCount} total)</span>
+                            )}
                         </h3>
                     </div>
                     <Button
@@ -208,11 +221,25 @@ const HomebrewBackgroundsList: React.FC = () => {
                 </div>
 
                 {/* Background List */}
-                {backgrounds.length === 0 ? (
-                    <EmptyState />
+                {totalCount === 0 ? (
+                    <HomebrewEmptyState
+                        icon={Scroll}
+                        title="Nenhum antecedente homebrew criado"
+                        description="Crie antecedentes customizados para usar em suas campanhas."
+                        buttonLabel="Criar Primeiro Antecedente"
+                        onButtonClick={handleCreate}
+                    />
+                ) : filteredCount === 0 ? (
+                    <HomebrewEmptyState
+                        icon={Scroll}
+                        title="Nenhum antecedente encontrado"
+                        description="Tente ajustar os filtros ou buscar por outros termos."
+                        variant="no-results"
+                        onClearFilters={clearFilters}
+                    />
                 ) : (
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {backgrounds.map((background) => (
+                        {filteredBackgrounds.map((background) => (
                             <BackgroundCard key={background.id} background={background} />
                         ))}
                     </div>

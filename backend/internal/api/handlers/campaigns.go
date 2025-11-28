@@ -119,12 +119,13 @@ func (h *CampaignHandler) CreateCampaign(w http.ResponseWriter, r *http.Request)
 	normalizedCode := utils.NormalizeInviteCode(inviteCode)
 
 	campaign := &models.Campaign{
-		Name:        req.Name,
-		Description: req.Description,
-		DMID:        userID,
-		MaxPlayers:  req.MaxPlayers,
-		Status:      "planning",
-		InviteCode:  normalizedCode,
+		Name:          req.Name,
+		Description:   req.Description,
+		DMID:          userID,
+		MaxPlayers:    req.MaxPlayers,
+		Status:        "planning",
+		AllowHomebrew: req.AllowHomebrew,
+		InviteCode:    normalizedCode,
 	}
 
 	err = h.DB.CreateCampaign(r.Context(), campaign)
@@ -168,6 +169,11 @@ func (h *CampaignHandler) UpdateCampaign(w http.ResponseWriter, r *http.Request)
 		MaxPlayers:     req.MaxPlayers,
 		CurrentSession: req.CurrentSession,
 		Status:         req.Status,
+	}
+
+	// Update AllowHomebrew if provided
+	if req.AllowHomebrew != nil {
+		campaign.AllowHomebrew = *req.AllowHomebrew
 	}
 
 	err = h.DB.UpdateCampaign(r.Context(), campaign)

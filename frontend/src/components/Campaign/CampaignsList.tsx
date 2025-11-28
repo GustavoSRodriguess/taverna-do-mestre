@@ -4,6 +4,7 @@ import { Page, Section, Button, CardBorder, Badge, Alert } from '../../ui';
 import { campaignService, Campaign } from '../../services/campaignService';
 import CreateCampaignModal from './CreateCampaignModal';
 import JoinCampaignModal from './JoinCampaignModal';
+import { Sparkles } from 'lucide-react';
 
 const CampaignsList: React.FC = () => {
     const navigate = useNavigate();
@@ -155,8 +156,16 @@ const CampaignsList: React.FC = () => {
                                             )}
                                         </div>
 
-                                        <div className="text-xs text-indigo-400">
-                                            Criada em: {new Date(campaign.created_at).toLocaleDateString('pt-BR')}
+                                        <div className="flex items-center justify-between">
+                                            <div className="text-xs text-indigo-400">
+                                                Criada em: {new Date(campaign.created_at).toLocaleDateString('pt-BR')}
+                                            </div>
+                                            {campaign.allow_homebrew && (
+                                                <div className="inline-flex items-center gap-1 bg-purple-900/30 px-2 py-0.5 rounded border border-purple-700">
+                                                    <Sparkles className="w-3 h-3 text-purple-300" />
+                                                    <span className="text-purple-300 text-xs">Homebrew</span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 

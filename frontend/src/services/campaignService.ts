@@ -10,6 +10,7 @@ export interface Campaign {
     max_players: number;
     current_session: number;
     status: StatusType;
+    allow_homebrew: boolean;
     invite_code: string;
     created_at: string;
     updated_at: string;
@@ -81,6 +82,7 @@ export interface CreateCampaignData {
     name: string;
     description: string;
     max_players: number;
+    allow_homebrew: boolean;
 }
 
 export interface UpdateCampaignData {
@@ -89,6 +91,7 @@ export interface UpdateCampaignData {
     max_players?: number;
     current_session?: number;
     status?: StatusType;
+    allow_homebrew?: boolean;
 }
 
 export interface AddCharacterData {

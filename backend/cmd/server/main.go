@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
 	"rpg-saas-backend/internal/api"
 	"rpg-saas-backend/internal/db"
@@ -20,6 +21,14 @@ import (
 )
 
 func main() {
+	tracer.Start(
+		tracer.WithService(getEnv("DD_SERVICE", "rpg-saas-backend")),
+		tracer.WithEnv(getEnv("DD_ENV", "dev")),
+		tracer.WithServiceVersion(getEnv("DD_VERSION", "local")),
+		tracer.WithRuntimeMetrics(),
+	)
+	defer tracer.Stop()
+
 	// Configurar log com timestamp
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 
@@ -39,7 +48,9 @@ func main() {
 	log.Printf("- DB_NAME: %s", getEnv("DB_NAME", "not set"))
 	log.Printf("- DB_SSLMODE: %s", getEnv("DB_SSLMODE", "disable"))
 	log.Printf("- AI_SERVICE_URL: %s", getEnv("AI_SERVICE_URL", "not set"))
-	log.Printf("- JWT_SECRET configured: %v", os.Getenv("JWT_SECRET") != "")
+	log.Printf("- DD_API_KEY configured: %v", os.Getenv("DD_API_KEY") != "")
+	log.Printf("- DD_ENV configured: %v", os.Getenv("DD_ENV") != "")
+	log.Printf("- DD_SITE configured: %v", os.Getenv("DD_SITE") != "")
 
 	// Configuração do banco de dados
 	dbConfig := db.Config{

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, CardBorder, Alert, Modal, ModalConfirmFooter } from '../../ui';
 import { campaignService, Campaign, UpdateCampaignData } from '../../services/campaignService';
+import { Sparkles } from 'lucide-react';
 
 interface CampaignSettingsProps {
     campaign: Campaign;
@@ -23,7 +24,8 @@ const CampaignSettings: React.FC<CampaignSettingsProps> = ({
         description: campaign.description,
         max_players: campaign.max_players,
         current_session: campaign.current_session,
-        status: campaign.status
+        status: campaign.status,
+        allow_homebrew: campaign.allow_homebrew
     });
 
     const handleSave = async () => {
@@ -70,7 +72,8 @@ const CampaignSettings: React.FC<CampaignSettingsProps> = ({
             description: campaign.description,
             max_players: campaign.max_players,
             current_session: campaign.current_session,
-            status: campaign.status
+            status: campaign.status,
+            allow_homebrew: campaign.allow_homebrew
         });
         setError(null);
         setSuccess(null);
@@ -177,8 +180,8 @@ const CampaignSettings: React.FC<CampaignSettingsProps> = ({
                             <select
                                 value={formData.status || 'planning'}
                                 onChange={(e) => setFormData({ ...formData, status: e.target.value as typeof formData.status })}
-                                className="w-full px-3 py-2 border border-indigo-700 rounded-md 
-                         focus:outline-none focus:ring-2 focus:ring-purple-500 
+                                className="w-full px-3 py-2 border border-indigo-700 rounded-md
+                         focus:outline-none focus:ring-2 focus:ring-purple-500
                          bg-indigo-900/50 text-white"
                                 disabled={loading}
                             >
@@ -187,6 +190,29 @@ const CampaignSettings: React.FC<CampaignSettingsProps> = ({
                                 <option value="paused">Pausada</option>
                                 <option value="completed">Concluída</option>
                             </select>
+                        </div>
+                    </div>
+
+                    <div className="mt-4">
+                        <label className="flex items-center space-x-3 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={formData.allow_homebrew ?? true}
+                                onChange={(e) => setFormData({ ...formData, allow_homebrew: e.target.checked })}
+                                className="w-5 h-5 rounded border-indigo-700 bg-indigo-900/50
+                                         text-purple-600 focus:ring-2 focus:ring-purple-500
+                                         focus:ring-offset-0 cursor-pointer"
+                                disabled={loading}
+                            />
+                            <div className="flex items-center gap-2">
+                                <Sparkles className="w-4 h-4 text-purple-400" />
+                                <span className="text-indigo-200 font-medium">
+                                    Permitir Conteúdo Homebrew
+                                </span>
+                            </div>
+                        </label>
+                        <div className="text-xs text-indigo-400 mt-2 ml-8">
+                            Permite que jogadores usem raças, classes e backgrounds personalizados
                         </div>
                     </div>
                 </div>

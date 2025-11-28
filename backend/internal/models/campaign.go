@@ -15,6 +15,7 @@ type Campaign struct {
 	MaxPlayers     int                 `json:"max_players" db:"max_players"`
 	CurrentSession int                 `json:"current_session" db:"current_session"`
 	Status         string              `json:"status" db:"status"` // planning, active, paused, completed
+	AllowHomebrew  bool                `json:"allow_homebrew" db:"allow_homebrew"`
 	InviteCode     string              `json:"invite_code" db:"invite_code"`
 	CreatedAt      time.Time           `json:"created_at" db:"created_at"`
 	UpdatedAt      time.Time           `json:"updated_at" db:"updated_at"`
@@ -74,9 +75,10 @@ type CampaignCharacter struct {
 }
 
 type CreateCampaignRequest struct {
-	Name        string `json:"name" binding:"required"`
-	Description string `json:"description"`
-	MaxPlayers  int    `json:"max_players"`
+	Name          string `json:"name" binding:"required"`
+	Description   string `json:"description"`
+	MaxPlayers    int    `json:"max_players"`
+	AllowHomebrew bool   `json:"allow_homebrew"`
 }
 
 type UpdateCampaignRequest struct {
@@ -85,6 +87,7 @@ type UpdateCampaignRequest struct {
 	MaxPlayers     int    `json:"max_players"`
 	CurrentSession int    `json:"current_session"`
 	Status         string `json:"status"`
+	AllowHomebrew  *bool  `json:"allow_homebrew"`
 }
 
 type JoinCampaignRequest struct {
@@ -147,6 +150,7 @@ type CampaignSummary struct {
 	Name           string    `json:"name" db:"name"`
 	Description    string    `json:"description" db:"description"`
 	Status         string    `json:"status" db:"status"`
+	AllowHomebrew  bool      `json:"allow_homebrew" db:"allow_homebrew"`
 	PlayerCount    int       `json:"player_count" db:"player_count"`
 	MaxPlayers     int       `json:"max_players" db:"max_players"`
 	CurrentSession int       `json:"current_session" db:"current_session"`
