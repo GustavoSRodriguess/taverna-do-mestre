@@ -42,6 +42,23 @@ services:
       - db
     command: sh -c "python -m flask run --host=0.0.0.0"
 
+  datadog:
+    image: gcr.io/datadoghq/agent:7
+    environment:
+      - DD_API_KEY=${DD_API_KEY}
+      - DD_SITE=us5.datadoghq.com
+      - DD_ENV=dev            # o mesmo que você escolher
+      - DD_APM_ENABLED=true
+      - DD_LOGS_ENABLED=true
+      - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    ports:
+      - "8126:8126"      # APM
+      - "8125:8125/udp"  # DogStatsD
   backend:
     build: 
       context: ./backend
@@ -55,11 +72,18 @@ services:
       - PYTHON_API_URL=http://python-api:5000
       - DATABASE_URL=postgresql://user:password@db:5432/rpg_saas
       - JWT_SECRET=${JWT_SECRET}
+      - DD_AGENT_HOST=datadog
+      - DD_ENV=dev
+      - DD_SERVICE=rpg-saas-backend
+      - DD_VERSION=local
+      - DD_API_KEY=${DD_API_KEY}
+      - DD_SITE=${DD_SITE}  
     volumes:
       - ./backend:/app
     depends_on:
       - db
       - python-api
+      - datadog
 # frontend:
 #   build: ./frontend
 #   container_name: rpg_saas_frontend

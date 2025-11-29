@@ -25,8 +25,8 @@ func TestJoinCampaignByCode_Succeeds(t *testing.T) {
 
 	now := time.Now()
 	campaignRow := sqlmock.NewRows([]string{
-		"id", "name", "description", "dm_id", "max_players", "current_session", "status", "invite_code", "created_at", "updated_at",
-	}).AddRow(1, "Joinable", "desc", 99, 5, 1, "planning", "ABCD1234", now, now)
+		"id", "name", "description", "dm_id", "max_players", "current_session", "status", "allow_homebrew", "invite_code", "created_at", "updated_at",
+	}).AddRow(1, "Joinable", "desc", 99, 5, 1, "planning", false, "ABCD1234", now, now)
 	mock.ExpectQuery(`FROM campaigns`).WithArgs("ABCD1234").WillReturnRows(campaignRow)
 
 	mock.ExpectQuery(`SELECT EXISTS\(SELECT 1 FROM campaign_players`).WithArgs(1, 7).
@@ -53,8 +53,8 @@ func TestJoinCampaignByCode_DMCannotJoin(t *testing.T) {
 
 	now := time.Now()
 	campaignRow := sqlmock.NewRows([]string{
-		"id", "name", "description", "dm_id", "max_players", "current_session", "status", "invite_code", "created_at", "updated_at",
-	}).AddRow(2, "Owned", "desc", 7, 5, 1, "planning", "ZZZZ1111", now, now)
+		"id", "name", "description", "dm_id", "max_players", "current_session", "status", "allow_homebrew", "invite_code", "created_at", "updated_at",
+	}).AddRow(2, "Owned", "desc", 7, 5, 1, "planning", false, "ZZZZ1111", now, now)
 	mock.ExpectQuery(`FROM campaigns`).WithArgs("ZZZZ1111").WillReturnRows(campaignRow)
 
 	mock.ExpectQuery(`SELECT EXISTS\(SELECT 1 FROM campaign_players`).WithArgs(2, 7).
@@ -199,9 +199,9 @@ func TestGetCampaigns(t *testing.T) {
 
 	now := time.Now()
 	rows := sqlmock.NewRows([]string{
-		"id", "name", "description", "status", "max_players", "current_session",
+		"id", "name", "description", "status", "allow_homebrew", "max_players", "current_session",
 		"invite_code", "created_at", "updated_at", "dm_name", "player_count",
-	}).AddRow(1, "Camp1", "desc", "active", 5, 1, "CODE123", now, now, "DM", 3)
+	}).AddRow(1, "Camp1", "desc", "active", false, 5, 1, "CODE123", now, now, "DM", 3)
 
 	mock.ExpectQuery(`FROM campaigns`).WithArgs(7, 20, 0).WillReturnRows(rows)
 
@@ -225,8 +225,8 @@ func TestGetCampaignByID(t *testing.T) {
 	now := time.Now()
 	campaignRow := sqlmock.NewRows([]string{
 		"id", "name", "description", "dm_id", "max_players", "current_session",
-		"status", "invite_code", "created_at", "updated_at",
-	}).AddRow(5, "TestCamp", "desc", 7, 5, 1, "active", "CODE", now, now)
+		"status", "allow_homebrew", "invite_code", "created_at", "updated_at",
+	}).AddRow(5, "TestCamp", "desc", 7, 5, 1, "active", false, "CODE", now, now)
 
 	playerRows := sqlmock.NewRows([]string{"id", "campaign_id", "user_id", "joined_at", "status", "username", "email"})
 	charCols := []string{
@@ -259,7 +259,7 @@ func TestCreateCampaign(t *testing.T) {
 	defer cleanup()
 
 	mock.ExpectQuery(`INSERT INTO campaigns`).
-		WithArgs("NewCamp", "desc", 7, 6, "planning", sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+		WithArgs("NewCamp", "desc", 7, 6, "planning", false, sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(10))
 
 	campaign := &models.Campaign{
@@ -287,7 +287,7 @@ func TestUpdateCampaign(t *testing.T) {
 	defer cleanup()
 
 	mock.ExpectExec(`UPDATE campaigns SET`).
-		WithArgs("Updated", "new desc", 8, 3, "active", sqlmock.AnyArg(), 15, 7).
+		WithArgs("Updated", "new desc", 8, 3, "active", false, sqlmock.AnyArg(), 15, 7).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
 	campaign := &models.Campaign{
@@ -600,3 +600,4 @@ func TestUpdateCampaignCharacterFull(t *testing.T) {
 		t.Fatalf("sql expectations not met: %v", err)
 	}
 }
+

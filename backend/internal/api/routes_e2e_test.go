@@ -234,7 +234,7 @@ func TestE2E_CampaignCreateAndList(t *testing.T) {
 	now := time.Now()
 
 	mock.ExpectQuery(`INSERT INTO campaigns`).
-		WithArgs("E2E Campaign", "desc", 42, 5, "planning", sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+		WithArgs("E2E Campaign", "desc", 42, 5, "planning", false, sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(99))
 
 	createBody := bytes.NewBufferString(`{"name":"E2E Campaign","description":"desc","max_players":5}`)
@@ -264,10 +264,10 @@ func TestE2E_CampaignCreateAndList(t *testing.T) {
 	}
 
 	campaignRows := sqlmock.NewRows([]string{
-		"id", "name", "description", "status", "max_players", "current_session",
+		"id", "name", "description", "status", "allow_homebrew", "max_players", "current_session",
 		"invite_code", "created_at", "updated_at", "dm_name", "player_count",
 	}).AddRow(
-		99, "E2E Campaign", "desc", "planning", 5, 1, "CODE1234", now, now, "Dungeon Master", 1,
+		99, "E2E Campaign", "desc", "planning", false, 5, 1, "CODE1234", now, now, "Dungeon Master", 1,
 	)
 	mock.ExpectQuery(`FROM campaigns`).WithArgs(42, 20, 0).WillReturnRows(campaignRows)
 
