@@ -49,6 +49,20 @@ describe('fetchFromAPI', () => {
     mockFetch.mockResolvedValueOnce(buildResponse(false, 500, { message: 'fail' }));
     await expect(fetchFromAPI('/error')).rejects.toThrow('fail');
   });
+
+  it('skips auth header and stringifies body, using statusText fallback on bad json', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      statusText: 'ERR',
+      json: vi.fn().mockRejectedValue(new Error('boom')),
+    } as unknown as Response);
+
+    await expect(fetchFromAPI('/fail', 'POST', { foo: 'bar' })).rejects.toThrow('Error 500: ERR');
+    const callArgs = mockFetch.mock.calls[0]?.[1] as RequestInit;
+    expect(callArgs?.headers).not.toHaveProperty('Authorization');
+    expect(callArgs?.body).toBe(JSON.stringify({ foo: 'bar' }));
+  });
 });
 
 describe('apiService helpers', () => {
@@ -91,6 +105,70 @@ describe('apiService helpers', () => {
     mockFetch.mockResolvedValueOnce(buildResponse(false, 400, { message: 'bad stuff' }));
 
     await expect(fetchFromAPI('/error')).rejects.toThrow('bad stuff');
+  });
+
+  it('getCharacters returns empty array when fetch fails', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('network down'));
+    const result = await apiService.getCharacters();
+    expect(result).toEqual([]);
+  });
+
+  it('generateLoot maps payload and response data', async () => {
+    mockFetch.mockResolvedValueOnce(
+      buildResponse(true, 200, {
+        data: {
+          level: 3,
+          total_value: 500,
+          hoards: [
+            {
+              value: 123,
+              coins: { gold: 10 },
+              valuables: [{ name: 'Gem', type: 'Gem', value: 50, rank: 'rare' }],
+              items: [{ name: 'Sword', type: 'Weapon', value: 75 }],
+            },
+          ],
+        },
+      }),
+    );
+
+    const loot = await apiService.generateLoot({ level: '3', quantity: 2, ranks: ['minor'], more_random_coins: true });
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('/treasures/generate'),
+      expect.objectContaining({ method: 'POST' }),
+    );
+    expect(loot.nivel).toBe(3);
+    expect(loot.hoards[0].items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ nome: 'Gem', raridade: 'rare' }),
+        expect.objectContaining({ nome: 'Sword', raridade: 'Comum' }),
+      ]),
+    );
+  });
+
+  it('generateNPC transforms manual attributes and abilities', async () => {
+    mockFetch.mockResolvedValueOnce(
+      buildResponse(true, 200, {
+        data: {
+          name: 'NPC',
+          race: 'Elf',
+          class: 'Rogue',
+          level: 2,
+          hp: 5,
+          ca: 13,
+          background: 'bg',
+          attributes: { strength: 12 },
+          abilities: { abilities: ['Hit'], spells: ['Fireball'] },
+          equipment: { items: ['Dagger'] },
+          description: 'desc',
+        },
+      }),
+    );
+
+    const npc = await apiService.generateNPC({ level: '2', manual: false });
+    expect(npc.Nome).toBe('NPC');
+    expect(npc.Atributos['Força']).toBe(12);
+    expect(npc.Modificadores['Força']).toBe(1);
+    expect(npc.Magias).toContain('Fireball');
   });
 
   it('transformToCharacterSheet maps attributes and modifiers', () => {
