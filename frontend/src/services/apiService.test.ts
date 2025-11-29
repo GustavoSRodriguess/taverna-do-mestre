@@ -78,6 +78,21 @@ describe('apiService helpers', () => {
     expect(result).toEqual({ generated: true });
   });
 
+  it('callGenerationEndpoint rethrows friendly error', async () => {
+    mockFetch.mockResolvedValueOnce(buildResponse(false, 500, { message: 'fail gen' }));
+
+    await expect(
+      // @ts-expect-error accessing private for test
+      apiService.callGenerationEndpoint('/npcs/generate', { foo: 'bar' })
+    ).rejects.toThrow('Erro ao gerar conteúdo');
+  });
+
+  it('fetchFromAPI uses response message when not ok', async () => {
+    mockFetch.mockResolvedValueOnce(buildResponse(false, 400, { message: 'bad stuff' }));
+
+    await expect(fetchFromAPI('/error')).rejects.toThrow('bad stuff');
+  });
+
   it('transformToCharacterSheet maps attributes and modifiers', () => {
     const input = {
       name: 'Hero',

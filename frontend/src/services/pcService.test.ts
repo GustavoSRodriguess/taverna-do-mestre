@@ -171,4 +171,52 @@ describe('pcService', () => {
       expect(pcService.formatModifier(-2)).toBe('-2');
     });
   });
+
+  describe('helpers and validation', () => {
+    it('creates default PC applying racial modifiers and class hp', () => {
+      const pc = pcService.createDefaultPC('human', 'fighter', 3);
+      expect(pc.attributes.strength).toBe(11); // +1 human
+      expect(pc.proficiency_bonus).toBe(2); // level 3 keeps base proficiency
+      expect(pc.hp).toBeGreaterThan(0);
+      expect(pc.ca).toBe(10 + pcService.calculateModifier(pc.attributes.dexterity));
+    });
+
+    it('validates pc data and returns errors', () => {
+      const errors = pcService.validatePCData({
+        name: '',
+        level: 30,
+        attributes: { strength: 30 } as any,
+        hp: -1,
+        current_hp: -5,
+        race: '',
+        class: '',
+      });
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors).toContain('Raça é obrigatória');
+      expect(errors).toContain('Classe é obrigatória');
+    });
+
+    it('applies racial modifiers for different races', () => {
+      const elf = pcService.createDefaultPC('elf', 'wizard', 1);
+      const dwarf = pcService.createDefaultPC('dwarf', 'cleric', 1);
+      const halfOrc = pcService.createDefaultPC('half-orc', 'barbarian', 1);
+
+      expect(elf.attributes.dexterity).toBeGreaterThan(10);
+      expect(dwarf.attributes.constitution).toBeGreaterThan(10);
+      expect(halfOrc.attributes.strength).toBeGreaterThan(10);
+    });
+
+    it('returns correct hit dice per class', () => {
+      expect((pcService as any).getClassHitDie('barbarian')).toBe(12);
+      expect((pcService as any).getClassHitDie('wizard')).toBe(6);
+      expect((pcService as any).getClassHitDie('fighter')).toBe(10);
+      expect((pcService as any).getClassHitDie('unknown')).toBe(8);
+    });
+
+    it('calculates skill bonus with proficiency and expertise', () => {
+      const attrs = { strength: 10, dexterity: 14, constitution: 10, intelligence: 10, wisdom: 10, charisma: 10 };
+      const bonus = pcService.calculateSkillBonus('dexterity', attrs as any, 2, true, true, 1);
+      expect(bonus).toBe(pcService.calculateModifier(14) + 2 + 2 + 1);
+    });
+  });
 });
