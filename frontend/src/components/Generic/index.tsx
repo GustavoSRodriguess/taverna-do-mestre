@@ -99,7 +99,7 @@ export const HPBar: React.FC<HPBarProps> = ({
     className = '',
     showNumbers = true
 }) => {
-    const total = current + temporary;
+    // const total = current + temporary;
     const percentage = Math.min((current / max) * 100, 100);
     const tempPercentage = temporary > 0 ? Math.min((temporary / max) * 100, 100) : 0;
 
