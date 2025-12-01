@@ -30,7 +30,7 @@ const RoomPage: React.FC = () => {
         socketConnected,
         sendChat,
         broadcastDiceRoll,
-    } = useRoom(id);
+    } = useRoom(id, user?.id);
     const [chatInput, setChatInput] = useState('');
     const boardRef = useRef<HTMLDivElement | null>(null);
     const [dragging, setDragging] = useState<string | null>(null);

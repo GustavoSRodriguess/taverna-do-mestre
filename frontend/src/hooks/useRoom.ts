@@ -6,7 +6,7 @@ const emptyScene: SceneState = {
     tokens: [],
 };
 
-export const useRoom = (roomId?: string) => {
+export const useRoom = (roomId?: string, currentUserId?: number) => {
     const [room, setRoom] = useState<Room | null>(null);
     const [sceneState, setSceneState] = useState<SceneState>(emptyScene);
     const [loading, setLoading] = useState(false);
@@ -15,6 +15,19 @@ export const useRoom = (roomId?: string) => {
     const [onlineMembers, setOnlineMembers] = useState<number[]>([]);
     const [socketConnected, setSocketConnected] = useState(false);
     const socketRef = useRef<WebSocket | null>(null);
+    const reconnectTimer = useRef<number | null>(null);
+    const seenMessageKeys = useRef<Set<string>>(new Set());
+
+    const addSeen = (key: string) => {
+        seenMessageKeys.current.add(key);
+    };
+
+    const generateLocalId = () => {
+        if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+            return crypto.randomUUID();
+        }
+        return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    };
 
     const loadRoom = useCallback(async () => {
         if (!roomId) return;
@@ -97,20 +110,39 @@ export const useRoom = (roomId?: string) => {
 
     const handleSocketMessage = useCallback(
         (raw: RoomSocketEvent) => {
+            const key =
+                raw.metadata?.local_id ||
+                `${raw.type}-${raw.sender_id || 'self'}-${raw.timestamp || ''}-${raw.message || ''}`;
+            if (seenMessageKeys.current.has(key)) {
+                return;
+            }
+
             switch (raw.type) {
+                case 'connection:ready':
+                    addSeen(key);
+                    setOnlineMembers(raw.members || []);
+                    break;
+                case 'error':
+                    addSeen(key);
+                    setError(raw.message || 'Erro no canal da sala');
+                    break;
                 case 'scene:state':
+                case 'scene:update':
+                    addSeen(key);
                     if (raw.scene_state) {
                         setSceneState(normalizeScene(raw.scene_state));
                         setRoom((prev) => (prev ? { ...prev, scene_state: raw.scene_state } : prev));
                     }
                     break;
                 case 'presence:update':
+                    addSeen(key);
                     setOnlineMembers(raw.members || []);
                     break;
                 case 'chat:message': {
+                    addSeen(key);
                     if (!raw.message) break;
                     const message: RoomChatMessage = {
-                        id: `${raw.timestamp || Date.now()}-${Math.random().toString(16).slice(2)}`,
+                        id: key,
                         room_id: raw.room_id || roomId || '',
                         user_id: raw.sender_id || 0,
                         message: raw.message,
@@ -120,12 +152,13 @@ export const useRoom = (roomId?: string) => {
                     break;
                 }
                 case 'dice:roll': {
+                    addSeen(key);
                     const dice = raw.dice || {};
                     const text = dice.label
                         ? `${dice.label}: ${dice.total ?? ''} (${dice.notation ?? ''})`
                         : `Rolagem: ${dice.total ?? ''} (${dice.notation ?? ''})`;
                     const message: RoomChatMessage = {
-                        id: `${raw.timestamp || Date.now()}-${Math.random().toString(16).slice(2)}`,
+                        id: key,
                         room_id: raw.room_id || roomId || '',
                         user_id: raw.sender_id || 0,
                         message: text.trim(),
@@ -143,6 +176,9 @@ export const useRoom = (roomId?: string) => {
 
     const connectSocket = useCallback(() => {
         if (!roomId) return;
+        if (socketRef.current && [WebSocket.OPEN, WebSocket.CONNECTING].includes(socketRef.current.readyState)) {
+            return;
+        }
         const token = localStorage.getItem('authToken');
         if (!token) return;
 
@@ -150,17 +186,35 @@ export const useRoom = (roomId?: string) => {
         const socket = new WebSocket(wsUrl);
         socketRef.current = socket;
 
+        const cleanupTimer = () => {
+            if (reconnectTimer.current) {
+                clearTimeout(reconnectTimer.current);
+                reconnectTimer.current = null;
+            }
+        };
+
+        const scheduleReconnect = (delay = 3000) => {
+            cleanupTimer();
+            reconnectTimer.current = window.setTimeout(() => {
+                connectSocket();
+            }, delay);
+        };
+
         socket.onopen = () => {
             setSocketConnected(true);
             setError(null);
+            // pequeno ping inicial para confirmar presença
+            sendSocketMessage({ type: 'presence:ping' });
         };
         socket.onclose = () => {
             setSocketConnected(false);
             socketRef.current = null;
+            scheduleReconnect(4000);
         };
         socket.onerror = () => {
             setSocketConnected(false);
             setError('Conexão em tempo real indisponível');
+            scheduleReconnect(8000);
         };
         socket.onmessage = (event) => {
             try {
@@ -170,13 +224,17 @@ export const useRoom = (roomId?: string) => {
                 console.error('Failed to parse room socket message', err);
             }
         };
-    }, [roomId, handleSocketMessage]);
+    }, [roomId, handleSocketMessage, sendSocketMessage]);
 
     useEffect(() => {
         connectSocket();
         return () => {
             socketRef.current?.close();
             socketRef.current = null;
+            if (reconnectTimer.current) {
+                clearTimeout(reconnectTimer.current);
+                reconnectTimer.current = null;
+            }
         };
     }, [connectSocket]);
 
@@ -184,31 +242,74 @@ export const useRoom = (roomId?: string) => {
         loadRoom();
     }, [loadRoom]);
 
+    // Heartbeat para manter e monitorar socket
+    useEffect(() => {
+        if (!socketConnected) return;
+        const interval = window.setInterval(() => {
+            sendSocketMessage({ type: 'presence:ping' });
+        }, 15000);
+        return () => clearInterval(interval);
+    }, [socketConnected, sendSocketMessage]);
+
+    // Fallback de polling quando socket estiver offline
+    useEffect(() => {
+        if (socketConnected) return;
+        const interval = window.setInterval(() => {
+            loadRoom();
+        }, 5000);
+        return () => clearInterval(interval);
+    }, [socketConnected, loadRoom]);
+
     const sendChat = useCallback(
         (message: string) => {
             if (!message.trim()) return;
-            const sent = sendSocketMessage({ type: 'chat:message', message: message.trim() });
+            const localId = generateLocalId();
+            const payload: RoomSocketEvent = {
+                type: 'chat:message',
+                message: message.trim(),
+                metadata: { local_id: localId },
+            };
+
+            const sent = sendSocketMessage(payload);
             if (!sent) {
-                setChatMessages((prev) => [
-                    ...prev,
-                    {
-                        id: `${Date.now()}`,
-                        room_id: roomId || '',
-                        user_id: 0,
-                        message,
-                        timestamp: Date.now(),
-                    },
-                ]);
+                const messageObj: RoomChatMessage = {
+                    id: localId,
+                    room_id: roomId || '',
+                    user_id: currentUserId || 0,
+                    message: message.trim(),
+                    timestamp: Date.now(),
+                };
+                addSeen(localId);
+                setChatMessages((prev) => [...prev.slice(-49), messageObj]);
             }
         },
-        [roomId, sendSocketMessage],
+        [roomId, currentUserId, sendSocketMessage],
     );
 
     const broadcastDiceRoll = useCallback(
         (dice: any) => {
-            sendSocketMessage({ type: 'dice:roll', dice });
+            const localId = generateLocalId();
+            const payload: RoomSocketEvent = {
+                type: 'dice:roll',
+                dice,
+                metadata: { local_id: localId },
+            };
+            const text = dice.label
+                ? `${dice.label}: ${dice.total ?? ''} (${dice.notation ?? ''})`
+                : `Rolagem: ${dice.total ?? ''} (${dice.notation ?? ''})`;
+            const message: RoomChatMessage = {
+                id: localId,
+                room_id: roomId || '',
+                user_id: currentUserId || 0,
+                message: text.trim(),
+                timestamp: dice.timestamp || Date.now(),
+            };
+            // otimista: mostra para quem rolou imediatamente
+            addSeen(localId);
+            setChatMessages((prev) => [...prev.slice(-49), message]);
+            sendSocketMessage(payload);
         },
-        [sendSocketMessage],
+        [roomId, currentUserId, sendSocketMessage],
     );
 
     return {
@@ -258,5 +359,5 @@ const buildWsUrl = (roomId: string, token: string) => {
             ? apiBase
             : `${window.location.origin}${apiBase}`;
     const wsBase = base.replace(/^http/, 'ws');
-    return `${wsBase}/rooms/${roomId}/ws?token=${token}`;
+    return `${wsBase}/rooms/${roomId}/ws?token=${encodeURIComponent(token)}`;
 };
