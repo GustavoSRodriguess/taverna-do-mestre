@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Page, Section, Button, CardBorder, Alert, Tabs, Modal } from '../../ui';
 import { campaignService, Campaign, CampaignCharacter } from '../../services/campaignService';
+import { roomService } from '../../services/roomService';
 import { useAuth } from '../../context/AuthContext';
 import { StatusBadge } from '../Generic';
 import { formatDate } from '../../utils/gameUtils';
@@ -22,6 +23,7 @@ const CampaignDetails: React.FC = () => {
     const [activeTab, setActiveTab] = useState('overview');
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [inviteCode, setInviteCode] = useState('');
+    const [roomLoading, setRoomLoading] = useState(false);
 
     const campaignId = parseInt(id || '0');
     const isDM = campaign && user && campaign.dm_id === user.id;
@@ -86,6 +88,25 @@ const CampaignDetails: React.FC = () => {
             alert('Código copiado para a área de transferência!');
         } catch (err) {
             console.error('Erro ao copiar:', err);
+        }
+    };
+
+    const handleOpenRoom = async () => {
+        if (!campaign) return;
+        try {
+            setRoomLoading(true);
+            setError(null);
+            const room = await roomService.createRoom({
+                name: `Sala - ${campaign.name}`,
+                campaign_id: campaignId,
+                metadata: { source: 'campaign_page' },
+            });
+            navigate(`/rooms/${room.id}`);
+        } catch (err) {
+            console.error('Erro ao abrir sala:', err);
+            setError('Nao foi possivel abrir/criar a sala de jogo');
+        } finally {
+            setRoomLoading(false);
         }
     };
 

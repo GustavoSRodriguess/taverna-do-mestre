@@ -66,6 +66,7 @@ func SetupRoutes(dbClient *db.PostgresDB, pythonClient *python.Client) *chi.Mux 
 	dndHandler := handlers.NewDnDHandler(dbClient)
 	homebrewHandler := handlers.NewHomebrewHandler(dbClient)
 	diceHandler := handlers.NewDiceHandler()
+	roomHandler := handlers.NewRoomHandler(dbClient)
 
 	router.Route("/api/npcs", func(r chi.Router) {
 		r.Use(customMiddleware.AuthMiddleware)
@@ -107,6 +108,14 @@ func SetupRoutes(dbClient *db.PostgresDB, pythonClient *python.Client) *chi.Mux 
 		r.Get("/{id}", itemHandler.GetTreasureByID)
 		r.Delete("/{id}", itemHandler.DeleteTreasure)
 		r.Post("/generate", itemHandler.GenerateRandomTreasure)
+	})
+
+	router.Route("/api/rooms", func(r chi.Router) {
+		r.Use(customMiddleware.AuthMiddleware)
+		r.Post("/", roomHandler.CreateRoom)
+		r.Get("/{id}", roomHandler.GetRoom)
+		r.Post("/{id}/join", roomHandler.JoinRoom)
+		r.Post("/{id}/scene", roomHandler.UpdateScene)
 	})
 
 	router.Route("/api/users", func(r chi.Router) {
