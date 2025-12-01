@@ -352,6 +352,15 @@ func (h *RoomHandler) RoomWebsocket(w http.ResponseWriter, r *http.Request) {
 
 	// Envia estado inicial da cena
 	_ = conn.WriteJSON(RoomSocketMessage{
+		Type:      "connection:ready",
+		RoomID:    roomID,
+		SenderID:  userID,
+		Members:   h.Hub.Members(roomID),
+		Timestamp: time.Now().UnixMilli(),
+	})
+
+	// Envia estado inicial da cena
+	_ = conn.WriteJSON(RoomSocketMessage{
 		Type:       "scene:state",
 		RoomID:     roomID,
 		SceneState: room.SceneState,
