@@ -386,6 +386,12 @@ func (h *RoomHandler) RoomWebsocket(w http.ResponseWriter, r *http.Request) {
 		msg.RoomID = roomID
 		msg.SenderID = userID
 		msg.Timestamp = time.Now().UnixMilli()
+		if msg.Metadata == nil {
+			msg.Metadata = map[string]any{}
+		}
+		if _, ok := msg.Metadata["local_id"]; !ok {
+			msg.Metadata["local_id"] = fmt.Sprintf("%s-%d", msg.Type, msg.Timestamp)
+		}
 
 		switch msg.Type {
 		case "chat:message":
