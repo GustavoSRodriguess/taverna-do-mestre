@@ -14,6 +14,14 @@ export interface SceneState {
     [key: string]: any;
 }
 
+export interface RoomChatMessage {
+    id: string;
+    room_id: string;
+    user_id: number;
+    message: string;
+    timestamp: number;
+}
+
 export interface RoomMember {
     room_id: string;
     user_id: number;
@@ -31,4 +39,16 @@ export interface Room {
     updated_at: string;
     members?: RoomMember[];
     metadata?: Record<string, any>;
+}
+
+export interface RoomSocketEvent {
+    type: string;
+    room_id?: string;
+    sender_id?: number;
+    message?: string;
+    scene_state?: SceneState;
+    dice?: any;
+    metadata?: Record<string, any>;
+    members?: number[];
+    timestamp?: number;
 }

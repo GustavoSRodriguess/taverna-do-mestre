@@ -68,6 +68,9 @@ func SetupRoutes(dbClient *db.PostgresDB, pythonClient *python.Client) *chi.Mux 
 	diceHandler := handlers.NewDiceHandler()
 	roomHandler := handlers.NewRoomHandler(dbClient)
 
+	// Websocket para salas (usa token via query)
+	router.Get("/api/rooms/{id}/ws", roomHandler.RoomWebsocket)
+
 	router.Route("/api/npcs", func(r chi.Router) {
 		r.Use(customMiddleware.AuthMiddleware)
 		r.Get("/", npcHandler.GetNPCs)
@@ -140,6 +143,7 @@ func SetupRoutes(dbClient *db.PostgresDB, pythonClient *python.Client) *chi.Mux 
 		r.Get("/{id}", campaignHandler.GetCampaignByID)
 		r.Put("/{id}", campaignHandler.UpdateCampaign)
 		r.Delete("/{id}", campaignHandler.DeleteCampaign)
+		r.Get("/{id}/room", roomHandler.GetCampaignRoom)
 
 		r.Get("/{id}/invite-code", campaignHandler.GetInviteCode)
 		r.Post("/{id}/regenerate-code", campaignHandler.RegenerateInviteCode)

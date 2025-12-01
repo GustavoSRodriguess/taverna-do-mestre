@@ -59,6 +59,25 @@ func (p *PostgresDB) GetRoomByID(ctx context.Context, roomID string) (*models.Ro
 	return &room, nil
 }
 
+func (p *PostgresDB) GetRoomByCampaignID(ctx context.Context, campaignID int) (*models.Room, error) {
+	query := `
+		SELECT id, name, owner_id, campaign_id, scene_state, metadata, created_at, updated_at
+		FROM rooms
+		WHERE campaign_id = $1
+		ORDER BY created_at DESC
+		LIMIT 1
+	`
+
+	var room models.Room
+	if err := p.DB.GetContext(ctx, &room, query, campaignID); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to fetch room for campaign %d: %w", campaignID, err)
+	}
+	return &room, nil
+}
+
 func (p *PostgresDB) AddRoomMember(ctx context.Context, roomID string, userID int, role string) (models.RoomMember, error) {
 	query := `
 		INSERT INTO room_members (room_id, user_id, role, joined_at)

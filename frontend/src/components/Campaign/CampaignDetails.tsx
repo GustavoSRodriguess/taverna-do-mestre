@@ -10,6 +10,7 @@ import { formatDate } from '../../utils/gameUtils';
 import CampaignCharacters from './CampaignCharacters';
 import CampaignSettings from './CampaignSettings';
 import { ClipboardList, Users, Settings, Sparkles } from 'lucide-react';
+import { Room } from '../../types/room';
 
 const CampaignDetails: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -24,13 +25,16 @@ const CampaignDetails: React.FC = () => {
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [inviteCode, setInviteCode] = useState('');
     const [roomLoading, setRoomLoading] = useState(false);
+    const [campaignRoom, setCampaignRoom] = useState<Room | null>(null);
 
     const campaignId = parseInt(id || '0');
     const isDM = campaign && user && campaign.dm_id === user.id;
 
     useEffect(() => {
         if (campaignId) {
+            setCampaignRoom(null);
             loadData();
+            loadCampaignRoom();
         }
     }, [campaignId]);
 
@@ -91,8 +95,23 @@ const CampaignDetails: React.FC = () => {
         }
     };
 
+    const loadCampaignRoom = async () => {
+        try {
+            const existing = await roomService.getCampaignRoom(campaignId);
+            if (existing) {
+                setCampaignRoom(existing);
+            }
+        } catch (err) {
+            console.error('Erro ao buscar sala da campanha:', err);
+        }
+    };
+
     const handleOpenRoom = async () => {
         if (!campaign) return;
+        if (campaignRoom) {
+            navigate(`/rooms/${campaignRoom.id}`);
+            return;
+        }
         try {
             setRoomLoading(true);
             setError(null);
@@ -101,10 +120,11 @@ const CampaignDetails: React.FC = () => {
                 campaign_id: campaignId,
                 metadata: { source: 'campaign_page' },
             });
+            setCampaignRoom(room);
             navigate(`/rooms/${room.id}`);
         } catch (err) {
             console.error('Erro ao abrir sala:', err);
-            setError('Nao foi possivel abrir/criar a sala de jogo');
+            setError('Não foi possível abrir/criar a sala de jogo');
         } finally {
             setRoomLoading(false);
         }
@@ -197,6 +217,17 @@ const CampaignDetails: React.FC = () => {
                                         <span className="text-purple-300 text-sm">Homebrew Permitido</span>
                                     </div>
                                 )}
+                                {campaignRoom && (
+                                    <div className="mt-3 text-sm text-indigo-200">
+                                        Sala ativa:{" "}
+                                        <button
+                                            className="underline hover:text-white"
+                                            onClick={() => navigate(`/rooms/${campaignRoom.id}`)}
+                                        >
+                                            /rooms/{campaignRoom.id}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="flex gap-2">
@@ -204,6 +235,18 @@ const CampaignDetails: React.FC = () => {
                                     buttonLabel="Voltar"
                                     onClick={() => navigate('/campaigns')}
                                     classname="bg-gray-600 hover:bg-gray-700"
+                                />
+                                <Button
+                                    buttonLabel={
+                                        roomLoading
+                                            ? 'Abrindo...'
+                                            : campaignRoom
+                                                ? 'Ir para sala'
+                                                : 'Abrir sala de jogo'
+                                    }
+                                    onClick={handleOpenRoom}
+                                    classname="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                                    disabled={roomLoading}
                                 />
                                 {isDM && (
                                     <Button

@@ -15,6 +15,18 @@ class RoomService {
         return fetchFromAPI('/rooms', 'POST', payload);
     }
 
+    async getCampaignRoom(campaignId: number): Promise<Room | null> {
+        try {
+            return await fetchFromAPI(`/campaigns/${campaignId}/room`);
+        } catch (err: any) {
+            const message = (err as Error)?.message || '';
+            if (message.includes('404')) {
+                return null;
+            }
+            throw err;
+        }
+    }
+
     async getRoom(id: string): Promise<Room> {
         return fetchFromAPI(`/rooms/${id}`);
     }
