@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Card, Footer, Page, Section } from '../../ui';
+import { Castle, FlaskConical, Wand2 } from 'lucide-react';
+import { Card, Footer, Page, Section } from '../../ui';
 import { useAuth } from '../../context/AuthContext';
 import TestimonialCard from './TestimonialCard';
 import PricingSection from './PricingSection';
@@ -19,7 +20,7 @@ const HomePage: React.FC = () => {
             <Section title="O Que Você Pode Fazer?" className="bg-gray-900">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <Card
-                        icon="🏰"
+                        icon={<Castle className="h-7 w-7" />}
                         title="Gerenciar Campanhas"
                         description="Crie e gerencie suas campanhas de RPG. Convide jogadores, organize personagens e acompanhe o progresso."
                         button={{
@@ -29,7 +30,7 @@ const HomePage: React.FC = () => {
                         }}
                     />
                     <Card
-                        icon="🧙"
+                        icon={<Wand2 className="h-7 w-7" />}
                         title="Criação de PCs e NPCs"
                         description="Gere personagens e NPCs únicos com atributos e histórias detalhadas."
                         button={{
@@ -39,9 +40,14 @@ const HomePage: React.FC = () => {
                         }}
                     />
                     <Card
-                        icon="🎲"
-                        title="Sistema Completo"
-                        description="Tudo que você precisa para suas sessões: personagens, encontros, tesouros e muito mais."
+                        icon={<FlaskConical className="h-7 w-7" />}
+                        title="Homebrew"
+                        description="Crie e gerencie conteúdo exclusivo para suas mesas: classes, itens, talentos e muito mais."
+                        button={{
+                            label: isAuthenticated ? 'Abrir Homebrew' : 'Fazer login',
+                            onClick: () => navigate(isAuthenticated ? '/homebrew' : '/login'),
+                            className: 'mt-4'
+                        }}
                     />
                 </div>
             </Section>
