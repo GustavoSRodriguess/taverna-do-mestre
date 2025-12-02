@@ -2,8 +2,8 @@
 
 Um assistente digital completo para mestres de RPG criarem, organizarem e gerenciarem suas campanhas de forma eficiente e criativa.
 Professores, para testar o projeto em produção, é necessário criar um usuário, o nome e email não importa, e a senha precisa ter no mínimo 6 caaracteres e 1 numero, por exemplo:
-teste@gmail.com
-teste1
+- Login: teste@gmail.com
+- Senha: teste1
 
 ## 🎲 Sobre o Projeto
 
