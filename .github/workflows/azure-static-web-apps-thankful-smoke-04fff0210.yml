@@ -20,17 +20,6 @@ jobs:
           submodules: true
           lfs: false
 
-      - name: Install dependencies
-        run: npm install
-        working-directory: ./frontend
-
-      - name: Clean and build frontend
-        run: |
-          rm -rf dist
-          npm run build
-          cp staticwebapp.config.json dist/staticwebapp.config.json
-        working-directory: ./frontend
-
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
@@ -38,8 +27,8 @@ jobs:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_THANKFUL_SMOKE_04FFF0210 }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
-          app_location: "./frontend/dist"
-          skip_app_build: true
+          app_location: "frontend"
+          output_location: "dist"
         env:
           VITE_API_URL: "https://torredomago-go.happybush-d3902cd7.brazilsouth.azurecontainerapps.io/api"
 
