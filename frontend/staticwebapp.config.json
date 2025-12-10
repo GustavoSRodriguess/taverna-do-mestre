@@ -3,25 +3,22 @@
         "rewrite": "/index.html",
         "exclude": [
             "/assets/*",
-            "/favicon.ico",
-            "/*.css",
             "/*.js",
+            "/*.css",
             "/*.png",
             "/*.jpg",
             "/*.jpeg",
-            "/*.gif",
             "/*.svg",
-            "/*.webp",
             "/*.ico",
             "/*.woff",
             "/*.woff2",
             "/*.ttf",
-            "/*.json"
+            "/*.gif",
+            "/*.webp",
+            "/*.json",
+            "/*.webmanifest",
+            "/favicon.ico",
+            "/robots.txt"
         ]
-    },
-    "responseOverrides": {
-        "404": {
-            "rewrite": "/index.html"
-        }
     }
 }
