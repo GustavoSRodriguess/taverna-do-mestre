@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { X, Users, MessageSquare, Image as ImageIcon, Plus, Swords, Dices } from 'lucide-react';
 import { Badge, Button, CardBorder } from '../../ui';
 import { RoomChatMessage, SceneToken, Room, SceneState } from '../../types/room';
 import { useCharacters } from '../../context/CharactersContext';
+import { campaignService, CampaignCharacter } from '../../services/campaignService';
 
 interface RoomSidebarProps {
     isOpen: boolean;
@@ -47,6 +48,35 @@ export const RoomSidebar: React.FC<RoomSidebarProps> = ({
     const memberCount = room?.members?.length || 0;
     const { characters, loading: loadingCharacters } = useCharacters();
     const chatContainerRef = React.useRef<HTMLDivElement>(null);
+    const [campaignCharacters, setCampaignCharacters] = useState<CampaignCharacter[]>([]);
+    const [loadingCampaignChars, setLoadingCampaignChars] = useState(false);
+    const campaignId = room?.campaign_id;
+
+    useEffect(() => {
+        const loadCampaignChars = async () => {
+            if (!campaignId) {
+                setCampaignCharacters([]);
+                return;
+            }
+            try {
+                setLoadingCampaignChars(true);
+                const response = await campaignService.getCampaignCharacters(campaignId);
+                setCampaignCharacters(response.characters || []);
+            } catch (err) {
+                setCampaignCharacters([]);
+            } finally {
+                setLoadingCampaignChars(false);
+            }
+        };
+        loadCampaignChars();
+    }, [campaignId]);
+
+    const availableCharacters = useMemo(() => {
+        if (campaignId) {
+            return campaignCharacters;
+        }
+        return characters;
+    }, [campaignCharacters, characters, campaignId]);
 
     // Scroll automático do chat quando novas mensagens chegam
     useEffect(() => {
@@ -212,7 +242,7 @@ export const RoomSidebar: React.FC<RoomSidebarProps> = ({
                             {sceneState.tokens?.map((token) => {
                                 // Memoizar busca do personagem para evitar múltiplas buscas no render
                                 const linkedCharacter = token.character_id
-                                    ? characters.find((c) => c.id === token.character_id)
+                                    ? availableCharacters.find((c) => c.id === token.character_id)
                                     : null;
 
                                 return (
@@ -246,17 +276,17 @@ export const RoomSidebar: React.FC<RoomSidebarProps> = ({
                                                 value={token.character_id || ''}
                                                 onChange={(e) => {
                                                     const charId = e.target.value ? parseInt(e.target.value) : undefined;
-                                                    const selectedChar = characters.find((c) => c.id === charId);
+                                                    const selectedChar = availableCharacters.find((c) => c.id === charId);
                                                     onTokenChange(token.id, {
                                                         character_id: charId,
                                                         name: selectedChar ? selectedChar.name : token.name
                                                     });
                                                 }}
                                                 className="px-2 py-1 bg-slate-800 text-white rounded border border-slate-700 text-sm"
-                                                disabled={loadingCharacters}
+                                                disabled={loadingCharacters || loadingCampaignChars}
                                             >
                                                 <option value="">Nenhum personagem</option>
-                                                {characters.map((char) => (
+                                                {availableCharacters.map((char) => (
                                                     <option key={char.id} value={char.id}>
                                                         {char.name} - Nv{char.level} {char.class}
                                                     </option>
@@ -265,6 +295,11 @@ export const RoomSidebar: React.FC<RoomSidebarProps> = ({
                                             {linkedCharacter && (
                                                 <div className="text-xs text-emerald-400 mt-1">
                                                     HP: {linkedCharacter.current_hp || linkedCharacter.hp} / {linkedCharacter.hp}
+                                                </div>
+                                            )}
+                                            {campaignId && !linkedCharacter && token.character_id && (
+                                                <div className="text-xs text-amber-400 mt-1">
+                                                    Personagem fora da campanha
                                                 </div>
                                             )}
                                         </div>

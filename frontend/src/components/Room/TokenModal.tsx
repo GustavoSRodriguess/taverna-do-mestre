@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { X, Heart, Shield, Zap, Minus, Plus, Dice6, AlertCircle } from 'lucide-react';
+import { X, Heart, Shield, Zap, Minus, Plus, Dice6, AlertCircle, Edit, Save, PlusCircle } from 'lucide-react';
 import { SceneToken } from '../../types/room';
-import { FullCharacter } from '../../types/game';
+import { FullCharacter, GameAttack } from '../../types/game';
 import { Button } from '../../ui';
 import { DND_CONDITIONS, getConditionById } from '../../constants/conditions';
 import { calculateHPPercentage, getHPTextColor } from '../../utils/tokenUtils';
 import { calculateModifier, rollInitiative } from '../../utils/combatUtils';
+import { useNavigate } from 'react-router-dom';
 
 interface TokenModalProps {
     token: SceneToken;
@@ -14,6 +15,7 @@ interface TokenModalProps {
     onClose: () => void;
     onUpdateToken: (updates: Partial<SceneToken>) => void;
     onUpdateCharacter?: (characterId: number, updates: Partial<FullCharacter>) => void;
+    campaignId?: number;
 }
 
 export const TokenModal: React.FC<TokenModalProps> = ({
@@ -23,18 +25,22 @@ export const TokenModal: React.FC<TokenModalProps> = ({
     onClose,
     onUpdateToken,
     onUpdateCharacter,
+    campaignId,
 }) => {
     const [hpAdjust, setHpAdjust] = useState(0);
     const [initiativeValue, setInitiativeValue] = useState(token.initiative || 0);
     const [tempHpValue, setTempHpValue] = useState(token.temp_hp || 0);
     const [maxHpValue, setMaxHpValue] = useState(token.max_hp || character?.hp || 0);
     const [showConditions, setShowConditions] = useState(false);
+    const [attacksDraft, setAttacksDraft] = useState<GameAttack[]>(character?.attacks || []);
+    const navigate = useNavigate();
 
     useEffect(() => {
         setInitiativeValue(token.initiative || 0);
         setTempHpValue(token.temp_hp || 0);
         setMaxHpValue(token.max_hp || character?.hp || 0);
-    }, [token.initiative, token.temp_hp, token.max_hp, character?.hp]);
+        setAttacksDraft(character?.attacks || []);
+    }, [token.initiative, token.temp_hp, token.max_hp, character?.hp, character]);
 
     if (!isOpen) return null;
 
@@ -128,6 +134,18 @@ export const TokenModal: React.FC<TokenModalProps> = ({
         onUpdateToken({ conditions: newConditions });
     };
 
+    const handleSaveAttacks = () => {
+        if (!character || !onUpdateCharacter) return;
+        onUpdateCharacter(character.id!, { attacks: attacksDraft });
+    };
+
+    const handleAddAttack = () => {
+        setAttacksDraft((prev) => [
+            ...prev,
+            { name: 'Novo ataque', bonus: 0, damage: '1d6', type: 'custom', range: '' },
+        ]);
+    };
+
 
     return (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
@@ -171,6 +189,25 @@ export const TokenModal: React.FC<TokenModalProps> = ({
                                     <Zap className="w-4 h-4 text-yellow-400" />
                                     <span>Prof: +{character.proficiency_bonus}</span>
                                 </div>
+                            </div>
+                            <div className="flex gap-2">
+                                <Button
+                                    buttonLabel={
+                                        <div className="flex items-center gap-2">
+                                            <Edit className="w-4 h-4" />
+                                            <span>Editar personagem</span>
+                                        </div>
+                                    }
+                                    classname="bg-purple-700 hover:bg-purple-600 text-xs"
+                                    onClick={() => {
+                                        if (!character.id) return;
+                                        if (campaignId) {
+                                            navigate(`/campaign-character-editor/${campaignId}/${character.id}`);
+                                        } else {
+                                            navigate(`/pc-editor/${character.id}`);
+                                        }
+                                    }}
+                                />
                             </div>
                         </div>
                     )}
@@ -430,6 +467,85 @@ export const TokenModal: React.FC<TokenModalProps> = ({
                             </div>
                         )}
                     </div>
+
+                    {/* Ataques (edição rápida) */}
+                    {character && (
+                        <div className="bg-slate-800/50 rounded p-3 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm font-semibold text-white flex items-center gap-2">
+                                    <Dice6 className="w-4 h-4 text-purple-300" />
+                                    Ataques
+                                </span>
+                                <button
+                                    onClick={handleAddAttack}
+                                    className="text-xs text-purple-300 hover:text-purple-100 flex items-center gap-1"
+                                >
+                                    <PlusCircle className="w-4 h-4" /> Novo
+                                </button>
+                            </div>
+                            <div className="space-y-2">
+                                {attacksDraft.map((atk, idx) => (
+                                    <div
+                                        key={`${atk.name}-${idx}`}
+                                        className="grid grid-cols-3 gap-2 bg-slate-900/60 p-2 rounded border border-slate-700"
+                                    >
+                                        <input
+                                            className="col-span-1 px-2 py-1 bg-slate-800 text-white rounded border border-slate-700 text-sm"
+                                            value={atk.name}
+                                            onChange={(e) =>
+                                                setAttacksDraft((prev) => {
+                                                    const next = [...prev];
+                                                    next[idx] = { ...next[idx], name: e.target.value };
+                                                    return next;
+                                                })
+                                            }
+                                            placeholder="Nome"
+                                        />
+                                        <input
+                                            type="number"
+                                            className="px-2 py-1 bg-slate-800 text-white rounded border border-slate-700 text-sm"
+                                            value={atk.bonus}
+                                            onChange={(e) =>
+                                                setAttacksDraft((prev) => {
+                                                    const next = [...prev];
+                                                    next[idx] = { ...next[idx], bonus: parseInt(e.target.value) || 0 };
+                                                    return next;
+                                                })
+                                            }
+                                            placeholder="Bônus"
+                                        />
+                                        <input
+                                            className="px-2 py-1 bg-slate-800 text-white rounded border border-slate-700 text-sm"
+                                            value={atk.damage}
+                                            onChange={(e) =>
+                                                setAttacksDraft((prev) => {
+                                                    const next = [...prev];
+                                                    next[idx] = { ...next[idx], damage: e.target.value };
+                                                    return next;
+                                                })
+                                            }
+                                            placeholder="Dano (ex: 1d8+3)"
+                                        />
+                                    </div>
+                                ))}
+                                {!attacksDraft.length && (
+                                    <div className="text-xs text-slate-500">Nenhum ataque cadastrado.</div>
+                                )}
+                            </div>
+                            <Button
+                                buttonLabel={
+                                    <div className="flex items-center gap-2">
+                                        <Save className="w-4 h-4" />
+                                        <span>Salvar ataques</span>
+                                    </div>
+                                }
+                                classname="bg-emerald-700 hover:bg-emerald-600 text-sm"
+                                onClick={handleSaveAttacks}
+                                disabled={!onUpdateCharacter}
+                            />
+                        </div>
+                    )}
+
                 </div>
 
                 {/* Footer */}

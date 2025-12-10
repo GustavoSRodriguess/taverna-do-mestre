@@ -12,6 +12,7 @@ import { TokenModal } from './TokenModal';
 import { InitiativeBar } from './InitiativeBar';
 import { FullCharacter } from '../../types/game';
 import { pcService } from '../../services/pcService';
+import { campaignService } from '../../services/campaignService';
 import {
     clampPercent,
     snapToGrid,
@@ -56,6 +57,10 @@ const RoomPage: React.FC = () => {
     const sceneRef = useRef(sceneState);
     const dragStartPos = useRef<{ x: number; y: number } | null>(null);
     const hasDragged = useRef(false);
+    const isGM = useMemo(
+        () => room?.members?.some((member) => member.user_id === user?.id && member.role === 'gm') ?? false,
+        [room?.members, user?.id],
+    );
 
     const isMember = useMemo(
         () => !!room?.members?.some((member) => member.user_id === user?.id),
@@ -172,8 +177,10 @@ const RoomPage: React.FC = () => {
 
         if (token?.character_id) {
             try {
-                const char = await pcService.getPC(token.character_id);
-                setSelectedCharacter(char);
+                const char = room?.campaign_id
+                    ? await campaignService.getCampaignCharacter(room.campaign_id, token.character_id)
+                    : await pcService.getPC(token.character_id);
+                setSelectedCharacter(char as FullCharacter);
             } catch (error) {
                 setSelectedCharacter(null);
             }
@@ -184,10 +191,15 @@ const RoomPage: React.FC = () => {
 
     const handleUpdateCharacter = async (characterId: number, updates: Partial<FullCharacter>) => {
         try {
-            await pcService.updatePC(characterId, updates);
-            // Recarregar personagem atualizado
-            const updatedChar = await pcService.getPC(characterId);
-            setSelectedCharacter(updatedChar);
+            if (room?.campaign_id) {
+                await campaignService.updateCampaignCharacterFull(room.campaign_id, characterId, updates);
+                const updatedChar = await campaignService.getCampaignCharacter(room.campaign_id, characterId);
+                setSelectedCharacter(updatedChar as FullCharacter);
+            } else {
+                await pcService.updatePC(characterId, updates);
+                const updatedChar = await pcService.getPC(characterId);
+                setSelectedCharacter(updatedChar);
+            }
         } catch (error) {
             // Erro ao atualizar personagem
         }
@@ -320,6 +332,9 @@ const RoomPage: React.FC = () => {
                                 onMouseDown={handleTokenMouseDown(token.id)}
                                 onClick={() => handleTokenDoubleClick(token.id)}
                                 isCurrentTurn={token.id === currentTurnTokenId}
+                                currentUserId={user?.id}
+                                isGM={isGM}
+                                campaignId={room?.campaign_id}
                             />
                         ))}
                     </div>
@@ -363,6 +378,7 @@ const RoomPage: React.FC = () => {
                     token={sceneState.tokens?.find((t) => t.id === selectedTokenId)!}
                     character={selectedCharacter}
                     isOpen={!!selectedTokenId}
+                    campaignId={room?.campaign_id}
                     onClose={() => {
                         setSelectedTokenId(null);
                         setSelectedCharacter(null);
