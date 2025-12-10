@@ -221,18 +221,8 @@ const PCList: React.FC = () => {
                             <Button
                                 buttonLabel={
                                     <div className="flex items-center gap-1">
-                                        <Dice1 className="w-4 h-4" />
-                                        <span>Gerar Personagem</span>
-                                    </div>
-                                }
-                                onClick={() => navigate('/generator')}
-                                classname="bg-green-600 hover:bg-green-700"
-                            />
-                            <Button
-                                buttonLabel={
-                                    <div className="flex items-center gap-1">
                                         <PenTool className="w-4 h-4" />
-                                        <span>Criar Manualmente</span>
+                                        <span>Criar personagem</span>
                                     </div>
                                 }
                                 onClick={() => navigate('/pc-editor/new')}

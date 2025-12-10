@@ -3,6 +3,7 @@ import React from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { DiceProvider } from './context/DiceContext';
+import { CharactersProvider } from './context/CharactersContext';
 
 import HomePage from './components/Home';
 import Login from './components/Login/Login';
@@ -23,9 +24,10 @@ const App: React.FC = () => {
   return (
     <AuthProvider>
       <DiceProvider>
-        <BrowserRouter>
-          <DiceRoller />
-          <Routes>
+        <CharactersProvider>
+          <BrowserRouter>
+            <DiceRoller />
+            <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<Login />} />
 
@@ -57,6 +59,7 @@ const App: React.FC = () => {
             } />
           </Routes>
         </BrowserRouter>
+        </CharactersProvider>
       </DiceProvider>
     </AuthProvider>
   );

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Dices, X, Minimize2, Maximize2, Trash2, AlertCircle, Sparkles, Skull } from 'lucide-react';
-import { diceService } from '../../services/diceService';
 import { DiceRoll, DiceType } from '../../types/dice';
+import { useDice } from '../../context/DiceContext';
 import { D4Icon, D6Icon, D8Icon, D10Icon, D12Icon, D20Icon, D100Icon } from './DiceIcons';
 
 const COMMON_DICE: { sides: DiceType; color: string; icon: React.ReactNode }[] = [
@@ -23,6 +23,7 @@ export const DiceRoller: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [rollingDice, setRollingDice] = useState(false);
     const [advantageMode, setAdvantageMode] = useState<'normal' | 'advantage' | 'disadvantage'>('normal');
+    const { roll } = useDice();
 
     const rollDice = async (notation: string, label?: string, advantage?: boolean, disadvantage?: boolean) => {
         setError(null);
@@ -30,29 +31,11 @@ export const DiceRoller: React.FC = () => {
         setRollingDice(true);
 
         try {
-            const result = await diceService.roll(notation, label, advantage, disadvantage);
-
-            // Detectar crítico (natural 20) ou falha (natural 1)
-            const isCritical = result.sides === 20 && result.quantity === 1 && result.rolls[0] === 20;
-            const isFumble = result.sides === 20 && result.quantity === 1 && result.rolls[0] === 1;
-
-            const roll: DiceRoll = {
-                notation: result.notation,
-                rolls: result.rolls,
-                modifier: result.modifier,
-                total: result.total,
-                timestamp: new Date(result.timestamp),
-                label: result.label,
-                isCritical,
-                isFumble,
-                advantage: result.advantage,
-                disadvantage: result.disadvantage,
-                droppedRolls: result.dropped_rolls,
-            };
+            const diceRoll = await roll(notation, label, advantage, disadvantage, { silent: true });
 
             // Simular delay de animação
             setTimeout(() => {
-                setHistory(prev => [roll, ...prev]);
+                setHistory(prev => [diceRoll, ...prev]);
                 setRollingDice(false);
                 setCustomNotation('');
                 setAdvantageMode('normal'); // Reset após rolagem

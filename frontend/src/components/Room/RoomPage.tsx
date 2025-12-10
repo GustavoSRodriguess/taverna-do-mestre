@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { Alert } from '../../ui';
 import { useAuth } from '../../context/AuthContext';
 import { useRoom } from '../../hooks/useRoom';
@@ -12,14 +12,20 @@ import { TokenModal } from './TokenModal';
 import { InitiativeBar } from './InitiativeBar';
 import { FullCharacter } from '../../types/game';
 import { pcService } from '../../services/pcService';
-
-const clampPercent = (value: number) => Math.max(0, Math.min(100, value));
-
-const tokenColors = ['#f59e0b', '#38bdf8', '#c084fc', '#22c55e', '#f97316'];
+import {
+    clampPercent,
+    snapToGrid,
+    generateTokenId,
+    getNextTokenColor,
+} from '../../utils/tokenUtils';
+import {
+    getNextTurnToken,
+    clearAllInitiatives,
+    hasAnyInitiative,
+} from '../../utils/combatUtils';
 
 const RoomPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
-    const navigate = useNavigate();
     const { user } = useAuth();
     const { addRollListener } = useDice();
     const {
@@ -36,17 +42,20 @@ const RoomPage: React.FC = () => {
         socketConnected,
         sendChat,
         broadcastDiceRoll,
-    } = useRoom(id, user?.id);
+    } = useRoom(id, user ? { id: user.id, username: user.username } : undefined);
     const [chatInput, setChatInput] = useState('');
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [selectedTokenId, setSelectedTokenId] = useState<string | null>(null);
     const [selectedCharacter, setSelectedCharacter] = useState<FullCharacter | null>(null);
     const [currentTurnTokenId, setCurrentTurnTokenId] = useState<string | null>(null);
     const [currentRound, setCurrentRound] = useState(1);
+    const [inCombat, setInCombat] = useState(false);
     const boardRef = useRef<HTMLDivElement | null>(null);
     const [dragging, setDragging] = useState<string | null>(null);
     const lastBroadcast = useRef<number>(0);
     const sceneRef = useRef(sceneState);
+    const dragStartPos = useRef<{ x: number; y: number } | null>(null);
+    const hasDragged = useRef(false);
 
     const isMember = useMemo(
         () => !!room?.members?.some((member) => member.user_id === user?.id),
@@ -75,7 +84,12 @@ const RoomPage: React.FC = () => {
 
     useEffect(() => {
         sceneRef.current = sceneState;
-    }, [sceneState]);
+
+        // Detectar automaticamente se está em combate baseado nas iniciativas
+        if (hasAnyInitiative(sceneState.tokens || []) && !inCombat) {
+            setInCombat(true);
+        }
+    }, [sceneState, inCombat]);
 
     if (!id) {
         return (
@@ -85,21 +99,19 @@ const RoomPage: React.FC = () => {
         );
     }
 
-    const snapToGrid = (value: number) => Math.round(value / 5) * 5;
-
-    const handleAddToken = () => {
+    const handleAddToken = useCallback(() => {
         const tokens = sceneRef.current.tokens || [];
         const nextToken: SceneToken = {
-            id: `token-${Date.now()}`,
+            id: generateTokenId(),
             name: `Token ${tokens.length + 1}`,
             x: 40,
             y: 40,
-            color: tokenColors[tokens.length % tokenColors.length],
+            color: getNextTokenColor(tokens.length),
         };
         const nextScene = { ...sceneRef.current, tokens: [...tokens, nextToken] };
         setSceneState(nextScene);
         saveScene(nextScene, { action: 'add_token' });
-    };
+    }, [saveScene, setSceneState]);
 
     const handleTokenChange = (tokenId: string, updates: Partial<SceneToken>) => {
         const nextUpdates: Partial<SceneToken> = { ...updates };
@@ -109,11 +121,17 @@ const RoomPage: React.FC = () => {
         if (nextUpdates.y !== undefined) {
             nextUpdates.y = snapToGrid(clampPercent(nextUpdates.y));
         }
-        setSceneState((prev) => {
-            const tokens = prev.tokens || [];
-            const updated = tokens.map((token) => (token.id === tokenId ? { ...token, ...nextUpdates } : token));
-            return { ...prev, tokens: updated };
-        });
+
+        const tokens = sceneRef.current.tokens || [];
+        const updated = tokens.map((token) => (token.id === tokenId ? { ...token, ...nextUpdates } : token));
+        const nextScene = { ...sceneRef.current, tokens: updated };
+
+        setSceneState(nextScene);
+
+        // Salvar mudanças importantes (iniciativa, HP, etc.) no backend
+        if (nextUpdates.initiative !== undefined || nextUpdates.current_hp !== undefined) {
+            saveScene(nextScene, { action: 'update_token', tokenId, updates: nextUpdates });
+        }
     };
 
     const handleRemoveToken = (tokenId: string) => {
@@ -139,9 +157,16 @@ const RoomPage: React.FC = () => {
     const handleTokenMouseDown = (tokenId: string) => (e: React.MouseEvent) => {
         e.preventDefault();
         setDragging(tokenId);
+        dragStartPos.current = { x: e.clientX, y: e.clientY };
+        hasDragged.current = false;
     };
 
-    const handleTokenClick = async (tokenId: string) => {
+    const handleTokenDoubleClick = async (tokenId: string) => {
+        // Só abre o modal se não houve drag
+        if (hasDragged.current) {
+            return;
+        }
+
         setSelectedTokenId(tokenId);
         const token = sceneState.tokens?.find((t) => t.id === tokenId);
 
@@ -150,7 +175,6 @@ const RoomPage: React.FC = () => {
                 const char = await pcService.getPC(token.character_id);
                 setSelectedCharacter(char);
             } catch (error) {
-                console.error('Erro ao buscar personagem:', error);
                 setSelectedCharacter(null);
             }
         } else {
@@ -165,47 +189,39 @@ const RoomPage: React.FC = () => {
             const updatedChar = await pcService.getPC(characterId);
             setSelectedCharacter(updatedChar);
         } catch (error) {
-            console.error('Erro ao atualizar personagem:', error);
+            // Erro ao atualizar personagem
         }
     };
 
-    const handleNextTurn = () => {
-        const tokensWithInitiative = sceneState.tokens
-            ?.filter((t) => t.initiative !== undefined && t.initiative !== null)
-            .sort((a, b) => (b.initiative || 0) - (a.initiative || 0));
+    const handleNextTurn = useCallback(() => {
+        const result = getNextTurnToken(sceneState.tokens || [], currentTurnTokenId);
 
-        if (!tokensWithInitiative || tokensWithInitiative.length === 0) return;
+        if (!result) return;
 
-        if (!currentTurnTokenId) {
-            setCurrentTurnTokenId(tokensWithInitiative[0].id);
-        } else {
-            const currentIndex = tokensWithInitiative.findIndex((t) => t.id === currentTurnTokenId);
-            const nextIndex = (currentIndex + 1) % tokensWithInitiative.length;
+        setCurrentTurnTokenId(result.nextTokenId);
 
-            // Se voltou para o primeiro token, incrementa o round
-            if (nextIndex === 0) {
-                setCurrentRound((prev) => prev + 1);
-            }
-
-            setCurrentTurnTokenId(tokensWithInitiative[nextIndex].id);
+        if (result.shouldIncrementRound) {
+            setCurrentRound((prev) => prev + 1);
         }
-    };
+    }, [sceneState.tokens, currentTurnTokenId]);
 
-    const handleEndCombat = () => {
-        // Limpar iniciativa de todos os tokens
-        const updatedTokens = sceneState.tokens?.map((token) => ({
-            ...token,
-            initiative: undefined,
-        }));
-
+    const handleEndCombat = useCallback(() => {
+        const updatedTokens = clearAllInitiatives(sceneState.tokens || []);
         const nextScene = { ...sceneState, tokens: updatedTokens };
+
         setSceneState(nextScene);
         saveScene(nextScene, { action: 'end_combat' });
 
         // Resetar estados de combate
         setCurrentTurnTokenId(null);
         setCurrentRound(1);
-    };
+        setInCombat(false);
+    }, [sceneState, saveScene, setSceneState]);
+
+    const handleStartCombat = useCallback(() => {
+        setInCombat(true);
+        setCurrentRound(1);
+    }, []);
 
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
@@ -302,7 +318,7 @@ const RoomPage: React.FC = () => {
                                 key={token.id}
                                 token={token}
                                 onMouseDown={handleTokenMouseDown(token.id)}
-                                onClick={() => handleTokenClick(token.id)}
+                                onClick={() => handleTokenDoubleClick(token.id)}
                                 isCurrentTurn={token.id === currentTurnTokenId}
                             />
                         ))}
@@ -336,8 +352,9 @@ const RoomPage: React.FC = () => {
                 onChatSubmit={handleChatSubmit}
                 socketConnected={socketConnected}
                 currentTurnTokenId={currentTurnTokenId}
-                onSelectToken={handleTokenClick}
+                onSelectToken={handleTokenDoubleClick}
                 onNextTurn={handleNextTurn}
+                onStartCombat={handleStartCombat}
             />
 
             {/* Token Modal */}
@@ -360,8 +377,10 @@ const RoomPage: React.FC = () => {
                 tokens={sceneState.tokens || []}
                 currentTurnTokenId={currentTurnTokenId}
                 currentRound={currentRound}
-                onSelectToken={handleTokenClick}
+                onSelectToken={handleTokenDoubleClick}
                 onNextTurn={handleNextTurn}
+                onEndCombat={handleEndCombat}
+                inCombat={inCombat}
             />
         </div>
     );

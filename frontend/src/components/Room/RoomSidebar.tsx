@@ -1,22 +1,16 @@
-import React, { useEffect, useState } from 'react';
-import { X, Users, MessageSquare, Image as ImageIcon, Plus, Swords } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { X, Users, MessageSquare, Image as ImageIcon, Plus, Swords, Dices } from 'lucide-react';
 import { Badge, Button, CardBorder } from '../../ui';
-import { RoomChatMessage, SceneToken, Room } from '../../types/room';
-import { FullCharacter } from '../../types/game';
-import { pcService } from '../../services/pcService';
-import { InitiativeTracker } from './InitiativeTracker';
+import { RoomChatMessage, SceneToken, Room, SceneState } from '../../types/room';
+import { useCharacters } from '../../context/CharactersContext';
 
 interface RoomSidebarProps {
     isOpen: boolean;
     onClose: () => void;
     room: Room | null;
     onlineMembers: number[];
-    sceneState: {
-        backgroundUrl?: string;
-        tokens: SceneToken[];
-        notes?: string;
-    };
-    setSceneState: React.Dispatch<React.SetStateAction<any>>;
+    sceneState: SceneState;
+    setSceneState: React.Dispatch<React.SetStateAction<SceneState>>;
     onAddToken: () => void;
     onTokenChange: (tokenId: string, updates: Partial<SceneToken>) => void;
     onRemoveToken: (tokenId: string) => void;
@@ -28,6 +22,7 @@ interface RoomSidebarProps {
     currentTurnTokenId: string | null;
     onSelectToken: (tokenId: string) => void;
     onNextTurn: () => void;
+    onStartCombat: () => void;
 }
 
 const clampPercent = (value: number) => Math.max(0, Math.min(100, value));
@@ -47,32 +42,18 @@ export const RoomSidebar: React.FC<RoomSidebarProps> = ({
     setChatInput,
     onChatSubmit,
     socketConnected,
-    currentTurnTokenId,
-    onSelectToken,
-    onNextTurn,
+    onStartCombat
 }) => {
     const memberCount = room?.members?.length || 0;
-    const [characters, setCharacters] = useState<FullCharacter[]>([]);
-    const [loadingCharacters, setLoadingCharacters] = useState(false);
+    const { characters, loading: loadingCharacters } = useCharacters();
+    const chatContainerRef = React.useRef<HTMLDivElement>(null);
 
-    // Buscar personagens disponíveis
+    // Scroll automático do chat quando novas mensagens chegam
     useEffect(() => {
-        const fetchCharacters = async () => {
-            try {
-                setLoadingCharacters(true);
-                const response = await pcService.getPCs(100, 0);
-                setCharacters(response.pcs || []);
-            } catch (error) {
-                console.error('Erro ao buscar personagens:', error);
-            } finally {
-                setLoadingCharacters(false);
-            }
-        };
-
-        if (isOpen) {
-            fetchCharacters();
+        if (chatContainerRef.current) {
+            chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
         }
-    }, [isOpen]);
+    }, [chatMessages]);
 
     return (
         <>
@@ -86,9 +67,8 @@ export const RoomSidebar: React.FC<RoomSidebarProps> = ({
 
             {/* Sidebar */}
             <div
-                className={`fixed top-0 right-0 h-screen w-full md:w-96 bg-slate-900 shadow-2xl z-50 transform transition-transform duration-300 ease-in-out overflow-y-auto ${
-                    isOpen ? 'translate-x-0' : 'translate-x-full'
-                }`}
+                className={`fixed top-0 right-0 h-screen w-full md:w-96 bg-slate-900 shadow-2xl z-50 transform transition-transform duration-300 ease-in-out overflow-y-auto custom-scrollbar ${isOpen ? 'translate-x-0' : 'translate-x-full'
+                    }`}
             >
                 {/* Header da Sidebar */}
                 <div className="sticky top-0 bg-slate-900 border-b border-slate-700 p-4 flex items-center justify-between">
@@ -166,7 +146,7 @@ export const RoomSidebar: React.FC<RoomSidebarProps> = ({
                                     type="text"
                                     value={sceneState.backgroundUrl || ''}
                                     onChange={(e) =>
-                                        setSceneState((prev: any) => ({
+                                        setSceneState((prev) => ({
                                             ...prev,
                                             backgroundUrl: e.target.value,
                                         }))
@@ -183,7 +163,7 @@ export const RoomSidebar: React.FC<RoomSidebarProps> = ({
                                 <textarea
                                     value={sceneState.notes || ''}
                                     onChange={(e) =>
-                                        setSceneState((prev: any) => ({
+                                        setSceneState((prev) => ({
                                             ...prev,
                                             notes: e.target.value,
                                         }))
@@ -199,109 +179,131 @@ export const RoomSidebar: React.FC<RoomSidebarProps> = ({
                     <CardBorder className="bg-slate-800/50">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-semibold text-white">Tokens</h3>
-                            <Button
-                                buttonLabel={
-                                    <div className="flex items-center gap-2">
-                                        <Plus className="w-4 h-4" />
-                                        <span>Novo</span>
-                                    </div>
-                                }
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    onAddToken();
-                                }}
-                                classname="bg-emerald-700 hover:bg-emerald-600 text-sm"
-                            />
+                            <div className="flex gap-2">
+                                <Button
+                                    buttonLabel={
+                                        <div className="flex items-center gap-2">
+                                            <Swords className="w-4 h-4" />
+                                            <span>Combate</span>
+                                        </div>
+                                    }
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        onStartCombat();
+                                    }}
+                                    classname="bg-red-700 hover:bg-red-600 text-sm"
+                                />
+                                <Button
+                                    buttonLabel={
+                                        <div className="flex items-center gap-2">
+                                            <Plus className="w-4 h-4" />
+                                            <span>Novo</span>
+                                        </div>
+                                    }
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        onAddToken();
+                                    }}
+                                    classname="bg-emerald-700 hover:bg-emerald-600 text-sm"
+                                />
+                            </div>
                         </div>
-                        <div className="space-y-3 max-h-64 overflow-y-auto">
-                            {sceneState.tokens?.map((token) => (
-                                <div
-                                    key={token.id}
-                                    className="p-3 bg-slate-900/60 rounded border border-slate-700 space-y-2"
-                                >
-                                    <div className="flex items-center justify-between gap-2">
-                                        <input
-                                            type="text"
-                                            value={token.name}
-                                            onChange={(e) =>
-                                                onTokenChange(token.id, { name: e.target.value })
-                                            }
-                                            className="flex-1 px-2 py-1 bg-slate-800 text-white rounded border border-slate-700 text-sm"
-                                        />
-                                        <Button
-                                            buttonLabel="X"
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                onRemoveToken(token.id);
-                                            }}
-                                            classname="bg-red-700 hover:bg-red-600 text-xs px-2 py-1"
-                                        />
-                                    </div>
+                        <div className="space-y-3 max-h-64 overflow-y-auto custom-scrollbar">
+                            {sceneState.tokens?.map((token) => {
+                                // Memoizar busca do personagem para evitar múltiplas buscas no render
+                                const linkedCharacter = token.character_id
+                                    ? characters.find((c) => c.id === token.character_id)
+                                    : null;
 
-                                    {/* Dropdown para vincular personagem */}
-                                    <div className="flex flex-col gap-1">
-                                        <label className="text-xs text-slate-300">Personagem vinculado</label>
-                                        <select
-                                            value={token.character_id || ''}
-                                            onChange={(e) => {
-                                                const charId = e.target.value ? parseInt(e.target.value) : undefined;
-                                                const selectedChar = characters.find(c => c.id === charId);
-                                                onTokenChange(token.id, {
-                                                    character_id: charId,
-                                                    name: selectedChar ? selectedChar.name : token.name
-                                                });
-                                            }}
-                                            className="px-2 py-1 bg-slate-800 text-white rounded border border-slate-700 text-sm"
-                                            disabled={loadingCharacters}
-                                        >
-                                            <option value="">Nenhum personagem</option>
-                                            {characters.map((char) => (
-                                                <option key={char.id} value={char.id}>
-                                                    {char.name} - Nv{char.level} {char.class}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        {token.character_id && characters.find(c => c.id === token.character_id) && (
-                                            <div className="text-xs text-emerald-400 mt-1">
-                                                HP: {characters.find(c => c.id === token.character_id)?.current_hp || characters.find(c => c.id === token.character_id)?.hp} / {characters.find(c => c.id === token.character_id)?.hp}
-                                            </div>
-                                        )}
-                                    </div>
+                                return (
+                                    <div
+                                        key={token.id}
+                                        className="p-3 bg-slate-900/60 rounded border border-slate-700 space-y-2"
+                                    >
+                                        <div className="flex items-center justify-between gap-2">
+                                            <input
+                                                type="text"
+                                                value={token.name}
+                                                onChange={(e) =>
+                                                    onTokenChange(token.id, { name: e.target.value })
+                                                }
+                                                className="flex-1 px-2 py-1 bg-slate-800 text-white rounded border border-slate-700 text-sm"
+                                            />
+                                            <Button
+                                                buttonLabel="X"
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    onRemoveToken(token.id);
+                                                }}
+                                                classname="bg-red-700 hover:bg-red-600 text-xs px-2 py-1"
+                                            />
+                                        </div>
 
-                                    <div className="grid grid-cols-2 gap-2 text-sm text-slate-200">
-                                        <label className="flex flex-col gap-1">
-                                            X (%)
-                                            <input
-                                                type="number"
-                                                value={token.x}
-                                                onChange={(e) =>
+                                        {/* Dropdown para vincular personagem */}
+                                        <div className="flex flex-col gap-1">
+                                            <label className="text-xs text-slate-300">Personagem vinculado</label>
+                                            <select
+                                                value={token.character_id || ''}
+                                                onChange={(e) => {
+                                                    const charId = e.target.value ? parseInt(e.target.value) : undefined;
+                                                    const selectedChar = characters.find((c) => c.id === charId);
                                                     onTokenChange(token.id, {
-                                                        x: clampPercent(parseFloat(e.target.value) || 0),
-                                                    })
-                                                }
-                                                min={0}
-                                                max={100}
-                                                className="px-2 py-1 bg-slate-800 text-white rounded border border-slate-700"
-                                            />
-                                        </label>
-                                        <label className="flex flex-col gap-1">
-                                            Y (%)
-                                            <input
-                                                type="number"
-                                                value={token.y}
-                                                onChange={(e) =>
-                                                    onTokenChange(token.id, {
-                                                        y: clampPercent(parseFloat(e.target.value) || 0),
-                                                    })
-                                                }
-                                                min={0}
-                                                max={100}
-                                                className="px-2 py-1 bg-slate-800 text-white rounded border border-slate-700"
-                                            />
-                                        </label>
+                                                        character_id: charId,
+                                                        name: selectedChar ? selectedChar.name : token.name
+                                                    });
+                                                }}
+                                                className="px-2 py-1 bg-slate-800 text-white rounded border border-slate-700 text-sm"
+                                                disabled={loadingCharacters}
+                                            >
+                                                <option value="">Nenhum personagem</option>
+                                                {characters.map((char) => (
+                                                    <option key={char.id} value={char.id}>
+                                                        {char.name} - Nv{char.level} {char.class}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            {linkedCharacter && (
+                                                <div className="text-xs text-emerald-400 mt-1">
+                                                    HP: {linkedCharacter.current_hp || linkedCharacter.hp} / {linkedCharacter.hp}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-2 text-sm text-slate-200">
+                                            <label className="flex flex-col gap-1">
+                                                X (%)
+                                                <input
+                                                    type="number"
+                                                    value={token.x}
+                                                    onChange={(e) =>
+                                                        onTokenChange(token.id, {
+                                                            x: clampPercent(parseFloat(e.target.value) || 0),
+                                                        })
+                                                    }
+                                                    min={0}
+                                                    max={100}
+                                                    className="px-2 py-1 bg-slate-800 text-white rounded border border-slate-700"
+                                                />
+                                            </label>
+                                            <label className="flex flex-col gap-1">
+                                                Y (%)
+                                                <input
+                                                    type="number"
+                                                    value={token.y}
+                                                    onChange={(e) =>
+                                                        onTokenChange(token.id, {
+                                                            y: clampPercent(parseFloat(e.target.value) || 0),
+                                                        })
+                                                    }
+                                                    min={0}
+                                                    max={100}
+                                                    className="px-2 py-1 bg-slate-800 text-white rounded border border-slate-700"
+                                                />
+                                            </label>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                             {!sceneState.tokens?.length && (
                                 <p className="text-sm text-slate-400">
                                     Nenhum token. Adicione um para iniciar.
@@ -309,21 +311,6 @@ export const RoomSidebar: React.FC<RoomSidebarProps> = ({
                             )}
                         </div>
                     </CardBorder>
-
-                    {/* Seção de Iniciativa */}
-                    <CardBorder className="bg-slate-800/50">
-                        <div className="flex items-center gap-2 mb-4">
-                            <Swords className="w-5 h-5 text-red-400" />
-                            <h3 className="text-lg font-semibold text-white">Ordem de Iniciativa</h3>
-                        </div>
-                        <InitiativeTracker
-                            tokens={sceneState.tokens || []}
-                            currentTurnTokenId={currentTurnTokenId}
-                            onSelectToken={onSelectToken}
-                            onNextTurn={onNextTurn}
-                        />
-                    </CardBorder>
-
                     {/* Seção de Chat */}
                     <CardBorder className="bg-slate-800/50">
                         <div className="flex items-center justify-between mb-4">
@@ -336,21 +323,86 @@ export const RoomSidebar: React.FC<RoomSidebarProps> = ({
                                 variant={socketConnected ? 'success' : 'danger'}
                             />
                         </div>
-                        <div className="bg-slate-950/40 border border-slate-800 rounded p-3 h-64 overflow-y-auto space-y-2">
+                        <div
+                            ref={chatContainerRef}
+                            className="bg-slate-950/40 border border-slate-800 rounded p-3 h-64 overflow-y-auto space-y-2 custom-scrollbar"
+                        >
                             {chatMessages.length === 0 && (
                                 <p className="text-sm text-slate-400">Nenhuma mensagem ainda.</p>
                             )}
-                            {chatMessages.map((msg: RoomChatMessage) => (
-                                <div key={msg.id} className="text-sm text-slate-200">
-                                    <span className="text-slate-400 mr-2 text-xs">
-                                        {new Date(msg.timestamp).toLocaleTimeString()}
-                                    </span>
-                                    <span className="font-semibold text-indigo-100">
-                                        User {msg.user_id}:
-                                    </span>{' '}
-                                    <span className="text-slate-100">{msg.message}</span>
-                                </div>
-                            ))}
+                            {chatMessages.map((msg: RoomChatMessage) => {
+                                const displayName = msg.username || (msg.user_id ? `User ${msg.user_id}` : 'Desconhecido');
+                                return (
+                                msg.kind === 'dice' && msg.dice ? (
+                                    <div
+                                        key={msg.id}
+                                        className="p-3 bg-slate-900/60 border border-indigo-800/70 rounded shadow-sm"
+                                    >
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="flex items-center gap-2">
+                                                <div className="p-1.5 rounded-full bg-indigo-800/60 text-indigo-200">
+                                                    <Dices className="w-4 h-4" />
+                                                </div>
+                                                <div>
+                                                    <div className="text-xs text-slate-400">
+                                                        {new Date(msg.timestamp).toLocaleTimeString()} · {displayName}
+                                                    </div>
+                                                    <div className="text-sm text-indigo-100 font-semibold">
+                                                        {msg.dice.label || 'Rolagem de dados'}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div
+                                                className={`text-lg font-bold ${msg.dice.isCritical
+                                                    ? 'text-emerald-300'
+                                                    : msg.dice.isFumble
+                                                        ? 'text-red-300'
+                                                        : 'text-white'
+                                                    }`}
+                                            >
+                                                {msg.dice.total ?? '-'}
+                                            </div>
+                                        </div>
+                                        <div className="mt-2 text-xs text-slate-300 flex flex-wrap gap-2">
+                                            {msg.dice.notation && (
+                                                <span className="px-2 py-1 rounded border border-slate-700 bg-slate-800/70">
+                                                    {msg.dice.notation}
+                                                </span>
+                                            )}
+                                            {msg.dice.rolls?.length ? (
+                                                <span className="flex items-center gap-1">
+                                                    <span className="text-slate-400">Rolagens:</span>
+                                                    <span className="text-slate-100">{msg.dice.rolls.join(', ')}</span>
+                                                </span>
+                                            ) : null}
+                                            {typeof msg.dice.modifier === 'number' && msg.dice.modifier !== 0 && (
+                                                <span className="text-slate-400">
+                                                    Mod: {msg.dice.modifier > 0 ? `+${msg.dice.modifier}` : msg.dice.modifier}
+                                                </span>
+                                            )}
+                                            {msg.dice.advantage && <span className="text-emerald-300">Vantagem</span>}
+                                            {msg.dice.disadvantage && <span className="text-amber-300">Desvantagem</span>}
+                                            {msg.dice.droppedRolls?.length ? (
+                                                <span className="text-slate-400">
+                                                    Descartados: {msg.dice.droppedRolls.join(', ')}
+                                                </span>
+                                            ) : null}
+                                        </div>
+                                        <div className="text-xs text-slate-500 mt-1">{msg.message}</div>
+                                    </div>
+                                ) : (
+                                    <div key={msg.id} className="text-sm text-slate-200">
+                                        <span className="text-slate-400 mr-2 text-xs">
+                                            {new Date(msg.timestamp).toLocaleTimeString()}
+                                        </span>
+                                        <span className="font-semibold text-indigo-100">
+                                            {displayName}:
+                                        </span>{' '}
+                                        <span className="text-slate-100">{msg.message}</span>
+                                    </div>
+                                )
+                                );
+                            })}
                         </div>
                         <div className="flex gap-2 mt-3">
                             <input

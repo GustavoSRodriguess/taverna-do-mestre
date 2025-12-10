@@ -4,7 +4,13 @@ import { DiceRoll } from '../types/dice';
 import { DiceNotification } from '../components/Dice/DiceNotification';
 
 interface DiceContextType {
-    roll: (notation: string, label?: string, advantage?: boolean, disadvantage?: boolean) => Promise<DiceRoll>;
+    roll: (
+        notation: string,
+        label?: string,
+        advantage?: boolean,
+        disadvantage?: boolean,
+        options?: { silent?: boolean },
+    ) => Promise<DiceRoll>;
     lastRoll: DiceRoll | null;
     addRollListener: (cb: (roll: DiceRoll) => void) => () => void;
 }
@@ -16,7 +22,13 @@ export const DiceProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [notification, setNotification] = useState<DiceRoll | null>(null);
     const listeners = React.useRef<Set<(roll: DiceRoll) => void>>(new Set());
 
-    const roll = async (notation: string, label?: string, advantage?: boolean, disadvantage?: boolean) => {
+    const roll = async (
+        notation: string,
+        label?: string,
+        advantage?: boolean,
+        disadvantage?: boolean,
+        options?: { silent?: boolean },
+    ) => {
         try {
             const result = await diceService.roll(notation, label, advantage, disadvantage);
 
@@ -39,7 +51,9 @@ export const DiceProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             };
 
             setLastRoll(diceRoll);
-            setNotification(diceRoll);
+            if (!options?.silent) {
+                setNotification(diceRoll);
+            }
             listeners.current.forEach((cb) => cb(diceRoll));
             return diceRoll;
         } catch (error) {

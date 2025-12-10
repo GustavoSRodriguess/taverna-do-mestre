@@ -1,12 +1,50 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import roomService, { Room, SceneState } from '../services/roomService';
-import { RoomChatMessage, RoomSocketEvent } from '../types/room';
+import { RoomChatMessage, RoomSocketEvent, RoomDicePayload } from '../types/room';
 
 const emptyScene: SceneState = {
     tokens: [],
 };
 
-export const useRoom = (roomId?: string, currentUserId?: number) => {
+const resolveTimestamp = (value?: number | string | Date): number => {
+    if (value instanceof Date) return value.getTime();
+    if (typeof value === 'string') {
+        const parsed = Date.parse(value);
+        return Number.isNaN(parsed) ? Date.now() : parsed;
+    }
+    if (typeof value === 'number') return value;
+    return Date.now();
+};
+
+const normalizeDicePayload = (dice: any): RoomDicePayload => {
+    if (!dice) return {};
+    return {
+        notation: dice.notation || dice.expr || dice.expression,
+        rolls: dice.rolls || dice.results || dice.values,
+        total: dice.total ?? dice.sum ?? dice.result,
+        modifier: dice.modifier ?? dice.mod,
+        label: dice.label,
+        advantage: dice.advantage ?? dice.has_advantage,
+        disadvantage: dice.disadvantage ?? dice.has_disadvantage,
+        isCritical: dice.isCritical ?? dice.critical,
+        isFumble: dice.isFumble ?? dice.fumble,
+        droppedRolls: dice.droppedRolls || dice.dropped_rolls,
+    };
+};
+
+const formatDiceMessage = (dice: RoomDicePayload) => {
+    const advantageTag = dice.advantage ? ' [vantagem]' : dice.disadvantage ? ' [desvantagem]' : '';
+    const critTag = dice.isCritical ? ' [CRÍTICO]' : dice.isFumble ? ' [FALHA]' : '';
+    const notation = dice.notation ? ` (${dice.notation})` : '';
+    if (dice.label) {
+        return `${dice.label}: ${dice.total ?? ''}${notation}${advantageTag}${critTag}`.trim();
+    }
+    return `Rolagem: ${dice.total ?? ''}${notation}${advantageTag}${critTag}`.trim();
+};
+
+type CurrentUserInfo = { id?: number; username?: string };
+
+export const useRoom = (roomId?: string, currentUser?: CurrentUserInfo) => {
     const [room, setRoom] = useState<Room | null>(null);
     const [sceneState, setSceneState] = useState<SceneState>(emptyScene);
     const [loading, setLoading] = useState(false);
@@ -41,7 +79,6 @@ export const useRoom = (roomId?: string, currentUserId?: number) => {
                 setOnlineMembers(data.members.map((m) => m.user_id));
             }
         } catch (err) {
-            console.error('Failed to load room', err);
             setError('Falha ao carregar a sala');
         } finally {
             setLoading(false);
@@ -56,7 +93,6 @@ export const useRoom = (roomId?: string, currentUserId?: number) => {
             setRoom(joined.room);
             return joined;
         } catch (err) {
-            console.error('Failed to join room', err);
             setError('Falha ao entrar na sala');
             throw err;
         }
@@ -98,7 +134,6 @@ export const useRoom = (roomId?: string, currentUserId?: number) => {
                 setSceneState(normalizeScene(updated.scene_state));
                 return updated;
             } catch (err) {
-                console.error('Failed to update scene', err);
                 setError('Falha ao salvar cena');
                 throw err;
             } finally {
@@ -141,28 +176,33 @@ export const useRoom = (roomId?: string, currentUserId?: number) => {
                 case 'chat:message': {
                     addSeen(key);
                     if (!raw.message) break;
+                    const timestamp = resolveTimestamp(raw.timestamp);
                     const message: RoomChatMessage = {
                         id: key,
                         room_id: raw.room_id || roomId || '',
                         user_id: raw.sender_id || 0,
+                        username: raw.sender_name || (raw.sender_id === currentUser?.id ? currentUser?.username : undefined),
                         message: raw.message,
-                        timestamp: raw.timestamp || Date.now(),
+                        timestamp,
+                        kind: 'chat',
                     };
                     setChatMessages((prev) => [...prev.slice(-49), message]);
                     break;
                 }
                 case 'dice:roll': {
                     addSeen(key);
-                    const dice = raw.dice || {};
-                    const text = dice.label
-                        ? `${dice.label}: ${dice.total ?? ''} (${dice.notation ?? ''})`
-                        : `Rolagem: ${dice.total ?? ''} (${dice.notation ?? ''})`;
+                    const dice = normalizeDicePayload(raw.dice);
+                    const timestamp = resolveTimestamp(raw.timestamp);
+                    const text = formatDiceMessage(dice);
                     const message: RoomChatMessage = {
                         id: key,
                         room_id: raw.room_id || roomId || '',
                         user_id: raw.sender_id || 0,
+                        username: raw.sender_name || (raw.sender_id === currentUser?.id ? currentUser?.username : undefined),
                         message: text.trim(),
-                        timestamp: raw.timestamp || Date.now(),
+                        timestamp,
+                        kind: 'dice',
+                        dice,
                     };
                     setChatMessages((prev) => [...prev.slice(-49), message]);
                     break;
@@ -171,7 +211,7 @@ export const useRoom = (roomId?: string, currentUserId?: number) => {
                     break;
             }
         },
-        [roomId],
+        [roomId, currentUser?.id, currentUser?.username],
     );
 
     const connectSocket = useCallback(() => {
@@ -221,7 +261,7 @@ export const useRoom = (roomId?: string, currentUserId?: number) => {
                 const raw = JSON.parse(event.data) as RoomSocketEvent;
                 handleSocketMessage(raw);
             } catch (err) {
-                console.error('Failed to parse room socket message', err);
+                // Failed to parse room socket message
             }
         };
     }, [roomId, handleSocketMessage, sendSocketMessage]);
@@ -267,6 +307,7 @@ export const useRoom = (roomId?: string, currentUserId?: number) => {
             const payload: RoomSocketEvent = {
                 type: 'chat:message',
                 message: message.trim(),
+                sender_name: currentUser?.username,
                 metadata: { local_id: localId },
             };
 
@@ -275,41 +316,48 @@ export const useRoom = (roomId?: string, currentUserId?: number) => {
                 const messageObj: RoomChatMessage = {
                     id: localId,
                     room_id: roomId || '',
-                    user_id: currentUserId || 0,
+                    user_id: currentUser?.id || 0,
                     message: message.trim(),
                     timestamp: Date.now(),
+                    kind: 'chat',
+                    username: currentUser?.username,
                 };
                 addSeen(localId);
                 setChatMessages((prev) => [...prev.slice(-49), messageObj]);
             }
         },
-        [roomId, currentUserId, sendSocketMessage],
+        [roomId, currentUser, sendSocketMessage],
     );
 
     const broadcastDiceRoll = useCallback(
         (dice: any) => {
             const localId = generateLocalId();
+            const dicePayload = normalizeDicePayload(dice);
+            const timestamp = resolveTimestamp(dice?.timestamp);
             const payload: RoomSocketEvent = {
                 type: 'dice:roll',
-                dice,
+                dice: dicePayload,
+                timestamp,
+                sender_name: currentUser?.username,
                 metadata: { local_id: localId },
             };
-            const text = dice.label
-                ? `${dice.label}: ${dice.total ?? ''} (${dice.notation ?? ''})`
-                : `Rolagem: ${dice.total ?? ''} (${dice.notation ?? ''})`;
+            const text = formatDiceMessage(dicePayload);
             const message: RoomChatMessage = {
                 id: localId,
                 room_id: roomId || '',
-                user_id: currentUserId || 0,
+                user_id: currentUser?.id || 0,
+                username: currentUser?.username,
                 message: text.trim(),
-                timestamp: dice.timestamp || Date.now(),
+                timestamp,
+                kind: 'dice',
+                dice: dicePayload,
             };
             // otimista: mostra para quem rolou imediatamente
             addSeen(localId);
             setChatMessages((prev) => [...prev.slice(-49), message]);
             sendSocketMessage(payload);
         },
-        [roomId, currentUserId, sendSocketMessage],
+        [roomId, currentUser, sendSocketMessage],
     );
 
     return {

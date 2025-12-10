@@ -17,7 +17,6 @@ const CreateRoom: React.FC = () => {
             const room = await roomService.createRoom(name);
             navigate(`/rooms/${room.id}`);
         } catch (err) {
-            console.error(err);
             setError('Nao foi possivel criar a sala');
         } finally {
             setLoading(false);

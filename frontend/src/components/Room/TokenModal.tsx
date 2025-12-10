@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { X, Heart, Shield, Zap, Minus, Plus } from 'lucide-react';
+import { X, Heart, Shield, Zap, Minus, Plus, Dice6, AlertCircle } from 'lucide-react';
 import { SceneToken } from '../../types/room';
 import { FullCharacter } from '../../types/game';
 import { Button } from '../../ui';
+import { DND_CONDITIONS, getConditionById } from '../../constants/conditions';
+import { calculateHPPercentage, getHPTextColor } from '../../utils/tokenUtils';
+import { calculateModifier, rollInitiative } from '../../utils/combatUtils';
 
 interface TokenModalProps {
     token: SceneToken;
@@ -23,24 +26,49 @@ export const TokenModal: React.FC<TokenModalProps> = ({
 }) => {
     const [hpAdjust, setHpAdjust] = useState(0);
     const [initiativeValue, setInitiativeValue] = useState(token.initiative || 0);
+    const [tempHpValue, setTempHpValue] = useState(token.temp_hp || 0);
+    const [maxHpValue, setMaxHpValue] = useState(token.max_hp || character?.hp || 0);
+    const [showConditions, setShowConditions] = useState(false);
 
     useEffect(() => {
         setInitiativeValue(token.initiative || 0);
-    }, [token.initiative]);
+        setTempHpValue(token.temp_hp || 0);
+        setMaxHpValue(token.max_hp || character?.hp || 0);
+    }, [token.initiative, token.temp_hp, token.max_hp, character?.hp]);
 
     if (!isOpen) return null;
 
     const currentHP = token.current_hp ?? character?.current_hp ?? character?.hp ?? 0;
-    const maxHP = character?.hp ?? 0;
-    const hpPercentage = maxHP > 0 ? (currentHP / maxHP) * 100 : 100;
+    const tempHP = token.temp_hp || 0;
+    const maxHP = token.max_hp || character?.hp || 0;
+    const hpPercentage = calculateHPPercentage(currentHP, maxHP);
+    const activeConditions = token.conditions || [];
 
     const handleApplyDamage = () => {
         if (hpAdjust === 0) return;
 
-        const newHP = Math.max(0, Math.min(maxHP, currentHP - hpAdjust));
+        let remainingDamage = hpAdjust;
+        let newTempHP = tempHP;
+        let newHP = currentHP;
+
+        // Primeiro, reduzir HP temporário
+        if (tempHP > 0) {
+            if (remainingDamage <= tempHP) {
+                newTempHP = tempHP - remainingDamage;
+                remainingDamage = 0;
+            } else {
+                remainingDamage -= tempHP;
+                newTempHP = 0;
+            }
+        }
+
+        // Depois, reduzir HP normal
+        if (remainingDamage > 0) {
+            newHP = Math.max(0, currentHP - remainingDamage);
+        }
 
         // Atualizar HP no token
-        onUpdateToken({ current_hp: newHP });
+        onUpdateToken({ current_hp: newHP, temp_hp: newTempHP });
 
         // Se tiver personagem vinculado, atualizar também
         if (character && onUpdateCharacter) {
@@ -77,16 +105,34 @@ export const TokenModal: React.FC<TokenModalProps> = ({
         onUpdateToken({ initiative: initiativeValue });
     };
 
-    const getHPColor = () => {
-        if (hpPercentage > 66) return 'text-green-400';
-        if (hpPercentage > 33) return 'text-yellow-400';
-        return 'text-red-400';
+    const handleRollInitiative = () => {
+        const dexMod = character ? calculateModifier(character.attributes.dexterity) : 0;
+        const total = rollInitiative(dexMod);
+        setInitiativeValue(total);
+        onUpdateToken({ initiative: total });
     };
 
+    const handleSetTempHP = () => {
+        onUpdateToken({ temp_hp: tempHpValue });
+    };
+
+    const handleSetMaxHP = () => {
+        onUpdateToken({ max_hp: maxHpValue });
+    };
+
+    const handleToggleCondition = (conditionId: string) => {
+        const current = activeConditions;
+        const newConditions = current.includes(conditionId)
+            ? current.filter((c) => c !== conditionId)
+            : [...current, conditionId];
+        onUpdateToken({ conditions: newConditions });
+    };
+
+
     return (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
             <div
-                className="bg-slate-900 rounded-lg shadow-2xl max-w-md w-full border border-slate-700"
+                className="bg-slate-900 rounded-lg shadow-2xl max-w-md w-full border border-slate-700 my-8 max-h-[90vh] flex flex-col"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
@@ -109,7 +155,7 @@ export const TokenModal: React.FC<TokenModalProps> = ({
                 </div>
 
                 {/* Body */}
-                <div className="p-4 space-y-4">
+                <div className="p-4 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
                     {/* Informações do Personagem */}
                     {character && (
                         <div className="bg-slate-800/50 rounded p-3 space-y-2">
@@ -136,9 +182,16 @@ export const TokenModal: React.FC<TokenModalProps> = ({
                                 <Heart className="w-4 h-4 text-red-400" />
                                 Pontos de Vida
                             </label>
-                            <span className={`text-2xl font-bold ${getHPColor()}`}>
-                                {currentHP} / {maxHP}
-                            </span>
+                            <div className="flex items-center gap-2">
+                                {tempHP > 0 && (
+                                    <span className="text-sm text-cyan-400 font-semibold">
+                                        +{tempHP}
+                                    </span>
+                                )}
+                                <span className={`text-2xl font-bold ${getHPTextColor(hpPercentage)}`}>
+                                    {currentHP} / {maxHP}
+                                </span>
+                            </div>
                         </div>
 
                         {/* Barra de HP */}
@@ -207,6 +260,54 @@ export const TokenModal: React.FC<TokenModalProps> = ({
                                 Cura
                             </button>
                         </div>
+
+                        {/* HP Temporário */}
+                        <div className="flex gap-2 pt-2 border-t border-slate-700">
+                            <div className="flex-1">
+                                <label className="text-xs text-slate-300 mb-1 block">HP Temporário</label>
+                                <input
+                                    type="number"
+                                    value={tempHpValue || ''}
+                                    onChange={(e) => {
+                                        const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+                                        setTempHpValue(isNaN(val) ? 0 : Math.max(0, val));
+                                    }}
+                                    className="w-full px-3 py-2 bg-slate-800 text-white rounded border border-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    placeholder="0"
+                                    min="0"
+                                />
+                            </div>
+                            <Button
+                                buttonLabel="Aplicar"
+                                onClick={handleSetTempHP}
+                                classname="bg-cyan-700 hover:bg-cyan-600 self-end"
+                            />
+                        </div>
+
+                        {/* HP Máximo (para tokens sem personagem) */}
+                        {!character && (
+                            <div className="flex gap-2">
+                                <div className="flex-1">
+                                    <label className="text-xs text-slate-300 mb-1 block">HP Máximo</label>
+                                    <input
+                                        type="number"
+                                        value={maxHpValue || ''}
+                                        onChange={(e) => {
+                                            const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+                                            setMaxHpValue(isNaN(val) ? 0 : Math.max(1, val));
+                                        }}
+                                        className="w-full px-3 py-2 bg-slate-800 text-white rounded border border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                        placeholder="HP máximo"
+                                        min="1"
+                                    />
+                                </div>
+                                <Button
+                                    buttonLabel="Definir"
+                                    onClick={handleSetMaxHP}
+                                    classname="bg-purple-700 hover:bg-purple-600 self-end"
+                                />
+                            </div>
+                        )}
                     </div>
 
                     {/* Iniciativa */}
@@ -218,22 +319,121 @@ export const TokenModal: React.FC<TokenModalProps> = ({
                         <div className="flex gap-2">
                             <input
                                 type="number"
-                                value={initiativeValue}
-                                onChange={(e) => setInitiativeValue(parseInt(e.target.value) || 0)}
+                                value={initiativeValue || ''}
+                                onChange={(e) => {
+                                    const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+                                    setInitiativeValue(isNaN(val) ? 0 : val);
+                                }}
                                 className="flex-1 px-3 py-2 bg-slate-800 text-white rounded border border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
                                 placeholder="Valor de iniciativa"
                             />
+                            {character && (
+                                <Button
+                                    buttonLabel={
+                                        <div className="flex items-center gap-1">
+                                            <Dice6 className="w-4 h-4" />
+                                            <span>Rolar</span>
+                                        </div>
+                                    }
+                                    onClick={handleRollInitiative}
+                                    classname="bg-indigo-700 hover:bg-indigo-600"
+                                />
+                            )}
                             <Button
                                 buttonLabel="Definir"
                                 onClick={handleInitiativeChange}
                                 classname="bg-purple-700 hover:bg-purple-600"
                             />
                         </div>
+                        {character && (
+                            <p className="text-xs text-slate-400">
+                                Modificador de DEX: {(() => {
+                                    const mod = calculateModifier(character.attributes.dexterity);
+                                    return mod >= 0 ? `+${mod}` : mod;
+                                })()}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Condições */}
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <label className="text-sm font-semibold text-white flex items-center gap-2">
+                                <AlertCircle className="w-4 h-4 text-orange-400" />
+                                Condições
+                                {activeConditions.length > 0 && (
+                                    <span className="text-xs bg-orange-600 text-white px-2 py-0.5 rounded-full">
+                                        {activeConditions.length}
+                                    </span>
+                                )}
+                            </label>
+                            <button
+                                onClick={() => setShowConditions(!showConditions)}
+                                className="text-xs text-indigo-400 hover:text-indigo-300"
+                            >
+                                {showConditions ? 'Ocultar' : 'Mostrar'}
+                            </button>
+                        </div>
+
+                        {/* Condições Ativas */}
+                        {activeConditions.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                                {activeConditions.map((condId) => {
+                                    const cond = getConditionById(condId);
+                                    if (!cond) return null;
+                                    return (
+                                        <span
+                                            key={condId}
+                                            className="text-xs px-2 py-1 rounded flex items-center gap-1"
+                                            style={{ backgroundColor: cond.color + '40', color: cond.color }}
+                                            title={cond.description}
+                                        >
+                                            {cond.name}
+                                            <X
+                                                className="w-3 h-3 cursor-pointer hover:opacity-70"
+                                                onClick={() => handleToggleCondition(condId)}
+                                            />
+                                        </span>
+                                    );
+                                })}
+                            </div>
+                        )}
+
+                        {/* Lista de Condições */}
+                        {showConditions && (
+                            <div className="max-h-48 overflow-y-auto bg-slate-800/50 rounded p-2 space-y-1 custom-scrollbar">
+                                {DND_CONDITIONS.map((cond) => {
+                                    const isActive = activeConditions.includes(cond.id);
+                                    return (
+                                        <button
+                                            key={cond.id}
+                                            onClick={() => handleToggleCondition(cond.id)}
+                                            className={`w-full text-left px-2 py-1.5 rounded text-sm transition-colors ${
+                                                isActive
+                                                    ? 'bg-slate-700 border border-slate-600'
+                                                    : 'hover:bg-slate-700/50'
+                                            }`}
+                                            title={cond.description}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <div
+                                                    className="w-3 h-3 rounded-full"
+                                                    style={{ backgroundColor: cond.color }}
+                                                />
+                                                <span className={isActive ? 'text-white font-semibold' : 'text-slate-300'}>
+                                                    {cond.name}
+                                                </span>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 {/* Footer */}
-                <div className="flex justify-end gap-2 p-4 border-t border-slate-700">
+                <div className="flex justify-end gap-2 p-4 border-t border-slate-700 flex-shrink-0">
                     <Button
                         buttonLabel="Fechar"
                         onClick={onClose}

@@ -8,6 +8,9 @@ export interface SceneToken {
     character_id?: number; // ID do personagem vinculado
     initiative?: number; // Valor de iniciativa para ordem de combate
     current_hp?: number; // HP atual (override do personagem)
+    temp_hp?: number; // HP temporário
+    max_hp?: number; // HP máximo (para tokens sem personagem vinculado)
+    conditions?: string[]; // Condições ativas (Envenenado, Atordoado, etc.)
 }
 
 export interface SceneState {
@@ -21,8 +24,11 @@ export interface RoomChatMessage {
     id: string;
     room_id: string;
     user_id: number;
+    username?: string;
     message: string;
     timestamp: number;
+    kind?: RoomChatKind;
+    dice?: RoomDicePayload;
 }
 
 export interface RoomMember {
@@ -44,14 +50,30 @@ export interface Room {
     metadata?: Record<string, any>;
 }
 
+export type RoomChatKind = 'chat' | 'dice';
+
+export interface RoomDicePayload {
+    notation?: string;
+    rolls?: number[];
+    total?: number;
+    modifier?: number;
+    label?: string;
+    advantage?: boolean;
+    disadvantage?: boolean;
+    isCritical?: boolean;
+    isFumble?: boolean;
+    droppedRolls?: number[];
+}
+
 export interface RoomSocketEvent {
     type: string;
     room_id?: string;
     sender_id?: number;
+    sender_name?: string;
     message?: string;
     scene_state?: SceneState;
-    dice?: any;
+    dice?: RoomDicePayload;
     metadata?: Record<string, any>;
     members?: number[];
-    timestamp?: number;
+    timestamp?: number | string;
 }

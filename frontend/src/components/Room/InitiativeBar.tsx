@@ -1,6 +1,7 @@
 import React from 'react';
-import { ChevronRight, Swords } from 'lucide-react';
+import { ChevronRight, Swords, X } from 'lucide-react';
 import { SceneToken } from '../../types/room';
+import { getTokensWithInitiative } from '../../utils/combatUtils';
 
 interface InitiativeBarProps {
     tokens: SceneToken[];
@@ -8,6 +9,8 @@ interface InitiativeBarProps {
     currentRound: number;
     onSelectToken: (tokenId: string) => void;
     onNextTurn: () => void;
+    onEndCombat: () => void;
+    inCombat?: boolean;
 }
 
 export const InitiativeBar: React.FC<InitiativeBarProps> = ({
@@ -16,14 +19,42 @@ export const InitiativeBar: React.FC<InitiativeBarProps> = ({
     currentRound,
     onSelectToken,
     onNextTurn,
+    onEndCombat,
+    inCombat = false,
 }) => {
     // Filtrar e ordenar tokens com iniciativa
-    const tokensWithInitiative = tokens
-        .filter((token) => token.initiative !== undefined && token.initiative !== null)
-        .sort((a, b) => (b.initiative || 0) - (a.initiative || 0));
+    const tokensWithInitiative = getTokensWithInitiative(tokens);
 
-    if (tokensWithInitiative.length === 0) {
-        return null; // Não mostrar barra se não houver iniciativa
+    // Mostrar barra se estiver em combate OU se houver tokens com iniciativa
+    if (tokensWithInitiative.length === 0 && !inCombat) {
+        return null;
+    }
+
+    // Se está em combate mas não há tokens com iniciativa ainda, mostrar mensagem
+    if (tokensWithInitiative.length === 0 && inCombat) {
+        return (
+            <div className="fixed top-16 left-0 right-0 z-30 flex justify-center pointer-events-none">
+                <div className="bg-slate-900/95 backdrop-blur-sm border border-slate-700 rounded-lg shadow-xl pointer-events-auto">
+                    <div className="px-4 py-2 flex items-center gap-3">
+                        <div className="flex items-center gap-2 text-yellow-400">
+                            <Swords className="w-4 h-4" />
+                            <span className="text-sm font-bold">Combate Iniciado</span>
+                        </div>
+                        <span className="text-xs text-slate-300">
+                            Clique nos tokens para definir iniciativa
+                        </span>
+                        <button
+                            onClick={onEndCombat}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-700 hover:bg-red-600 text-white rounded transition-colors font-semibold text-xs"
+                            title="Sair de Combate"
+                        >
+                            <X className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">Sair</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
     }
 
     const currentTurnIndex = tokensWithInitiative.findIndex((t) => t.id === currentTurnTokenId);
@@ -157,14 +188,22 @@ export const InitiativeBar: React.FC<InitiativeBarProps> = ({
                         })}
                     </div>
 
-                    {/* Botão Próximo Turno */}
-                    <div className="pl-2 border-l border-slate-700">
+                    {/* Botões de Controle */}
+                    <div className="pl-2 border-l border-slate-700 flex gap-1.5">
                         <button
                             onClick={onNextTurn}
                             className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-700 hover:bg-indigo-600 text-white rounded transition-colors font-semibold text-xs"
                         >
                             <ChevronRight className="w-3.5 h-3.5" />
                             <span className="hidden sm:inline">Próximo</span>
+                        </button>
+                        <button
+                            onClick={onEndCombat}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-700 hover:bg-red-600 text-white rounded transition-colors font-semibold text-xs"
+                            title="Sair de Combate"
+                        >
+                            <X className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">Sair</span>
                         </button>
                     </div>
                 </div>
