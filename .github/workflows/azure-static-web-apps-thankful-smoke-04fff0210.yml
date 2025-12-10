@@ -24,8 +24,10 @@ jobs:
         run: npm install
         working-directory: ./frontend
 
-      - name: Build frontend
-        run: npm run build
+      - name: Clean and build frontend
+        run: |
+          rm -rf dist
+          npm run build
         working-directory: ./frontend
 
       - name: Copy staticwebapp.config.json to dist
