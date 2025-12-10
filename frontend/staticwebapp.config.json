@@ -1,0 +1,25 @@
+{
+    "navigationFallback": {
+        "rewrite": "/index.html",
+        "exclude": [
+            "/assets/*",
+            "*.css",
+            "*.js",
+            "/*.png",
+            "/*.jpg",
+            "/*.svg"
+        ]
+    },
+    "routes": [
+        {
+            "route": "/api/*",
+            "serve": "/api/$1",
+            "statusCode": 200
+        },
+        {
+            "route": "/*",
+            "serve": "/index.html",
+            "statusCode": 200
+        }
+    ]
+}
