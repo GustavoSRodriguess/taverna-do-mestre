@@ -5,6 +5,9 @@ export interface SceneToken {
     y: number; // percentage 0-100
     color?: string;
     avatar?: string;
+    character_id?: number; // ID do personagem vinculado
+    initiative?: number; // Valor de iniciativa para ordem de combate
+    current_hp?: number; // HP atual (override do personagem)
 }
 
 export interface SceneState {
