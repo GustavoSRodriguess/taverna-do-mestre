@@ -28,10 +28,8 @@ jobs:
         run: |
           rm -rf dist
           npm run build
+          cp staticwebapp.config.json dist/staticwebapp.config.json
         working-directory: ./frontend
-
-      - name: Copy staticwebapp.config.json to dist
-        run: cp ./frontend/staticwebapp.config.json ./frontend/dist/staticwebapp.config.json
 
       - name: Build And Deploy
         id: builddeploy
