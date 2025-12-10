@@ -17,6 +17,7 @@ import { PCEditor } from './components/PC';
 import PCCampaigns from './components/PC/PCCampaigns';
 import { HomebrewManager } from './components/Homebrew';
 import { DiceRoller } from './components/Dice/DiceRoller';
+import RoomPage from './components/Room/RoomPage';
 
 const App: React.FC = () => {
   return (
@@ -45,6 +46,8 @@ const App: React.FC = () => {
 
             {/* Homebrew Routes */}
             <Route path="/homebrew" element={<HomebrewManager />} />
+            {/* Play Rooms MVP */}
+            <Route path="/rooms/:id" element={<RoomPage />} />
           </Route>
 
           <Route path="*" element={

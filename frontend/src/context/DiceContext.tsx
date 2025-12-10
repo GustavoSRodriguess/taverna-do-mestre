@@ -4,8 +4,9 @@ import { DiceRoll } from '../types/dice';
 import { DiceNotification } from '../components/Dice/DiceNotification';
 
 interface DiceContextType {
-    roll: (notation: string, label?: string, advantage?: boolean, disadvantage?: boolean) => Promise<void>;
+    roll: (notation: string, label?: string, advantage?: boolean, disadvantage?: boolean) => Promise<DiceRoll>;
     lastRoll: DiceRoll | null;
+    addRollListener: (cb: (roll: DiceRoll) => void) => () => void;
 }
 
 const DiceContext = createContext<DiceContextType | undefined>(undefined);
@@ -13,6 +14,7 @@ const DiceContext = createContext<DiceContextType | undefined>(undefined);
 export const DiceProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [lastRoll, setLastRoll] = useState<DiceRoll | null>(null);
     const [notification, setNotification] = useState<DiceRoll | null>(null);
+    const listeners = React.useRef<Set<(roll: DiceRoll) => void>>(new Set());
 
     const roll = async (notation: string, label?: string, advantage?: boolean, disadvantage?: boolean) => {
         try {
@@ -38,6 +40,8 @@ export const DiceProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             setLastRoll(diceRoll);
             setNotification(diceRoll);
+            listeners.current.forEach((cb) => cb(diceRoll));
+            return diceRoll;
         } catch (error) {
             console.error('Erro ao rolar dados:', error);
             throw error;
@@ -48,8 +52,13 @@ export const DiceProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setNotification(null);
     };
 
+    const addRollListener = (cb: (roll: DiceRoll) => void) => {
+        listeners.current.add(cb);
+        return () => listeners.current.delete(cb);
+    };
+
     return (
-        <DiceContext.Provider value={{ roll, lastRoll }}>
+        <DiceContext.Provider value={{ roll, lastRoll, addRollListener }}>
             {children}
             {notification && (
                 <DiceNotification
