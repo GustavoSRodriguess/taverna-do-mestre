@@ -5,21 +5,18 @@
             "/assets/*",
             "/*.js",
             "/*.css",
+            "/*.json",
             "/*.png",
             "/*.jpg",
             "/*.jpeg",
+            "/*.gif",
             "/*.svg",
             "/*.ico",
             "/*.woff",
             "/*.woff2",
             "/*.ttf",
-            "/*.gif",
             "/*.webp",
-            "/*.json",
-            "/*.webmanifest",
-            "/favicon.ico",
-            "/robots.txt",
-            "/static/*"
+            "/favicon.ico"
         ]
     },
     "responseOverrides": {
