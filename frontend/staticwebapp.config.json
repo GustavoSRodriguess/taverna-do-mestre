@@ -18,7 +18,14 @@
             "/*.json",
             "/*.webmanifest",
             "/favicon.ico",
-            "/robots.txt"
+            "/robots.txt",
+            "/static/*"
         ]
+    },
+    "responseOverrides": {
+        "404": {
+            "rewrite": "/index.html",
+            "statusCode": 200
+        }
     }
 }
