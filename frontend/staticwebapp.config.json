@@ -3,7 +3,19 @@
         "rewrite": "/index.html",
         "exclude": ["/assets/*", "/*.{png,jpg,jpeg,gif,svg,ico,css,js,json,woff,woff2,ttf,webp,pdf}"]
     },
+    "routes": [
+        {
+            "route": "/index.html",
+            "serve": "/index.html"
+        }
+    ],
     "platform": {
-        "apiRuntime": "node:16"
+        "apiRuntime": "node:20"
+    },
+    "responseOverrides": {
+        "404": {
+            "rewrite": "/index.html",
+            "statusCode": 200
+        }
     }
 }

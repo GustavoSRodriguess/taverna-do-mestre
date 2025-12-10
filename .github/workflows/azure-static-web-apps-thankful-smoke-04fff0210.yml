@@ -20,17 +20,29 @@ jobs:
           submodules: true
           lfs: false
 
-      - name: Build And Deploy
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install and Build
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+          cp staticwebapp.config.json dist/
+        env:
+          VITE_API_URL: "https://torredomago-go.happybush-d3902cd7.brazilsouth.azurecontainerapps.io/api"
+
+      - name: Deploy to Azure Static Web Apps
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_THANKFUL_SMOKE_04FFF0210 }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
-          app_location: "frontend"
-          output_location: "dist"
-        env:
-          VITE_API_URL: "https://torredomago-go.happybush-d3902cd7.brazilsouth.azurecontainerapps.io/api"
+          app_location: "frontend/dist"
+          skip_app_build: true
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
